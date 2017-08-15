@@ -20,4 +20,8 @@ func main() {
     return
   }
   println(order.Signature.Verify(order.Maker))
+  ob := order.Bytes()
+  newOrder := types.OrderFromBytes(ob)
+  println(newOrder.Signature.Verify(newOrder.Maker))
+  // println(reflect.DeepEqual())
 }

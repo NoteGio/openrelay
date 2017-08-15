@@ -138,3 +138,44 @@ func (order *Order)UnmarshalJSON(b []byte) (error) {
   )
   return nil
 }
+
+func (order *Order)Bytes() ([377]byte) {
+  var output [377]byte
+  copy(output[0:20], order.Maker[:]) // 20
+  copy(output[20:40], order.Taker[:]) // 20
+  copy(output[40:60], order.MakerToken[:]) // 20
+  copy(output[60:80], order.TakerToken[:]) // 20
+  copy(output[80:100], order.FeeRecipient[:]) // 20
+  copy(output[100:120], order.ExchangeAddress[:]) // 20
+  copy(output[120:152], order.MakerTokenAmount[:]) // 32
+  copy(output[152:184], order.TakerTokenAmount[:]) // 32
+  copy(output[184:216], order.MakerFee[:]) // 32
+  copy(output[216:248], order.TakerFee[:]) // 32
+  copy(output[248:280], order.ExpirationTimestampInSec[:]) // 32
+  copy(output[280:312], order.Salt[:]) // 32
+  output[312] = order.Signature.V
+  copy(output[313:345], order.Signature.R[:])
+  copy(output[345:377], order.Signature.S[:])
+  return output
+}
+
+func OrderFromBytes(data [377]byte) (*Order) {
+  order := Order{}
+  copy(order.Maker[:], data[0:20])
+  copy(order.Taker[:], data[20:40])
+  copy(order.MakerToken[:], data[40:60])
+  copy(order.TakerToken[:], data[60:80])
+  copy(order.FeeRecipient[:], data[80:100])
+  copy(order.ExchangeAddress[:], data[100:120])
+  copy(order.MakerTokenAmount[:], data[120:152])
+  copy(order.TakerTokenAmount[:], data[152:184])
+  copy(order.MakerFee[:], data[184:216])
+  copy(order.TakerFee[:], data[216:248])
+  copy(order.ExpirationTimestampInSec[:], data[248:280])
+  copy(order.Salt[:], data[280:312])
+  order.Signature.V = data[312]
+  copy(order.Signature.R[:], data[313:345])
+  copy(order.Signature.S[:], data[345:377])
+  copy(order.Signature.Hash[:], order.Hash())
+  return &order
+}
