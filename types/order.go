@@ -2,6 +2,7 @@ package types
 import (
   "github.com/ethereum/go-ethereum/crypto/sha3"
   "encoding/json"
+  "strconv"
 )
 
 // Order represents an 0x order object
@@ -18,7 +19,7 @@ type Order struct {
   TakerFee [32]byte
   ExpirationTimestampInSec [32]byte
   Salt [32]byte
-  Signature Signature
+  Signature *Signature
 }
 
 // NewOrder takes string representations of values and converts them into an Order object
@@ -55,7 +56,7 @@ func (order *Order) fromStrings(maker, taker, makerToken, takerToken, feeRecipie
   if err != nil { return err }
   saltBytes, err := intStringToBytes(salt)
   if err != nil { return err }
-  sigVBytes, err := intStringToBytes(sigV)
+  sigVInt, err := strconv.Atoi(sigV)
   if err != nil { return err }
   sigRBytes, err := hexStringToBytes(sigR)
   if err != nil { return err }
@@ -73,7 +74,8 @@ func (order *Order) fromStrings(maker, taker, makerToken, takerToken, feeRecipie
   copy(order.TakerFee[:], takerFeeBytes)
   copy(order.ExpirationTimestampInSec[:], expirationTimestampInSecBytes)
   copy(order.Salt[:], saltBytes)
-  order.Signature.V = sigVBytes[0]
+  order.Signature = &Signature{}
+  order.Signature.V = byte(sigVInt - 27)  // I don't know why we subtract 27 from v, but it's what ethutil.js does, and it works
   copy(order.Signature.S[:], sigSBytes)
   copy(order.Signature.R[:], sigRBytes)
   copy(order.Signature.Hash[:], order.Hash())
@@ -136,6 +138,7 @@ func (order *Order)UnmarshalJSON(b []byte) (error) {
     jOrder.Signature.R,
     jOrder.Signature.S,
   )
+
   return nil
 }
 
@@ -159,8 +162,7 @@ func (order *Order)Bytes() ([377]byte) {
   return output
 }
 
-func OrderFromBytes(data [377]byte) (*Order) {
-  order := Order{}
+func (order *Order)FromBytes(data [377]byte) {
   copy(order.Maker[:], data[0:20])
   copy(order.Taker[:], data[20:40])
   copy(order.MakerToken[:], data[40:60])
@@ -173,9 +175,15 @@ func OrderFromBytes(data [377]byte) (*Order) {
   copy(order.TakerFee[:], data[216:248])
   copy(order.ExpirationTimestampInSec[:], data[248:280])
   copy(order.Salt[:], data[280:312])
+  order.Signature = &Signature{}
   order.Signature.V = data[312]
   copy(order.Signature.R[:], data[313:345])
   copy(order.Signature.S[:], data[345:377])
   copy(order.Signature.Hash[:], order.Hash())
+}
+
+func OrderFromBytes(data [377]byte) (*Order) {
+  order := Order{}
+  order.FromBytes(data)
   return &order
 }
