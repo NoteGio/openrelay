@@ -10,9 +10,9 @@ type Consumer interface {
 }
 
 type ConsumerChannel interface {
-	AddConsumer(Consumer)
-	StartConsuming() error
-	StopConsuming() error
-	ReturnAllUnacked() error
-	PurgeRejected() error
+	AddConsumer(Consumer) bool
+	StartConsuming() bool
+	StopConsuming() bool
+	ReturnAllUnacked() int
+	PurgeRejected() int
 }

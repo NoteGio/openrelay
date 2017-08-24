@@ -13,6 +13,21 @@ type topicConsumerChannel struct {
 	consumingStopped bool
 }
 
+// NewTopicConsumerChannel returns a ConsumerChannel that uses Redis PubSub for
+// communication. Each message delivered through this consumer channel will be
+// delivered once to each consumer. Note, however, that network issues that
+// prevent delivery of a message may lead to messages going completely
+// undelivered. Consumers may Ack or Reject the messages, but this is a no-op.
+func NewTopicConsumerChannel(channelName string, redisClient *redis.Client) (ConsumerChannel) {
+	return &topicConsumerChannel{
+		redisClient,
+		nil,
+		channelName,
+		[]Consumer{},
+		false,
+	}
+}
+
 // ReturnAllUnacked is just here for API Compatibility with topics. It does
 // nothing
 func (topic *topicConsumerChannel) ReturnAllUnacked() int {

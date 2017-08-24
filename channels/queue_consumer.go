@@ -15,6 +15,21 @@ type queueConsumerChannel struct {
 	deliveryChan     chan Delivery
 }
 
+// NewQueueConsumerChannel returns a ConsumerChannel that uses Redis queues for
+// communication. Each message delivered through this ConsumerChannel will be
+// delivered to only one consumer, assuming the consumer Acks the message.
+func NewQueueConsumerChannel(channelName string, redisClient *redis.Client) (ConsumerChannel) {
+	return &queueConsumerChannel{
+		redisClient,
+		channelName,
+		channelName,
+		channelName + "::unacked",
+		channelName + "::rejected",
+		nil,
+		nil,
+	}
+}
+
 // ReturnAllUnacked moves all unacked deliveries back to the ready
 // queue and deletes the unacked key afterwards, returns number of returned
 // deliveries
