@@ -18,6 +18,7 @@ type Publisher interface {
 
 type Account interface {
 	Blacklisted() bool
+	IsFeeRecipient() bool
 	MinFee() *big.Int
 }
 
@@ -81,15 +82,24 @@ func Handler(publisher Publisher, accounts AccountService) func(http.ResponseWri
 		}
 		// Now that we have a complete order, request the account from redis
 		// asynchronously since this may have some latency
-		acctChan := make(chan Account)
-		go func() { acctChan <- accounts.Get(order.Maker) }()
+		makerChan := make(chan Account)
+		feeChan := make(chan Account)
+		go func() { feeChan <- accounts.Get(order.FeeRecipient) }()
+		go func() { makerChan <- accounts.Get(order.Maker) }()
 		makerFee := new(big.Int)
 		takerFee := new(big.Int)
 		totalFee := new(big.Int)
 		makerFee.SetBytes(order.MakerFee[:])
 		takerFee.SetBytes(order.TakerFee[:])
 		totalFee.Add(makerFee, takerFee)
-		account := <-acctChan
+		feeRecipient := <-feeChan
+		if !feeRecipient.IsFeeRecipient() {
+			w.WriteHeader(402)
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprintf(w, "{\"error\": \"Fee Recipient must be an authorized address\"}")
+			return
+		}
+		account := <-makerChan
 		minFee := account.MinFee()
 		if totalFee.Cmp(minFee) < 0 {
 			w.WriteHeader(402)

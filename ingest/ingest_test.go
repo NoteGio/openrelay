@@ -24,11 +24,15 @@ func (pub *TestPublisher) Publish(channel, message string) error {
 
 type TestAccount struct {
 	blacklist bool
+	feeRecipient bool
 	minfee    *big.Int
 }
 
 func (acct *TestAccount) Blacklisted() bool {
 	return acct.blacklist
+}
+func (acct *TestAccount) IsFeeRecipient() bool {
+	return acct.feeRecipient
 }
 func (acct *TestAccount) MinFee() *big.Int {
 	return acct.minfee
@@ -36,6 +40,7 @@ func (acct *TestAccount) MinFee() *big.Int {
 
 type TestAccountService struct {
 	blacklist bool
+	feeRecipient bool
 	minFee    *big.Int
 }
 
@@ -51,7 +56,7 @@ func (reader TestReader) Read(p []byte) (n int, err error) {
 
 // Get makes up an account deterministically based on the provided address
 func (service *TestAccountService) Get(address [20]byte) ingest.Account {
-	return &TestAccount{service.blacklist, service.minFee}
+	return &TestAccount{service.blacklist, service.feeRecipient, service.minFee}
 }
 
 func TestTooLongBytes(t *testing.T) {
@@ -207,7 +212,7 @@ func TestInsufficientFee(t *testing.T) {
 	publisher := TestPublisher{}
 	fee := new(big.Int)
 	fee.SetInt64(1000)
-	handler := ingest.Handler(&publisher, &TestAccountService{false, fee})
+	handler := ingest.Handler(&publisher, &TestAccountService{false, true, fee})
 	data, _ := hex.DecodeString("324454186bb728a3ea55750e0618ff1b18ce6cf800000000000000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c000000000000000000000000000000000000000090fe2af704b34e0224bf2299c838e04d4dcf1364000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000059938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b00021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f1")
 	reader := TestReader{
 		data,
@@ -233,7 +238,7 @@ func TestInsufficientFee(t *testing.T) {
 }
 func TestBlacklisted(t *testing.T) {
 	publisher := TestPublisher{}
-	handler := ingest.Handler(&publisher, &TestAccountService{true, new(big.Int)})
+	handler := ingest.Handler(&publisher, &TestAccountService{true, true, new(big.Int)})
 	data, _ := hex.DecodeString("324454186bb728a3ea55750e0618ff1b18ce6cf800000000000000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c000000000000000000000000000000000000000090fe2af704b34e0224bf2299c838e04d4dcf1364000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000059938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b00021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f1")
 	reader := TestReader{
 		data,
@@ -250,9 +255,32 @@ func TestBlacklisted(t *testing.T) {
 		t.Errorf("Unexpected message count '%v'", len(publisher.messages))
 	}
 }
+func TestNotFeeRecipient(t *testing.T) {
+	publisher := TestPublisher{}
+	handler := ingest.Handler(&publisher, &TestAccountService{true, false, new(big.Int)})
+	data, _ := hex.DecodeString("324454186bb728a3ea55750e0618ff1b18ce6cf800000000000000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c000000000000000000000000000000000000000090fe2af704b34e0224bf2299c838e04d4dcf1364000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000059938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b00021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f1")
+	reader := TestReader{
+		data,
+		nil,
+	}
+	request, _ := http.NewRequest("POST", "/", reader)
+	request.Header["Content-Type"] = []string{"application/octet-stream"}
+	recorder := httptest.NewRecorder()
+	handler(recorder, request)
+	if recorder.Code != 402 {
+		t.Errorf("Expected error code 402, got '%v'", recorder.Code)
+	}
+	body := recorder.Body.String()
+	if body != "{\"error\": \"Fee Recipient must be an authorized address\"}" {
+		t.Errorf("Got unexpected body: '%v' - %v", body, len(body))
+	}
+	if len(publisher.messages) != 0 {
+		t.Errorf("Unexpected message count '%v'", len(publisher.messages))
+	}
+}
 func TestValid(t *testing.T) {
 	publisher := TestPublisher{}
-	handler := ingest.Handler(&publisher, &TestAccountService{false, new(big.Int)})
+	handler := ingest.Handler(&publisher, &TestAccountService{false, true, new(big.Int)})
 	data, _ := hex.DecodeString("324454186bb728a3ea55750e0618ff1b18ce6cf800000000000000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c000000000000000000000000000000000000000090fe2af704b34e0224bf2299c838e04d4dcf1364000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000059938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b00021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f1")
 	reader := TestReader{
 		data,
