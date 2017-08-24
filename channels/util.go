@@ -1,9 +1,8 @@
 package channels
 
 import (
-  "gopkg.in/redis.v3"
-  "log"
-
+	"gopkg.in/redis.v3"
+	"log"
 )
 
 func redisErrIsNil(result redis.Cmder) bool {

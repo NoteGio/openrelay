@@ -1,7 +1,7 @@
 package channels
 
 import (
-  "gopkg.in/redis.v3"
+	"gopkg.in/redis.v3"
 )
 
 type Delivery interface {
@@ -11,49 +11,49 @@ type Delivery interface {
 }
 
 type topicDelivery struct {
-  payload string
-  redisClient *redis.Client
+	payload     string
+	redisClient *redis.Client
 }
 
 func (delivery *topicDelivery) Payload() string {
-  return delivery.payload
+	return delivery.payload
 }
 
 func (delivery *topicDelivery) Ack() bool {
-  // Topics can't actually be Ack'd, but we want the interface to be the same
-  return true
+	// Topics can't actually be Ack'd, but we want the interface to be the same
+	return true
 }
 
 func (delivery *topicDelivery) Reject() bool {
-  // Topics can't actually be Rejected, but we want the interface to be the same
-  return true
+	// Topics can't actually be Rejected, but we want the interface to be the same
+	return true
 }
 
-func newTopicDelivery(payload string, client *redis.Client) (*topicDelivery) {
-  return &topicDelivery{payload, client}
+func newTopicDelivery(payload string, client *redis.Client) *topicDelivery {
+	return &topicDelivery{payload, client}
 }
 
 type queueDelivery struct {
-  payload string
-  unackedKey string
-  rejectedKey string
-  redisClient *redis.Client
+	payload     string
+	unackedKey  string
+	rejectedKey string
+	redisClient *redis.Client
 }
 
 func (delivery *queueDelivery) Payload() string {
-  return delivery.payload
+	return delivery.payload
 }
 
 func (delivery *queueDelivery) Ack() bool {
-  result := delivery.redisClient.LRem(delivery.unackedKey, 1, delivery.payload)
-  if redisErrIsNil(result) {
-    return false
-  }
-  return result.Val() == 1
+	result := delivery.redisClient.LRem(delivery.unackedKey, 1, delivery.payload)
+	if redisErrIsNil(result) {
+		return false
+	}
+	return result.Val() == 1
 }
 
 func (delivery *queueDelivery) Reject() bool {
-  return delivery.move(delivery.rejectedKey)
+	return delivery.move(delivery.rejectedKey)
 
 }
 
@@ -70,6 +70,6 @@ func (delivery *queueDelivery) move(key string) bool {
 	return true
 }
 
-func newQueueDelivery(payload, unackedKey, rejectedKey string, client *redis.Client) (*queueDelivery) {
-  return &queueDelivery{payload, unackedKey, rejectedKey, client}
+func newQueueDelivery(payload, unackedKey, rejectedKey string, client *redis.Client) *queueDelivery {
+	return &queueDelivery{payload, unackedKey, rejectedKey, client}
 }

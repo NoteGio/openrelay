@@ -1,18 +1,18 @@
 package channels
 
 import (
-  "gopkg.in/redis.v3"
-  "time"
+	"gopkg.in/redis.v3"
+	"time"
 )
 
 type queueConsumerChannel struct {
-  redisClient *redis.Client
-  channelName string
-  readyKey string
-  unackedKey string
-  rejectedKey string
-  consumingStopped chan bool
-  deliveryChan chan Delivery
+	redisClient      *redis.Client
+	channelName      string
+	readyKey         string
+	unackedKey       string
+	rejectedKey      string
+	consumingStopped chan bool
+	deliveryChan     chan Delivery
 }
 
 // ReturnAllUnacked moves all unacked deliveries back to the ready
@@ -65,12 +65,12 @@ func (queue *queueConsumerChannel) deleteRedisList(key string) int {
 }
 
 func (queue *queueConsumerChannel) AddConsumer(consumer Consumer) bool {
-  go func() {
-    for delivery := range queue.deliveryChan {
-  		consumer.Consume(delivery)
-  	}
-  }()
-  return true
+	go func() {
+		for delivery := range queue.deliveryChan {
+			consumer.Consume(delivery)
+		}
+	}()
+	return true
 }
 
 func (queue *queueConsumerChannel) StartConsuming() bool {
@@ -86,22 +86,22 @@ func (queue *queueConsumerChannel) StartConsuming() bool {
 
 func (queue *queueConsumerChannel) consume() {
 	for {
-    result := queue.redisClient.BRPopLPush(queue.readyKey, queue.unackedKey, time.Second)
-    if !redisErrIsNil(result) {
-      queue.deliveryChan <- newQueueDelivery(result.Val(), queue.unackedKey, queue.rejectedKey, queue.redisClient)
-    }
-		if queue.consumingStopped != nil{
+		result := queue.redisClient.BRPopLPush(queue.readyKey, queue.unackedKey, time.Second)
+		if !redisErrIsNil(result) {
+			queue.deliveryChan <- newQueueDelivery(result.Val(), queue.unackedKey, queue.rejectedKey, queue.redisClient)
+		}
+		if queue.consumingStopped != nil {
 			// log.Printf("rmq queue stopped consuming %s", queue)
-      queue.consumingStopped <- true
+			queue.consumingStopped <- true
 			return
 		}
 	}
 }
 
 func (queue *queueConsumerChannel) StopConsuming() bool {
-  if queue.deliveryChan != nil && queue.consumingStopped == nil{
-    queue.consumingStopped = make(chan bool)
-    return <-queue.consumingStopped
-  }
-  return false
+	if queue.deliveryChan != nil && queue.consumingStopped == nil {
+		queue.consumingStopped = make(chan bool)
+		return <-queue.consumingStopped
+	}
+	return false
 }
