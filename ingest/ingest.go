@@ -19,7 +19,7 @@ type Publisher interface {
 type Account interface {
 	Blacklisted() bool
 	IsFeeRecipient() bool
-	MinFee() *big.Int
+	Fee() *big.Int
 }
 
 type AccountService interface {
@@ -100,7 +100,11 @@ func Handler(publisher Publisher, accounts AccountService) func(http.ResponseWri
 			return
 		}
 		account := <-makerChan
-		minFee := account.MinFee()
+		minFee := new(big.Int)
+		// A fee recipient's Fee() value is the base fee for that recipient.
+		// A maker's Fee() is the discount that recipient gets from the base fee.
+		// Thus, the minimum fee required is feeRecipient.Fee() - maker.Fee()
+		minFee.Sub(feeRecipient.Fee(), account.Fee())
 		if totalFee.Cmp(minFee) < 0 {
 			w.WriteHeader(402)
 			w.Header().Set("Content-Type", "application/json")

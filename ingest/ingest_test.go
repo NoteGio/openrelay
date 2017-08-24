@@ -10,6 +10,8 @@ import (
 	// "reflect"
 	"errors"
 	// "io/ioutil"
+	"sync"
+	// "fmt"
 )
 
 type TestPublisher struct {
@@ -25,7 +27,7 @@ func (pub *TestPublisher) Publish(channel, message string) error {
 type TestAccount struct {
 	blacklist bool
 	feeRecipient bool
-	minfee    *big.Int
+	fee    *big.Int
 }
 
 func (acct *TestAccount) Blacklisted() bool {
@@ -34,14 +36,16 @@ func (acct *TestAccount) Blacklisted() bool {
 func (acct *TestAccount) IsFeeRecipient() bool {
 	return acct.feeRecipient
 }
-func (acct *TestAccount) MinFee() *big.Int {
-	return acct.minfee
+func (acct *TestAccount) Fee() *big.Int {
+	return acct.fee
 }
 
 type TestAccountService struct {
-	blacklist bool
-	feeRecipient bool
-	minFee    *big.Int
+	blacklist []bool
+	feeRecipient []bool
+	minFee    []*big.Int
+	counter   int
+	mutex     *sync.Mutex
 }
 
 type TestReader struct {
@@ -56,7 +60,18 @@ func (reader TestReader) Read(p []byte) (n int, err error) {
 
 // Get makes up an account deterministically based on the provided address
 func (service *TestAccountService) Get(address [20]byte) ingest.Account {
-	return &TestAccount{service.blacklist, service.feeRecipient, service.minFee}
+	if service.mutex == nil {
+		service.mutex = &sync.Mutex{}
+	}
+	service.mutex.Lock()
+	account := &TestAccount{
+		service.blacklist[service.counter % len(service.blacklist)],
+		service.feeRecipient[service.counter % len(service.feeRecipient)],
+		service.minFee[service.counter % len(service.minFee)],
+	}
+	service.counter++
+	service.mutex.Unlock()
+	return account
 }
 
 func TestTooLongBytes(t *testing.T) {
@@ -212,7 +227,7 @@ func TestInsufficientFee(t *testing.T) {
 	publisher := TestPublisher{}
 	fee := new(big.Int)
 	fee.SetInt64(1000)
-	handler := ingest.Handler(&publisher, &TestAccountService{false, true, fee})
+	handler := ingest.Handler(&publisher, &TestAccountService{[]bool{false}, []bool{true}, []*big.Int{new(big.Int), fee}, 0, &sync.Mutex{}})
 	data, _ := hex.DecodeString("324454186bb728a3ea55750e0618ff1b18ce6cf800000000000000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c000000000000000000000000000000000000000090fe2af704b34e0224bf2299c838e04d4dcf1364000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000059938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b00021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f1")
 	reader := TestReader{
 		data,
@@ -238,7 +253,7 @@ func TestInsufficientFee(t *testing.T) {
 }
 func TestBlacklisted(t *testing.T) {
 	publisher := TestPublisher{}
-	handler := ingest.Handler(&publisher, &TestAccountService{true, true, new(big.Int)})
+	handler := ingest.Handler(&publisher, &TestAccountService{[]bool{true}, []bool{true}, []*big.Int{new(big.Int)}, 0, &sync.Mutex{}})
 	data, _ := hex.DecodeString("324454186bb728a3ea55750e0618ff1b18ce6cf800000000000000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c000000000000000000000000000000000000000090fe2af704b34e0224bf2299c838e04d4dcf1364000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000059938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b00021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f1")
 	reader := TestReader{
 		data,
@@ -257,7 +272,7 @@ func TestBlacklisted(t *testing.T) {
 }
 func TestNotFeeRecipient(t *testing.T) {
 	publisher := TestPublisher{}
-	handler := ingest.Handler(&publisher, &TestAccountService{true, false, new(big.Int)})
+	handler := ingest.Handler(&publisher, &TestAccountService{[]bool{true}, []bool{false}, []*big.Int{new(big.Int)}, 0, &sync.Mutex{}})
 	data, _ := hex.DecodeString("324454186bb728a3ea55750e0618ff1b18ce6cf800000000000000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c000000000000000000000000000000000000000090fe2af704b34e0224bf2299c838e04d4dcf1364000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000059938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b00021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f1")
 	reader := TestReader{
 		data,
@@ -280,7 +295,7 @@ func TestNotFeeRecipient(t *testing.T) {
 }
 func TestValid(t *testing.T) {
 	publisher := TestPublisher{}
-	handler := ingest.Handler(&publisher, &TestAccountService{false, true, new(big.Int)})
+	handler := ingest.Handler(&publisher, &TestAccountService{[]bool{false}, []bool{true}, []*big.Int{new(big.Int)}, 0, &sync.Mutex{}})
 	data, _ := hex.DecodeString("324454186bb728a3ea55750e0618ff1b18ce6cf800000000000000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c000000000000000000000000000000000000000090fe2af704b34e0224bf2299c838e04d4dcf1364000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000059938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b00021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f1")
 	reader := TestReader{
 		data,
