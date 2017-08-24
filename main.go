@@ -5,6 +5,7 @@ import (
   "io/ioutil"
   "encoding/json"
   // "encoding/hex"
+  "fmt"
   // "reflect"
 )
 
@@ -21,6 +22,7 @@ func main() {
   }
   println(order.Signature.Verify(order.Maker))
   ob := order.Bytes()
+  fmt.Printf("'%v'\n", order.Signature.V)
   newOrder := types.OrderFromBytes(ob)
   println(newOrder.Signature.Verify(newOrder.Maker))
   // println(reflect.DeepEqual())

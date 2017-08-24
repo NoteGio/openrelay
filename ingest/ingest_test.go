@@ -16,7 +16,7 @@ type TestPublisher struct {
   messages [][2]string
 }
 
-func (pub *TestPublisher) Publish(channel, message string) interface{} {
+func (pub *TestPublisher) Publish(channel, message string) error {
   messagePair := [2]string{channel, message}
   pub.messages = append(pub.messages, messagePair)
   return nil

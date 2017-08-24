@@ -13,7 +13,7 @@ import (
 // Publisher items have a Publish function, allowing the publication of a
 // string to a channel
 type Publisher interface {
-  Publish(string, string) interface{};
+  Publish(string, string) error;
 }
 
 type Account interface {
@@ -105,6 +105,8 @@ func Handler(publisher Publisher, accounts AccountService) func(http.ResponseWri
     w.WriteHeader(202)
     fmt.Fprintf(w, "")
     orderBytes := order.Bytes()
-    publisher.Publish("ingest", string(orderBytes[:]))
+    if err := publisher.Publish("ingest", string(orderBytes[:])); err != nil {
+      fmt.Println(err);
+    }
   }
 }
