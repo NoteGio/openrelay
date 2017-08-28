@@ -3,6 +3,7 @@ package channels
 import (
 	"gopkg.in/redis.v3"
 	// "time"
+	// "fmt"
 )
 
 type topicConsumerChannel struct {

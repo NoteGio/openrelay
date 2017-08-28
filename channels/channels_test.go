@@ -144,13 +144,13 @@ func redisCleanup(redisClient *redis.Client, consumerChannel channels.ConsumerCh
 }
 
 func TestRedisQueueChannelSend(t *testing.T) {
-	redisUrl := os.Getenv("REDIS_URL")
-	if redisUrl == "" {
+	redisURL := os.Getenv("REDIS_URL")
+	if redisURL == "" {
 		t.Errorf("Please set the REDIS_URL environment variable")
 		return
 	}
 	redisClient := redis.NewClient(&redis.Options{
-		Addr: redisUrl,
+		Addr: redisURL,
 	})
 	publisher := channels.NewQueuePublisher("test_queue", redisClient)
 	consumerChannel := channels.NewQueueConsumerChannel("test_queue", redisClient)
@@ -158,13 +158,13 @@ func TestRedisQueueChannelSend(t *testing.T) {
 	ChannelSendTest(publisher, consumerChannel, t)
 }
 func TestRedisQueueReturnUnacked(t *testing.T) {
-	redisUrl := os.Getenv("REDIS_URL")
-	if redisUrl == "" {
+	redisURL := os.Getenv("REDIS_URL")
+	if redisURL == "" {
 		t.Errorf("Please set the REDIS_URL environment variable")
 		return
 	}
 	redisClient := redis.NewClient(&redis.Options{
-		Addr: redisUrl,
+		Addr: redisURL,
 	})
 	publisher := channels.NewQueuePublisher("test_queue", redisClient)
 	consumerChannel := channels.NewQueueConsumerChannel("test_queue", redisClient)
@@ -172,13 +172,13 @@ func TestRedisQueueReturnUnacked(t *testing.T) {
 	ReturnUnackedTest(publisher, consumerChannel, t)
 }
 func TestRedisQueueAck(t *testing.T) {
-	redisUrl := os.Getenv("REDIS_URL")
-	if redisUrl == "" {
+	redisURL := os.Getenv("REDIS_URL")
+	if redisURL == "" {
 		t.Errorf("Please set the REDIS_URL environment variable")
 		return
 	}
 	redisClient := redis.NewClient(&redis.Options{
-		Addr: redisUrl,
+		Addr: redisURL,
 	})
 	publisher := channels.NewQueuePublisher("test_queue", redisClient)
 	consumerChannel := channels.NewQueueConsumerChannel("test_queue", redisClient)
@@ -186,16 +186,45 @@ func TestRedisQueueAck(t *testing.T) {
 	AckTest(publisher, consumerChannel, t)
 }
 func TestRedisQueueReject(t *testing.T) {
-	redisUrl := os.Getenv("REDIS_URL")
-	if redisUrl == "" {
+	redisURL := os.Getenv("REDIS_URL")
+	if redisURL == "" {
 		t.Errorf("Please set the REDIS_URL environment variable")
 		return
 	}
 	redisClient := redis.NewClient(&redis.Options{
-		Addr: redisUrl,
+		Addr: redisURL,
 	})
 	publisher := channels.NewQueuePublisher("test_queue", redisClient)
 	consumerChannel := channels.NewQueueConsumerChannel("test_queue", redisClient)
 	defer redisCleanup(redisClient, consumerChannel)
 	RejectTest(publisher, consumerChannel, t)
+}
+
+func TestRedisTopicChannelSend(t *testing.T) {
+	redisURL := os.Getenv("REDIS_URL")
+	if redisURL == "" {
+		t.Errorf("Please set the REDIS_URL environment variable")
+		return
+	}
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: redisURL,
+	})
+	publisher := channels.NewTopicPublisher("test_topic", redisClient)
+	consumerChannel := channels.NewTopicConsumerChannel("test_topic", redisClient)
+	defer consumerChannel.StopConsuming()
+	ChannelSendTest(publisher, consumerChannel, t)
+}
+func TestRedisTopicAck(t *testing.T) {
+	redisURL := os.Getenv("REDIS_URL")
+	if redisURL == "" {
+		t.Errorf("Please set the REDIS_URL environment variable")
+		return
+	}
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: redisURL,
+	})
+	publisher := channels.NewTopicPublisher("test_topic", redisClient)
+	consumerChannel := channels.NewTopicConsumerChannel("test_topic", redisClient)
+	defer consumerChannel.StopConsuming()
+	AckTest(publisher, consumerChannel, t)
 }

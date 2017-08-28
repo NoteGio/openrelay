@@ -31,5 +31,5 @@ func NewTopicPublisher(key string, client *redis.Client) Publisher {
 }
 
 func (publisher *topicPublisher) Publish(payload string) bool {
-	return !redisErrIsNil(publisher.redisClient.Publish(publisher.key+"::ready", payload))
+	return !redisErrIsNil(publisher.redisClient.Publish(publisher.key, payload))
 }
