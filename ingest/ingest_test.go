@@ -3,6 +3,8 @@ package ingest_test
 import (
 	"encoding/hex"
 	"github.com/notegio/0xrelay/ingest"
+	accountsModule "github.com/notegio/0xrelay/accounts"
+	affiliatesModule "github.com/notegio/0xrelay/affiliates"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
@@ -10,42 +12,59 @@ import (
 	// "reflect"
 	"errors"
 	// "io/ioutil"
-	"sync"
 	// "fmt"
 )
 
 type TestPublisher struct {
-	messages [][2]string
+	channel string
+	messages []string
 }
 
-func (pub *TestPublisher) Publish(channel, message string) error {
-	messagePair := [2]string{channel, message}
-	pub.messages = append(pub.messages, messagePair)
-	return nil
+func (pub *TestPublisher) Publish(message string) bool {
+	pub.messages = append(pub.messages, message)
+	return true
 }
 
 type TestAccount struct {
 	blacklist bool
-	feeRecipient bool
-	fee    *big.Int
+	discount    *big.Int
 }
 
 func (acct *TestAccount) Blacklisted() bool {
 	return acct.blacklist
 }
-func (acct *TestAccount) IsFeeRecipient() bool {
-	return acct.feeRecipient
+func (acct *TestAccount) Discount() *big.Int {
+	return acct.discount
 }
-func (acct *TestAccount) Fee() *big.Int {
-	return acct.fee
+
+type TestAffiliate struct {
+	fee *big.Int
+}
+
+func (affiliate *TestAffiliate) Fee() *big.Int {
+	return affiliate.fee
+}
+
+type TestAffiliateService struct {
+	fee *big.Int
+	err error
+}
+
+func (service *TestAffiliateService) Get(address [20]byte) (affiliatesModule.Affiliate, error) {
+	if service.err == nil {
+		return &TestAffiliate{service.fee}, nil
+	}
+	return nil, service.err
+}
+
+// Set must be provided to satisfy the interface, but we don't need it for these tests.
+func (service *TestAffiliateService) Set(address [20]byte, affiliate affiliatesModule.Affiliate) error {
+	return nil
 }
 
 type TestAccountService struct {
-	blacklist []bool
-	feeRecipient []bool
-	minFee    []*big.Int
-	counter   int
-	mutex     *sync.Mutex
+	blacklist bool
+	discount    *big.Int
 }
 
 type TestReader struct {
@@ -59,24 +78,23 @@ func (reader TestReader) Read(p []byte) (n int, err error) {
 }
 
 // Get makes up an account deterministically based on the provided address
-func (service *TestAccountService) Get(address [20]byte) ingest.Account {
-	if service.mutex == nil {
-		service.mutex = &sync.Mutex{}
-	}
-	service.mutex.Lock()
+func (service *TestAccountService) Get(address [20]byte) accountsModule.Account {
 	account := &TestAccount{
-		service.blacklist[service.counter % len(service.blacklist)],
-		service.feeRecipient[service.counter % len(service.feeRecipient)],
-		service.minFee[service.counter % len(service.minFee)],
+		service.blacklist,
+		service.discount,
 	}
-	service.counter++
-	service.mutex.Unlock()
 	return account
 }
+// Set must be provided to satisfy the interface, but we don't need it for these tests.
+func (service *TestAccountService) Set(address [20]byte, account accountsModule.Account) error {
+	return nil
+}
+
+
 
 func TestTooLongBytes(t *testing.T) {
 	publisher := TestPublisher{}
-	handler := ingest.Handler(&publisher, &TestAccountService{})
+	handler := ingest.Handler(&publisher, &TestAccountService{}, &TestAffiliateService{})
 	reader := TestReader{
 		[]byte("0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"),
 		nil,
@@ -101,7 +119,7 @@ func TestTooLongBytes(t *testing.T) {
 }
 func TestBadRead(t *testing.T) {
 	publisher := TestPublisher{}
-	handler := ingest.Handler(&publisher, &TestAccountService{})
+	handler := ingest.Handler(&publisher, &TestAccountService{}, &TestAffiliateService{})
 	reader := TestReader{
 		[]byte("00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"),
 		errors.New("Fail!"),
@@ -126,7 +144,7 @@ func TestBadRead(t *testing.T) {
 }
 func TestBadJSON(t *testing.T) {
 	publisher := TestPublisher{}
-	handler := ingest.Handler(&publisher, &TestAccountService{})
+	handler := ingest.Handler(&publisher, &TestAccountService{}, &TestAffiliateService{})
 	reader := TestReader{
 		[]byte("bad json"),
 		nil,
@@ -151,7 +169,7 @@ func TestBadJSON(t *testing.T) {
 }
 func TestJSONBadRead(t *testing.T) {
 	publisher := TestPublisher{}
-	handler := ingest.Handler(&publisher, &TestAccountService{})
+	handler := ingest.Handler(&publisher, &TestAccountService{}, &TestAffiliateService{})
 	reader := TestReader{
 		[]byte("bad json"),
 		errors.New("Sample Error"),
@@ -176,7 +194,7 @@ func TestJSONBadRead(t *testing.T) {
 }
 func TestNoContentType(t *testing.T) {
 	publisher := TestPublisher{}
-	handler := ingest.Handler(&publisher, &TestAccountService{})
+	handler := ingest.Handler(&publisher, &TestAccountService{}, &TestAffiliateService{})
 	reader := TestReader{
 		[]byte(""),
 		nil,
@@ -200,7 +218,7 @@ func TestNoContentType(t *testing.T) {
 }
 func TestBadSignature(t *testing.T) {
 	publisher := TestPublisher{}
-	handler := ingest.Handler(&publisher, &TestAccountService{})
+	handler := ingest.Handler(&publisher, &TestAccountService{}, &TestAffiliateService{})
 	reader := TestReader{
 		[]byte("00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"),
 		nil,
@@ -227,7 +245,7 @@ func TestInsufficientFee(t *testing.T) {
 	publisher := TestPublisher{}
 	fee := new(big.Int)
 	fee.SetInt64(1000)
-	handler := ingest.Handler(&publisher, &TestAccountService{[]bool{false}, []bool{true}, []*big.Int{new(big.Int), fee}, 0, &sync.Mutex{}})
+	handler := ingest.Handler(&publisher, &TestAccountService{false, new(big.Int)}, &TestAffiliateService{fee, nil})
 	data, _ := hex.DecodeString("324454186bb728a3ea55750e0618ff1b18ce6cf800000000000000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c000000000000000000000000000000000000000090fe2af704b34e0224bf2299c838e04d4dcf1364000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000059938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b00021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f1")
 	reader := TestReader{
 		data,
@@ -253,7 +271,7 @@ func TestInsufficientFee(t *testing.T) {
 }
 func TestBlacklisted(t *testing.T) {
 	publisher := TestPublisher{}
-	handler := ingest.Handler(&publisher, &TestAccountService{[]bool{true}, []bool{true}, []*big.Int{new(big.Int)}, 0, &sync.Mutex{}})
+	handler := ingest.Handler(&publisher, &TestAccountService{true, new(big.Int)}, &TestAffiliateService{new(big.Int), nil})
 	data, _ := hex.DecodeString("324454186bb728a3ea55750e0618ff1b18ce6cf800000000000000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c000000000000000000000000000000000000000090fe2af704b34e0224bf2299c838e04d4dcf1364000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000059938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b00021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f1")
 	reader := TestReader{
 		data,
@@ -272,7 +290,7 @@ func TestBlacklisted(t *testing.T) {
 }
 func TestNotFeeRecipient(t *testing.T) {
 	publisher := TestPublisher{}
-	handler := ingest.Handler(&publisher, &TestAccountService{[]bool{true}, []bool{false}, []*big.Int{new(big.Int)}, 0, &sync.Mutex{}})
+	handler := ingest.Handler(&publisher, &TestAccountService{true, new(big.Int)}, &TestAffiliateService{nil, errors.New("Fee Recipient must be an authorized address")})
 	data, _ := hex.DecodeString("324454186bb728a3ea55750e0618ff1b18ce6cf800000000000000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c000000000000000000000000000000000000000090fe2af704b34e0224bf2299c838e04d4dcf1364000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000059938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b00021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f1")
 	reader := TestReader{
 		data,
@@ -295,7 +313,7 @@ func TestNotFeeRecipient(t *testing.T) {
 }
 func TestValid(t *testing.T) {
 	publisher := TestPublisher{}
-	handler := ingest.Handler(&publisher, &TestAccountService{[]bool{false}, []bool{true}, []*big.Int{new(big.Int)}, 0, &sync.Mutex{}})
+	handler := ingest.Handler(&publisher, &TestAccountService{false, new(big.Int)}, &TestAffiliateService{new(big.Int), nil})
 	data, _ := hex.DecodeString("324454186bb728a3ea55750e0618ff1b18ce6cf800000000000000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c000000000000000000000000000000000000000090fe2af704b34e0224bf2299c838e04d4dcf1364000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000059938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b00021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f1")
 	reader := TestReader{
 		data,
@@ -312,10 +330,7 @@ func TestValid(t *testing.T) {
 		t.Errorf("Unexpected message count '%v'", len(publisher.messages))
 		return
 	}
-	if publisher.messages[0][0] != "ingest" {
-		t.Errorf("Message published on unexpected channel")
-	}
-	if publisher.messages[0][1] != string(data) {
+	if publisher.messages[0] != string(data) {
 		t.Errorf("Unexpected message data")
 	}
 }

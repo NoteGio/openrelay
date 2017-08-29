@@ -152,7 +152,7 @@ func TestRedisQueueChannelSend(t *testing.T) {
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: redisURL,
 	})
-	publisher := channels.NewQueuePublisher("test_queue", redisClient)
+	publisher := channels.NewRedisQueuePublisher("test_queue", redisClient)
 	consumerChannel := channels.NewQueueConsumerChannel("test_queue", redisClient)
 	defer redisCleanup(redisClient, consumerChannel)
 	ChannelSendTest(publisher, consumerChannel, t)
@@ -166,7 +166,7 @@ func TestRedisQueueReturnUnacked(t *testing.T) {
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: redisURL,
 	})
-	publisher := channels.NewQueuePublisher("test_queue", redisClient)
+	publisher := channels.NewRedisQueuePublisher("test_queue", redisClient)
 	consumerChannel := channels.NewQueueConsumerChannel("test_queue", redisClient)
 	defer redisCleanup(redisClient, consumerChannel)
 	ReturnUnackedTest(publisher, consumerChannel, t)
@@ -180,7 +180,7 @@ func TestRedisQueueAck(t *testing.T) {
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: redisURL,
 	})
-	publisher := channels.NewQueuePublisher("test_queue", redisClient)
+	publisher := channels.NewRedisQueuePublisher("test_queue", redisClient)
 	consumerChannel := channels.NewQueueConsumerChannel("test_queue", redisClient)
 	defer redisCleanup(redisClient, consumerChannel)
 	AckTest(publisher, consumerChannel, t)
@@ -194,7 +194,7 @@ func TestRedisQueueReject(t *testing.T) {
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: redisURL,
 	})
-	publisher := channels.NewQueuePublisher("test_queue", redisClient)
+	publisher := channels.NewRedisQueuePublisher("test_queue", redisClient)
 	consumerChannel := channels.NewQueueConsumerChannel("test_queue", redisClient)
 	defer redisCleanup(redisClient, consumerChannel)
 	RejectTest(publisher, consumerChannel, t)
@@ -209,7 +209,7 @@ func TestRedisTopicChannelSend(t *testing.T) {
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: redisURL,
 	})
-	publisher := channels.NewTopicPublisher("test_topic", redisClient)
+	publisher := channels.NewRedisTopicPublisher("test_topic", redisClient)
 	consumerChannel := channels.NewTopicConsumerChannel("test_topic", redisClient)
 	defer consumerChannel.StopConsuming()
 	ChannelSendTest(publisher, consumerChannel, t)
@@ -223,7 +223,7 @@ func TestRedisTopicAck(t *testing.T) {
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: redisURL,
 	})
-	publisher := channels.NewTopicPublisher("test_topic", redisClient)
+	publisher := channels.NewRedisTopicPublisher("test_topic", redisClient)
 	consumerChannel := channels.NewTopicConsumerChannel("test_topic", redisClient)
 	defer consumerChannel.StopConsuming()
 	AckTest(publisher, consumerChannel, t)

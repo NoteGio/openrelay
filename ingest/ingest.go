@@ -2,31 +2,21 @@ package ingest
 
 import (
 	"encoding/json"
+	"encoding/hex"
 	"fmt"
+	"log"
 	"github.com/notegio/0xrelay/types"
+	"github.com/notegio/0xrelay/channels"
+	accountsModule "github.com/notegio/0xrelay/accounts"
+	affiliatesModule "github.com/notegio/0xrelay/affiliates"
 	"io"
 	"math/big"
 	"net/http"
 	"strings"
 )
 
-// Publisher items have a Publish function, allowing the publication of a
-// string to a channel
-type Publisher interface {
-	Publish(string, string) error
-}
 
-type Account interface {
-	Blacklisted() bool
-	IsFeeRecipient() bool
-	Fee() *big.Int
-}
-
-type AccountService interface {
-	Get([20]byte) Account
-}
-
-func Handler(publisher Publisher, accounts AccountService) func(http.ResponseWriter, *http.Request) {
+func Handler(publisher channels.Publisher, accounts accountsModule.AccountService, affiliates affiliatesModule.AffiliateService) func(http.ResponseWriter, *http.Request) {
 	var contentType string
 	return func(w http.ResponseWriter, r *http.Request) {
 		if typeVal, ok := r.Header["Content-Type"]; ok {
@@ -47,24 +37,25 @@ func Handler(publisher Publisher, accounts AccountService) func(http.ResponseWri
 				w.WriteHeader(500)
 				w.Header().Set("Content-Type", "application/json")
 				fmt.Fprintf(w, "{\"error\": \"Error reading content\"}")
-				fmt.Printf(err.Error())
+				log.Printf(err.Error())
 				return
 			}
 			order.FromBytes(data)
 		} else if contentType == "application/json" {
 			var data [1024]byte
-			_, err := r.Body.Read(data[:])
+			jsonLength, err := r.Body.Read(data[:])
 			if err != nil && err != io.EOF {
 				w.WriteHeader(500)
 				w.Header().Set("Content-Type", "application/json")
 				fmt.Fprintf(w, "{\"error\": \"Error reading content\"}")
-				fmt.Printf(err.Error())
+				log.Printf(err.Error())
 				return
 			}
-			if err := json.Unmarshal(data[:], &order); err != nil {
+			if err := json.Unmarshal(data[:jsonLength], &order); err != nil {
 				w.WriteHeader(400)
 				w.Header().Set("Content-Type", "application/json")
 				fmt.Fprintf(w, "{\"error\": \"Error parsing JSON content\"}")
+				log.Printf("%v: '%v'", err.Error(), string(data[:]))
 				return
 			}
 		} else {
@@ -82,9 +73,16 @@ func Handler(publisher Publisher, accounts AccountService) func(http.ResponseWri
 		}
 		// Now that we have a complete order, request the account from redis
 		// asynchronously since this may have some latency
-		makerChan := make(chan Account)
-		feeChan := make(chan Account)
-		go func() { feeChan <- accounts.Get(order.FeeRecipient) }()
+		makerChan := make(chan accountsModule.Account)
+		affiliateChan := make(chan affiliatesModule.Affiliate)
+		go func() {
+			feeRecipient, err := affiliates.Get(order.FeeRecipient)
+			if err != nil {
+				affiliateChan <- nil
+			} else {
+				affiliateChan <- feeRecipient
+			}
+		}()
 		go func() { makerChan <- accounts.Get(order.Maker) }()
 		makerFee := new(big.Int)
 		takerFee := new(big.Int)
@@ -92,19 +90,21 @@ func Handler(publisher Publisher, accounts AccountService) func(http.ResponseWri
 		makerFee.SetBytes(order.MakerFee[:])
 		takerFee.SetBytes(order.TakerFee[:])
 		totalFee.Add(makerFee, takerFee)
-		feeRecipient := <-feeChan
-		if !feeRecipient.IsFeeRecipient() {
+		feeRecipient := <-affiliateChan
+		if feeRecipient == nil {
 			w.WriteHeader(402)
 			w.Header().Set("Content-Type", "application/json")
+			// Fee Recipient must be an authorized address
 			fmt.Fprintf(w, "{\"error\": \"Fee Recipient must be an authorized address\"}")
 			return
 		}
 		account := <-makerChan
 		minFee := new(big.Int)
-		// A fee recipient's Fee() value is the base fee for that recipient.
-		// A maker's Fee() is the discount that recipient gets from the base fee.
-		// Thus, the minimum fee required is feeRecipient.Fee() - maker.Fee()
-		minFee.Sub(feeRecipient.Fee(), account.Fee())
+		// A fee recipient's Fee() value is the base fee for that recipient. A
+		// maker's Discount() is the discount that recipient gets from the base
+		// fee. Thus, the minimum fee required is feeRecipient.Fee() -
+		// maker.Discount()
+		minFee.Sub(feeRecipient.Fee(), account.Discount())
 		if totalFee.Cmp(minFee) < 0 {
 			w.WriteHeader(402)
 			w.Header().Set("Content-Type", "application/json")
@@ -119,8 +119,8 @@ func Handler(publisher Publisher, accounts AccountService) func(http.ResponseWri
 		w.WriteHeader(202)
 		fmt.Fprintf(w, "")
 		orderBytes := order.Bytes()
-		if err := publisher.Publish("ingest", string(orderBytes[:])); err != nil {
-			fmt.Println(err)
+		if err := publisher.Publish(string(orderBytes[:])); !err {
+			log.Println("Failed to publish '%v'", hex.EncodeToString(order.Hash()))
 		}
 	}
 }
