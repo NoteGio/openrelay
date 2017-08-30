@@ -2,9 +2,9 @@ package funds_test
 
 import (
 	"encoding/hex"
-	"github.com/notegio/0xrelay/common"
-	"github.com/notegio/0xrelay/funds"
-	"github.com/notegio/0xrelay/types"
+	"github.com/notegio/openrelay/common"
+	"github.com/notegio/openrelay/funds"
+	"github.com/notegio/openrelay/types"
 	"math/big"
 	"reflect"
 	"testing"

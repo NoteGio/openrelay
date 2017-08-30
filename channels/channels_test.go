@@ -2,7 +2,7 @@ package channels_test
 
 import (
 	"fmt"
-	"github.com/notegio/0xrelay/channels"
+	"github.com/notegio/openrelay/channels"
 	"gopkg.in/redis.v3"
 	"os"
 	"testing"

@@ -2,9 +2,9 @@ package ingest_test
 
 import (
 	"encoding/hex"
-	accountsModule "github.com/notegio/0xrelay/accounts"
-	affiliatesModule "github.com/notegio/0xrelay/affiliates"
-	"github.com/notegio/0xrelay/ingest"
+	accountsModule "github.com/notegio/openrelay/accounts"
+	affiliatesModule "github.com/notegio/openrelay/affiliates"
+	"github.com/notegio/openrelay/ingest"
 	"math/big"
 	"net/http"
 	"net/http/httptest"

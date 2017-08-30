@@ -3,8 +3,8 @@ package funds
 import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/ethclient"
-	orCommon "github.com/notegio/0xrelay/common"
-	tokenModule "github.com/notegio/0xrelay/token"
+	orCommon "github.com/notegio/openrelay/common"
+	tokenModule "github.com/notegio/openrelay/token"
 	"math/big"
 )
 

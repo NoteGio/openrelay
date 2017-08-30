@@ -1,7 +1,7 @@
 package accounts_test
 
 import (
-	"github.com/notegio/0xrelay/accounts"
+	"github.com/notegio/openrelay/accounts"
 	"math/big"
 	"testing"
 	"time"

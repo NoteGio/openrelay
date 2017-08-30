@@ -1,7 +1,7 @@
 package channels_test
 
 import (
-	"github.com/notegio/0xrelay/channels"
+	"github.com/notegio/openrelay/channels"
 	"testing"
 )
 

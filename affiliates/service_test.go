@@ -2,8 +2,8 @@ package affiliates_test
 
 import (
 	"encoding/hex"
-	"github.com/notegio/0xrelay/affiliates"
-	"github.com/notegio/0xrelay/config"
+	"github.com/notegio/openrelay/affiliates"
+	"github.com/notegio/openrelay/config"
 	"gopkg.in/redis.v3"
 	"math/big"
 	"os"

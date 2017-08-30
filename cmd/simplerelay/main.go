@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/notegio/0xrelay/channels"
+	"github.com/notegio/openrelay/channels"
 	"gopkg.in/redis.v3"
 	"os"
 	"os/signal"

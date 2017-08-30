@@ -3,7 +3,7 @@ package types_test
 import (
 	"encoding/hex"
 	"encoding/json"
-	"github.com/notegio/0xrelay/types"
+	"github.com/notegio/openrelay/types"
 	"io/ioutil"
 	"reflect"
 	"testing"

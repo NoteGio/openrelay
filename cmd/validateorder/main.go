@@ -2,8 +2,8 @@ package main
 
 import (
 	"os"
-	"github.com/notegio/0xrelay/funds"
-	"github.com/notegio/0xrelay/types"
+	"github.com/notegio/openrelay/funds"
+	"github.com/notegio/openrelay/types"
 	"log"
 	"encoding/hex"
 	"encoding/json"

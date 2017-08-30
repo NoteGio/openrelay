@@ -3,7 +3,7 @@ package funds
 import (
 	"encoding/hex"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/notegio/0xrelay/types"
+	"github.com/notegio/openrelay/types"
 	"log"
 	"math/big"
 )

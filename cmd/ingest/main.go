@@ -1,10 +1,10 @@
 package main
 
 import (
-	"github.com/notegio/0xrelay/ingest"
-	"github.com/notegio/0xrelay/channels"
-	"github.com/notegio/0xrelay/affiliates"
-	"github.com/notegio/0xrelay/accounts"
+	"github.com/notegio/openrelay/ingest"
+	"github.com/notegio/openrelay/channels"
+	"github.com/notegio/openrelay/affiliates"
+	"github.com/notegio/openrelay/accounts"
 	"net/http"
 	"gopkg.in/redis.v3"
 	"os"

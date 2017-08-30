@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/hex"
 	"gopkg.in/redis.v3"
-	"github.com/notegio/0xrelay/affiliates"
+	"github.com/notegio/openrelay/affiliates"
 	"os"
 	"fmt"
 )

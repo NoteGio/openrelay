@@ -2,7 +2,7 @@ package accounts
 
 import (
 	"encoding/json"
-	"github.com/notegio/0xrelay/config"
+	"github.com/notegio/openrelay/config"
 	"gopkg.in/redis.v3"
 	"math/big"
 )

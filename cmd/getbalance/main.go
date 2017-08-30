@@ -2,7 +2,7 @@ package main
 
 import (
 	"os"
-	"github.com/notegio/0xrelay/funds"
+	"github.com/notegio/openrelay/funds"
 	"log"
 	"encoding/hex"
 	"fmt"

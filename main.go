@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/notegio/0xrelay/types"
+	"github.com/notegio/openrelay/types"
 	"io/ioutil"
 	// "encoding/hex"
 	"fmt"

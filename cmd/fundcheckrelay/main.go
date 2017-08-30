@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/notegio/0xrelay/channels"
-	"github.com/notegio/0xrelay/funds"
-	"github.com/notegio/0xrelay/types"
+	"github.com/notegio/openrelay/channels"
+	"github.com/notegio/openrelay/funds"
+	"github.com/notegio/openrelay/types"
 	"gopkg.in/redis.v3"
 	"os"
 	"os/signal"
