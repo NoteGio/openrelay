@@ -1,20 +1,19 @@
 package ingest
 
 import (
-	"encoding/json"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
-	"log"
-	"github.com/notegio/0xrelay/types"
-	"github.com/notegio/0xrelay/channels"
 	accountsModule "github.com/notegio/0xrelay/accounts"
 	affiliatesModule "github.com/notegio/0xrelay/affiliates"
+	"github.com/notegio/0xrelay/channels"
+	"github.com/notegio/0xrelay/types"
 	"io"
+	"log"
 	"math/big"
 	"net/http"
 	"strings"
 )
-
 
 func Handler(publisher channels.Publisher, accounts accountsModule.AccountService, affiliates affiliatesModule.AffiliateService) func(http.ResponseWriter, *http.Request) {
 	var contentType string

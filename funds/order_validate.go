@@ -1,15 +1,15 @@
 package funds
 
 import (
-	"github.com/notegio/0xrelay/types"
-	"github.com/ethereum/go-ethereum/common"
-	"math/big"
 	"encoding/hex"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/notegio/0xrelay/types"
 	"log"
+	"math/big"
 )
 
 type OrderValidator interface {
-	ValidateOrder(order *types.Order) (bool)
+	ValidateOrder(order *types.Order) bool
 }
 
 type orderValidator struct {
@@ -30,7 +30,7 @@ func (funds *orderValidator) checkFunds(tokenAddress, userAddress [20]byte, requ
 
 // ValidateOrder makes sure that the maker of an order has sufficient funds to
 // fill the order and pay makerFees
-func (funds *orderValidator)ValidateOrder(order *types.Order) bool {
+func (funds *orderValidator) ValidateOrder(order *types.Order) bool {
 	// TODO: Look this up from somewhere so it can work on different chains
 	feeToken := common.HexToAddress("0xe41d2489571d322189246dafa5ebde1f4699f498")
 	makerChan := make(chan bool)
@@ -40,13 +40,13 @@ func (funds *orderValidator)ValidateOrder(order *types.Order) bool {
 	return (<-makerChan && <-feeChan)
 }
 
-func NewRpcOrderValidator(rpcUrl string) (OrderValidator, error){
+func NewRpcOrderValidator(rpcUrl string) (OrderValidator, error) {
 	if checker, err := NewRpcBalanceChecker(rpcUrl); err != nil {
 		return &orderValidator{checker}, nil
 	} else {
 		return nil, err
 	}
 }
-func NewOrderValidator(checker BalanceChecker) (OrderValidator){
+func NewOrderValidator(checker BalanceChecker) OrderValidator {
 	return &orderValidator{checker}
 }

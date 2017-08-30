@@ -1,11 +1,11 @@
 package common
 
 import (
-	"github.com/ethereum/go-ethereum/common"
 	"encoding/hex"
+	"github.com/ethereum/go-ethereum/common"
 )
 
-func BytesToAddress(data [20]byte) (common.Address) {
+func BytesToAddress(data [20]byte) common.Address {
 	return common.HexToAddress(hex.EncodeToString(data[:]))
 }
 

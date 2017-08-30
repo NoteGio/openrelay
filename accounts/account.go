@@ -1,15 +1,15 @@
 package accounts
 
 import (
-	"time"
 	"math/big"
+	"time"
 )
 
 type account struct {
-	blacklisted bool
-	baseFee *big.Int `json:"-"`
+	blacklisted        bool
+	baseFee            *big.Int `json:"-"`
 	discountPercentage int64
-	expiration int64
+	expiration         int64
 }
 
 func (acct *account) Blacklisted() bool {

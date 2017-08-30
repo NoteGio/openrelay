@@ -1,8 +1,5 @@
 package channels
 
-// import (
-// )
-
 type mockConsumerChannel struct {
 	channel   chan Delivery
 	consumers []Consumer
@@ -10,12 +7,12 @@ type mockConsumerChannel struct {
 	rejected  *deliveries
 }
 
-func (mock *mockConsumerChannel)AddConsumer(consumer Consumer) bool {
+func (mock *mockConsumerChannel) AddConsumer(consumer Consumer) bool {
 	mock.consumers = append(mock.consumers, consumer)
 	return true
 }
 
-func (mock *mockConsumerChannel)StartConsuming() bool {
+func (mock *mockConsumerChannel) StartConsuming() bool {
 	go func() {
 		for message := range mock.channel {
 			mock.unacked.deliveries = append(mock.unacked.deliveries, message)
@@ -27,14 +24,14 @@ func (mock *mockConsumerChannel)StartConsuming() bool {
 	return true
 }
 
-func (mock *mockConsumerChannel)StopConsuming() bool {
+func (mock *mockConsumerChannel) StopConsuming() bool {
 	close(mock.channel)
 	return true
 }
 
-func (mock *mockConsumerChannel)ReturnAllUnacked() int {
+func (mock *mockConsumerChannel) ReturnAllUnacked() int {
 	returned := len(mock.unacked.deliveries)
-	go func () {
+	go func() {
 		var message Delivery
 		for {
 			index := len(mock.unacked.deliveries) - 1
@@ -47,19 +44,19 @@ func (mock *mockConsumerChannel)ReturnAllUnacked() int {
 	return returned
 }
 
-func (mock *mockConsumerChannel)PurgeRejected() int {
+func (mock *mockConsumerChannel) PurgeRejected() int {
 	rejected := len(mock.rejected.deliveries)
 	mock.rejected.deliveries = []Delivery{}
 	return rejected
 }
 
 type mockPublisher struct {
-	channel chan Delivery
-	unacked *deliveries
+	channel  chan Delivery
+	unacked  *deliveries
 	rejected *deliveries
 }
 
-func (mock *mockPublisher)Publish(payload string) bool{
+func (mock *mockPublisher) Publish(payload string) bool {
 	mock.channel <- &mockDelivery{payload, mock.unacked, mock.rejected}
 	return true
 }
@@ -74,28 +71,28 @@ type mockDelivery struct {
 	rejected *deliveries
 }
 
-func (mock *mockDelivery)Payload() string {
+func (mock *mockDelivery) Payload() string {
 	return mock.payload
 }
 
-func (mock *mockDelivery)Ack() bool {
+func (mock *mockDelivery) Ack() bool {
 	for i, value := range mock.unacked.deliveries {
 		if value == mock {
 			mock.unacked.deliveries = append(
 				mock.unacked.deliveries[:i],
-				mock.unacked.deliveries[i+1:]...
+				mock.unacked.deliveries[i+1:]...,
 			)
 			return true
 		}
 	}
 	return false
 }
-func (mock *mockDelivery)Reject() bool {
+func (mock *mockDelivery) Reject() bool {
 	for i, value := range mock.unacked.deliveries {
 		if value == mock {
 			mock.unacked.deliveries = append(
 				mock.unacked.deliveries[:i],
-				mock.unacked.deliveries[i+1:]...
+				mock.unacked.deliveries[i+1:]...,
 			)
 			mock.rejected.deliveries = append(mock.rejected.deliveries, mock)
 			return true

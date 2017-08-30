@@ -16,12 +16,12 @@ type BaseFee interface {
 }
 
 type redisBaseFee struct {
-	redisClient *redis.Client
-	cachedValue *big.Int
+	redisClient     *redis.Client
+	cachedValue     *big.Int
 	cacheExpiration int64
 }
 
-func (baseFee *redisBaseFee)Get()(*big.Int, error) {
+func (baseFee *redisBaseFee) Get() (*big.Int, error) {
 	if baseFee.cacheExpiration > time.Now().Unix() {
 		// It should be okay to cache the base fee for a while. It might mean
 		// that we require the old fee until the cache expires, but that
@@ -37,10 +37,10 @@ func (baseFee *redisBaseFee)Get()(*big.Int, error) {
 	return result, nil
 }
 
-func (baseFee *redisBaseFee)Set(value *big.Int) error {
+func (baseFee *redisBaseFee) Set(value *big.Int) error {
 	return baseFee.redisClient.Set("baseFee", string(value.Bytes()), 0).Err()
 }
 
-func NewBaseFee(client *redis.Client) (BaseFee) {
+func NewBaseFee(client *redis.Client) BaseFee {
 	return &redisBaseFee{client, nil, 0}
 }

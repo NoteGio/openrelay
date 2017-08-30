@@ -1,25 +1,29 @@
 package funds_test
 
 import (
-	"github.com/notegio/0xrelay/funds"
+	"encoding/hex"
 	"github.com/notegio/0xrelay/common"
+	"github.com/notegio/0xrelay/funds"
 	"github.com/notegio/0xrelay/types"
-	"testing"
 	"math/big"
 	"reflect"
-	"encoding/hex"
+	"testing"
 )
 
 func createMockBalanceChecker(tokenAddress, userAddress string, tokenAmount int64, feeTokenAmount int64, t *testing.T) funds.BalanceChecker {
 	tokenBytes, err := common.HexToBytes(tokenAddress)
-	if err != nil { t.Errorf(err.Error())}
+	if err != nil {
+		t.Errorf(err.Error())
+	}
 	userBytes, err := common.HexToBytes(userAddress)
-	if err != nil { t.Errorf(err.Error())}
+	if err != nil {
+		t.Errorf(err.Error())
+	}
 	feeTokenBytes, _ := common.HexToBytes("e41d2489571d322189246dafa5ebde1f4699f498")
 	tokenInt := big.NewInt(tokenAmount)
 	feeTokenInt := big.NewInt(feeTokenAmount)
 	balanceMap := make(map[[20]byte]map[[20]byte]*big.Int)
-	balanceMap[tokenBytes]= make(map[[20]byte]*big.Int)
+	balanceMap[tokenBytes] = make(map[[20]byte]*big.Int)
 	balanceMap[feeTokenBytes] = make(map[[20]byte]*big.Int)
 	balanceMap[tokenBytes][userBytes] = tokenInt
 	if reflect.DeepEqual(feeTokenBytes, tokenBytes) {

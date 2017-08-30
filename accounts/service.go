@@ -1,15 +1,15 @@
 package accounts
 
 import (
+	"encoding/json"
 	"github.com/notegio/0xrelay/config"
 	"gopkg.in/redis.v3"
-	"encoding/json"
 	"math/big"
 )
 
 type redisAccountService struct {
 	redisClient *redis.Client
-	baseFee config.BaseFee
+	baseFee     config.BaseFee
 }
 
 func (accountService *redisAccountService) Get(address [20]byte) Account {
@@ -35,10 +35,10 @@ func (accountService *redisAccountService) Set(address [20]byte, acct Account) e
 	if err != nil {
 		return err
 	}
-	return accountService.redisClient.Set("account::" + string(address[:]), string(data), 0).Err()
+	return accountService.redisClient.Set("account::"+string(address[:]), string(data), 0).Err()
 }
 
-func NewRedisAccountService(redisClient *redis.Client) (AccountService) {
+func NewRedisAccountService(redisClient *redis.Client) AccountService {
 	return &redisAccountService{
 		redisClient,
 		config.NewBaseFee(redisClient),

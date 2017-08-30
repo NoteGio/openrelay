@@ -24,7 +24,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-
 package channels
 
 import (
@@ -46,7 +45,7 @@ type queueConsumerChannel struct {
 // NewQueueConsumerChannel returns a ConsumerChannel that uses Redis queues for
 // communication. Each message delivered through this ConsumerChannel will be
 // delivered to only one consumer, assuming the consumer Acks the message.
-func NewQueueConsumerChannel(channelName string, redisClient *redis.Client) (ConsumerChannel) {
+func NewQueueConsumerChannel(channelName string, redisClient *redis.Client) ConsumerChannel {
 	return &queueConsumerChannel{
 		redisClient,
 		channelName,

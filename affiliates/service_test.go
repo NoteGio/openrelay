@@ -1,17 +1,17 @@
 package affiliates_test
 
 import (
+	"encoding/hex"
 	"github.com/notegio/0xrelay/affiliates"
 	"github.com/notegio/0xrelay/config"
-	"testing"
 	"gopkg.in/redis.v3"
-	"os"
-	"encoding/hex"
 	"math/big"
+	"os"
+	"testing"
 	// "time"
 )
 
-func getRedisClient(t *testing.T) *redis.Client{
+func getRedisClient(t *testing.T) *redis.Client {
 	redisURL := os.Getenv("REDIS_URL")
 	if redisURL == "" {
 		t.Errorf("Please set the REDIS_URL environment variable")

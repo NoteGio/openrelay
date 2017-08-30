@@ -2,8 +2,8 @@ package accounts_test
 
 import (
 	"github.com/notegio/0xrelay/accounts"
-	"testing"
 	"math/big"
+	"testing"
 	"time"
 )
 
@@ -22,7 +22,7 @@ func TestExpiredDiscount(t *testing.T) {
 
 func TestFiftyPercentDiscount(t *testing.T) {
 	baseFee := big.NewInt(10000)
-	account := accounts.NewAccount(false, baseFee, 50, time.Now().Unix() + 5)
+	account := accounts.NewAccount(false, baseFee, 50, time.Now().Unix()+5)
 	if discount := account.Discount(); discount.Cmp(big.NewInt(5000)) != 0 {
 		t.Errorf("Expected 5000 discount, got '%v'", discount)
 	}

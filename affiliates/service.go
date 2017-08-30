@@ -1,15 +1,15 @@
 package affiliates
 
 import (
+	"encoding/json"
 	"github.com/notegio/0xrelay/config"
 	"gopkg.in/redis.v3"
-	"encoding/json"
 	"math/big"
 )
 
 type redisAffiliateService struct {
 	redisClient *redis.Client
-	baseFee config.BaseFee
+	baseFee     config.BaseFee
 }
 
 func (affiliateService *redisAffiliateService) Get(address [20]byte) (Affiliate, error) {
@@ -35,10 +35,10 @@ func (affiliateService *redisAffiliateService) Set(address [20]byte, acct Affili
 	if err != nil {
 		return err
 	}
-	return affiliateService.redisClient.Set("affiliate::" + string(address[:]), string(data), 0).Err()
+	return affiliateService.redisClient.Set("affiliate::"+string(address[:]), string(data), 0).Err()
 }
 
-func NewRedisAffiliateService(redisClient *redis.Client) (AffiliateService) {
+func NewRedisAffiliateService(redisClient *redis.Client) AffiliateService {
 	return &redisAffiliateService{
 		redisClient,
 		config.NewBaseFee(redisClient),

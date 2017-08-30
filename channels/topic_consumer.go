@@ -1,4 +1,5 @@
 package channels
+
 //TODO: Test channels!
 import (
 	"gopkg.in/redis.v3"
@@ -19,7 +20,7 @@ type topicConsumerChannel struct {
 // delivered once to each consumer. Note, however, that network issues that
 // prevent delivery of a message may lead to messages going completely
 // undelivered. Consumers may Ack or Reject the messages, but this is a no-op.
-func NewTopicConsumerChannel(channelName string, redisClient *redis.Client) (ConsumerChannel) {
+func NewTopicConsumerChannel(channelName string, redisClient *redis.Client) ConsumerChannel {
 	return &topicConsumerChannel{
 		redisClient,
 		nil,

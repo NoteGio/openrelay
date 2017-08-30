@@ -2,9 +2,9 @@ package ingest_test
 
 import (
 	"encoding/hex"
-	"github.com/notegio/0xrelay/ingest"
 	accountsModule "github.com/notegio/0xrelay/accounts"
 	affiliatesModule "github.com/notegio/0xrelay/affiliates"
+	"github.com/notegio/0xrelay/ingest"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
@@ -16,7 +16,7 @@ import (
 )
 
 type TestPublisher struct {
-	channel string
+	channel  string
 	messages []string
 }
 
@@ -27,7 +27,7 @@ func (pub *TestPublisher) Publish(message string) bool {
 
 type TestAccount struct {
 	blacklist bool
-	discount    *big.Int
+	discount  *big.Int
 }
 
 func (acct *TestAccount) Blacklisted() bool {
@@ -64,7 +64,7 @@ func (service *TestAffiliateService) Set(address [20]byte, affiliate affiliatesM
 
 type TestAccountService struct {
 	blacklist bool
-	discount    *big.Int
+	discount  *big.Int
 }
 
 type TestReader struct {
@@ -85,12 +85,11 @@ func (service *TestAccountService) Get(address [20]byte) accountsModule.Account 
 	}
 	return account
 }
+
 // Set must be provided to satisfy the interface, but we don't need it for these tests.
 func (service *TestAccountService) Set(address [20]byte, account accountsModule.Account) error {
 	return nil
 }
-
-
 
 func TestTooLongBytes(t *testing.T) {
 	publisher := TestPublisher{}

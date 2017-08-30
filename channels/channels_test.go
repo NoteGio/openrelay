@@ -1,20 +1,20 @@
 package channels_test
 
 import (
+	"fmt"
 	"github.com/notegio/0xrelay/channels"
 	"gopkg.in/redis.v3"
-	"testing"
 	"os"
-	"fmt"
+	"testing"
 )
 
 type testConsumer struct {
 	channel chan string
-	ack chan bool
-	done chan bool
+	ack     chan bool
+	done    chan bool
 }
 
-func (consumer *testConsumer)Consume(msg channels.Delivery){
+func (consumer *testConsumer) Consume(msg channels.Delivery) {
 	consumer.channel <- msg.Payload()
 	if <-consumer.ack {
 		msg.Ack()

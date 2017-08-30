@@ -1,17 +1,17 @@
 package accounts_test
 
 import (
+	"encoding/hex"
 	"github.com/notegio/0xrelay/accounts"
 	"github.com/notegio/0xrelay/config"
-	"testing"
 	"gopkg.in/redis.v3"
-	"os"
-	"encoding/hex"
 	"math/big"
+	"os"
+	"testing"
 	"time"
 )
 
-func getRedisClient(t *testing.T) *redis.Client{
+func getRedisClient(t *testing.T) *redis.Client {
 	redisURL := os.Getenv("REDIS_URL")
 	if redisURL == "" {
 		t.Errorf("Please set the REDIS_URL environment variable")
@@ -46,7 +46,7 @@ func TestSetAccount(t *testing.T) {
 		return
 	}
 	service := accounts.NewRedisAccountService(redisClient)
-	account := accounts.NewAccount(false, new(big.Int), 0, time.Now().Unix() + 5)
+	account := accounts.NewAccount(false, new(big.Int), 0, time.Now().Unix()+5)
 	address, _ := hex.DecodeString("0000000000000000000000000000000000000000")
 	var addressArray [20]byte
 	copy(addressArray[:], address[:])
