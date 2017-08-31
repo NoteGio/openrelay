@@ -1,1 +1,3 @@
 **/coverage.out
+bin/
+.gopath/

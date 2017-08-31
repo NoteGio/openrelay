@@ -25,7 +25,7 @@ func main() {
 	rpcURL := os.Args[1]
 	orderFile := os.Args[2]
 
-	fundChecker, err := funds.NewRpcFundChecker(rpcURL)
+	fundChecker, err := funds.NewRpcOrderValidator(rpcURL)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}

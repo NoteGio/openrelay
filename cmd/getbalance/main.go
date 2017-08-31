@@ -23,7 +23,7 @@ func main() {
 	tokenAddress := os.Args[2]
 	userAddress := os.Args[3]
 
-	fundChecker, err := funds.NewRpcFundChecker(rpcURL)
+	fundChecker, err := funds.NewRpcBalanceChecker(rpcURL)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
