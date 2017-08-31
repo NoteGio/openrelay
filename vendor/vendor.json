@@ -89,10 +89,11 @@
 			"revisionTime": "2017-08-08T17:10:09Z"
 		},
 		{
-			"checksumSHA1": "VsqOiLFDRSDa67wPeqlxKJmE0XE=",
+			"checksumSHA1": "TMVztwYLcQlIio/kEqbF8TQYWYg=",
 			"path": "github.com/ethereum/go-ethereum/crypto/secp256k1",
 			"revision": "17ce0a37de5a2712a8bf9d58df705e718b3b2cd6",
-			"revisionTime": "2017-08-08T17:10:09Z"
+			"revisionTime": "2017-08-08T17:10:09Z",
+			"tree": true
 		},
 		{
 			"checksumSHA1": "pQzUVRi0z/3Z4FpRyExSg1ROLSA=",
