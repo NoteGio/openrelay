@@ -1,0 +1,5 @@
+FROM scratch
+
+COPY bin/validateorder /validateorder
+
+CMD ["/validateorder"]

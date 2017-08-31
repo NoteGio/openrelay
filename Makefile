@@ -2,29 +2,36 @@ PACKAGE  = github.com/notegio/openrelay
 GOPATH   = $(CURDIR)/.gopath
 BASE     = $(GOPATH)/src/$(PACKAGE)
 
+env :
+	export CGO_ENABLED=0
+	export GOOS=windows
+
 $(BASE):
 	@mkdir -p $(dir $@)
 	@ln -sf $(CURDIR) $@
 
-bin/delayrelay: $(BASE) cmd/delayrelay/main.go
-	cd $(BASE) && go build -o bin/delayrelay cmd/delayrelay/main.go
+clean:
+	rm -rf bin/ .gopath/
 
-bin/fundcheckrelay: $(BASE) cmd/fundcheckrelay/main.go
-	cd $(BASE) && go build -o bin/fundcheckrelay cmd/fundcheckrelay/main.go
+bin/delayrelay: $(BASE) env cmd/delayrelay/main.go
+	cd $(BASE) && go build -a -ldflags '-extldflags "-static"' -o bin/delayrelay cmd/delayrelay/main.go
 
-bin/getbalance: $(BASE) cmd/getbalance/main.go
-	cd $(BASE) && go build -o bin/getbalance cmd/getbalance/main.go
+bin/fundcheckrelay: $(BASE) env cmd/fundcheckrelay/main.go
+	cd $(BASE) && go build -a -ldflags '-extldflags "-static"' -o bin/fundcheckrelay cmd/fundcheckrelay/main.go
 
-bin/ingest: $(BASE) cmd/ingest/main.go
-	cd $(BASE) && go build -o bin/ingest cmd/ingest/main.go
+bin/getbalance: $(BASE) env cmd/getbalance/main.go
+	cd $(BASE) && go build -a -ldflags '-extldflags "-static"' -o bin/getbalance cmd/getbalance/main.go
 
-bin/initialize: $(BASE) cmd/initialize/main.go
-	cd $(BASE) && go build -o bin/initialize cmd/initialize/main.go
+bin/ingest: $(BASE) env cmd/ingest/main.go
+	cd $(BASE) && go build -a -ldflags '-extldflags "-static"' -o bin/ingest cmd/ingest/main.go
 
-bin/simplerelay: $(BASE) cmd/simplerelay/main.go
-	cd $(BASE) && go build -o bin/simplerelay cmd/simplerelay/main.go
+bin/initialize: $(BASE) env cmd/initialize/main.go
+	cd $(BASE) && go build -a -ldflags '-extldflags "-static"' -o bin/initialize cmd/initialize/main.go
 
-bin/validateorder: $(BASE) cmd/validateorder/main.go
-	cd $(BASE) && go build -o bin/validateorder cmd/validateorder/main.go
+bin/simplerelay: $(BASE) env cmd/simplerelay/main.go
+	cd $(BASE) && go build -a -ldflags '-extldflags "-static"' -o bin/simplerelay cmd/simplerelay/main.go
+
+bin/validateorder: $(BASE) env cmd/validateorder/main.go
+	cd $(BASE) && go build -a -ldflags '-extldflags "-static"' -o bin/validateorder cmd/validateorder/main.go
 
 bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder

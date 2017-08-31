@@ -1,0 +1,5 @@
+FROM scratch
+
+COPY bin/getbalance /getbalance
+
+CMD ["/getbalance"]
