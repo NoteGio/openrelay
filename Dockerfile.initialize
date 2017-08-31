@@ -1,0 +1,5 @@
+FROM scratch
+
+COPY bin/initialize /initialize
+
+CMD ["/initialize"]
