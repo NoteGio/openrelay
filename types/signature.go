@@ -4,6 +4,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"reflect"
+	"log"
 )
 
 type Signature struct {
@@ -29,7 +30,7 @@ func (sig *Signature) Verify(address [20]byte) bool {
 	signedBytes := crypto.Keccak256(hashedBytes)
 	pub, err := crypto.Ecrecover(signedBytes, sigBytes)
 	if err != nil {
-		println(err.Error())
+		log.Println(err.Error())
 		return false
 	}
 	recoverAddress := common.BytesToAddress(crypto.Keccak256(pub[1:])[12:])

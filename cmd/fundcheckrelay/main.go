@@ -25,6 +25,8 @@ func (filter *FundFilter) Filter(delivery channels.Delivery) bool {
 func main() {
 	redisURL := os.Args[1]
 	rpcURL := os.Args[2]
+	src := os.Args[3]
+	dest := os.Args[4]
 	if redisURL == "" {
 		log.Fatalf("Please specify redis URL")
 	}
@@ -34,8 +36,8 @@ func main() {
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: redisURL,
 	})
-	consumerChannel := channels.NewQueueConsumerChannel("ingest", redisClient)
-	publisher := channels.NewRedisTopicPublisher("instant", redisClient)
+	consumerChannel := channels.ConsumerFromURI(src, redisClient)
+	publisher := channels.PublisherFromURI(dest, redisClient)
 	orderValidator, err := funds.NewRpcOrderValidator(rpcURL)
 	if err != nil { log.Fatalf(err.Error()) }
 	fundFilter := &FundFilter{orderValidator}
@@ -47,4 +49,5 @@ func main() {
 	for _ = range c {
 		break
 	}
+	relay.Stop()
 }

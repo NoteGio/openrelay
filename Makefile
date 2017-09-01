@@ -3,6 +3,7 @@ GOPATH   = $(CURDIR)/.gopath
 BASE     = $(GOPATH)/src/$(PACKAGE)
 GOSTATIC = go build -a -installsuffix cgo -ldflags '-extldflags "-static"'
 
+# Fix the space
 env :
 	export CGO_ENABLED=0
 	export GOOS=linux
