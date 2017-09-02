@@ -1,3 +1,6 @@
 **/coverage.out
 bin/
 .gopath/
+node_modules/
+build/
+.node-xmlhttprequest-*
