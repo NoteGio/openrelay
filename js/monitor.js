@@ -18,16 +18,17 @@ updated.
 
 var publishers = require("./publishers");
 
+// TODO: Make sure filter will be recreated if the backend RPC server changes
 
 module.exports = function(redisClient, notificationChannel, filterCreator, web3){
-    var blockKey = notificationChannel + "blocknumber";
+    var blockKey = notificationChannel + "::blocknumber";
     channel = publishers.FromURI(redisClient, notificationChannel);
-    new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         redisClient.get(blockKey, function(err, data) {
             if(err){
                 reject(err);
             } else {
-                resolve(parseInt(data));
+                resolve(data);
             }
         })
     }).then((blockNumber) => {
@@ -39,7 +40,7 @@ module.exports = function(redisClient, notificationChannel, filterCreator, web3)
         } else {
             // blockNumber from Redis is the last completed block, so we
             // want to resume from the next block.
-            blockNumber = blockNumber + 1;
+            blockNumber = parseInt(blockNumber) + 1;
             resuming = true;
         }
         var watcher = filterCreator({fromBlock: blockNumber, toBlock: "latest"});
@@ -50,20 +51,20 @@ module.exports = function(redisClient, notificationChannel, filterCreator, web3)
                 clearTimeout(resumptionTimeout);
                 resumptionTimeout = setTimeout(function(){
                     resuming = false;
-                    channel.Flush();
+                    channel.FlushQueue();
                     redisClient.set(blockKey, web3.eth.blockNumber);
                     lastBlockNumber = web3.eth.blockNumber;
                 }, 5000);
                 channel.QueueMessage(JSON.stringify(data));
             } else {
                 channel.Publish(JSON.stringify(data));
-                if(lastBlockNumber != currentBlockNumber) {
-                    redisClient.set(blockKey, currentBlockNumber);
-                    lastBlockNumber = currentBlockNumber;
+                if(lastBlockNumber != currentBlock) {
+                    redisClient.set(blockKey, currentBlock);
+                    lastBlockNumber = currentBlock;
                 }
             }
 
-        })
+        });
     }).catch((err) => {
         console.log("Failed to get initial block number: " + err);
     })

@@ -86,6 +86,8 @@ function MockPublisher(redisClient, name) {
     }
 }
 
+var mockChannels = {};
+
 function FromURI(redisClient, channelUri) {
     if(channelUri.startsWith("topic://")) {
         return new TopicPublisher(redisClient, channelUri.substr("topic://".length));
@@ -94,7 +96,13 @@ function FromURI(redisClient, channelUri) {
         return new QueuePublisher(redisClient, channelUri.substr("queue://".length));
     }
     if(channelUri.startsWith("mock://")) {
-        return new MockPublisher();
+        var channel = mockChannels[channelUri];
+        if(channel) {
+            return channel;
+        } else {
+            mockChannels[channelUri] = new MockPublisher();
+            return mockChannels[channelUri];
+        }
     }
 }
 

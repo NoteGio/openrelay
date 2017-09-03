@@ -31,7 +31,8 @@ func (funds *orderValidator) checkFunds(tokenAddress, userAddress [20]byte, requ
 // ValidateOrder makes sure that the maker of an order has sufficient funds to
 // fill the order and pay makerFees
 func (funds *orderValidator) ValidateOrder(order *types.Order) bool {
-	// TODO: Look this up from somewhere so it can work on different chains
+	// TODO: Add this to the config module so it can work on different chains
+	// TODO: Validate allowances, not just funds
 	feeToken := common.HexToAddress("0xe41d2489571d322189246dafa5ebde1f4699f498")
 	makerChan := make(chan bool)
 	feeChan := make(chan bool)

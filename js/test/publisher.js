@@ -6,7 +6,7 @@ const redis = require('redis');
 describe('MockPublisher', () => {
     describe('#Publish', () => {
         it('should queue the published message', (done) => {
-            var mockPub = publishers.FromURI(null, "mock://");
+            var mockPub = publishers.FromURI(null, "mock://publish");
             mockPub.Publish("message").then(() => {
                 assert.equal(mockPub.messages.length, 1);
                 assert.equal(mockPub.messages[0], "message");
@@ -16,7 +16,7 @@ describe('MockPublisher', () => {
     });
     describe("Queue / Flush", () => {
         it('should queue the messages, then flush them', (done) => {
-            var mockPub = publishers.FromURI(null, "mock://");
+            var mockPub = publishers.FromURI(null, "mock://resumption");
             mockPub.QueueMessage("message 1").then(() => {
                 return mockPub.QueueMessage("message 2")
             }).then(() => {
