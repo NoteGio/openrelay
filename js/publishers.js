@@ -22,7 +22,7 @@ function QueuePublisher(redisClient, queueName) {
         }).then((count) => {
             batch = redisClient.batch();
             for(var i = 0; i < count; i++) {
-                batch = batch.rpoplpush(resumptionQueue, queuName);
+                batch = batch.rpoplpush(resumptionQueue, queueName);
             }
             batch.exec();
         });
@@ -53,7 +53,7 @@ function TopicPublisher(redisClient, topicName) {
         }).then((count) => {
             batch = redisClient.batch();
             for(var i = 0; i < count; i++) {
-                batch = batch.eval("return redis.call('PUBLISH', "+ topicName +", redis.call('RPOP', "+ resumptionQueue +"))");
+                batch = batch.eval("return redis.call('PUBLISH', '"+ topicName +"', redis.call('RPOP', '"+ resumptionQueue +"'))", 0);
             }
             batch.exec();
         });
@@ -71,14 +71,15 @@ function MockPublisher(redisClient, name) {
     }
     this.QueueMessage = function(message) {
         return new Promise((resolve, reject) => {
-            queued.push(message);
+            this.queued.push(message);
             resolve();
         });
     }
     this.FlushQueue = function() {
         return new Promise((resolve, reject) => {
-            for(var i = 0; i < queued.length; i++) {
-                messages.push(queued.pop());
+            var count = this.queued.length
+            for(var i = 0; i < count; i++) {
+                this.messages.push(this.queued.shift());
             }
             resolve();
         });

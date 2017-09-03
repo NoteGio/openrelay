@@ -19,5 +19,8 @@
     "redis": "^2.8.0",
     "truffle": "^3.4.9",
     "web3": "^0.20.0"
+  },
+  "devDependencies": {
+    "uuid": "^3.1.0"
   }
 }
