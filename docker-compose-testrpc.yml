@@ -1,0 +1,91 @@
+version: "3"
+services:
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  ethnode:
+    image: harshjv/testrpc
+    ports:
+      - "8545"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  ingest:
+    build:
+      context: ./
+      dockerfile: Dockerfile.ingest
+    ports:
+      - "8080"
+    command: ["/ingest", "${REDIS_HOST:-redis:6379}"]
+    depends_on:
+      - redis
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  fundcheckrelay:
+    build:
+      context: ./
+      dockerfile: Dockerfile.fundcheckrelay
+    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-ethnode:8545}", "queue://ingest", "topic://instant"]
+    depends_on:
+      - redis
+      - ethnode
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  simplerelay:
+    build:
+      context: ./
+      dockerfile: Dockerfile.simplerelay
+    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "topic://instant", "queue://delay1"]
+    depends_on:
+      - redis
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  delayrelay1:
+    build:
+      context: ./
+      dockerfile: Dockerfile.delayrelay
+    command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "queue://delay1", "queue://delay2", "queue://delay1trigger"]
+    depends_on:
+      - redis
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  delayrelay2:
+    build:
+      context: ./
+      dockerfile: Dockerfile.delayrelay
+    command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "queue://delay2", "topic://released", "topic://newblocks", "queue://delay1trigger"]
+    depends_on:
+      - redis
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  # TODO: Add second fund verifier here
+  initialize:
+    build:
+      context: ./
+      dockerfile: Dockerfile.initialize
+    command: ["/initialize", "${REDIS_HOST:-redis:6379}", "${ZRX_FEE:-500000000000000000}", "${RELAY_ADDRESS:-C22d5b2951DB72B44CFb8089bb8CD374A3c354eA}"]
+    depends_on:
+      - redis
+  contractinit:
+    build:
+      context: ./
+      dockerfile: Dockerfile.testinit
+    command: ["/project/setup.sh", "redis://${REDIS_HOST:-redis:6379}"]
+    depends_on:
+      - redis
