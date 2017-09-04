@@ -13,7 +13,7 @@ import (
 func main() {
 	redisURL := os.Args[1]
 	baseFeeString := os.Args[2]
-	authorizedAddresses := os.Args[2:]
+	authorizedAddresses := os.Args[3:]
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: redisURL,
 	})
