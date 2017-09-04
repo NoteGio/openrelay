@@ -4,6 +4,7 @@ import (
 	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/funds"
 	"github.com/notegio/openrelay/types"
+	"github.com/notegio/openrelay/config"
 	"gopkg.in/redis.v3"
 	"os"
 	"os/signal"
@@ -36,9 +37,11 @@ func main() {
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: redisURL,
 	})
-	consumerChannel := channels.ConsumerFromURI(src, redisClient)
-	publisher := channels.PublisherFromURI(dest, redisClient)
-	orderValidator, err := funds.NewRpcOrderValidator(rpcURL)
+	consumerChannel, err := channels.ConsumerFromURI(src, redisClient)
+	if err != nil { log.Fatalf(err.Error()) }
+	publisher, err := channels.PublisherFromURI(dest, redisClient)
+	if err != nil { log.Fatalf(err.Error()) }
+	orderValidator, err := funds.NewRpcOrderValidator(rpcURL, config.NewFeeToken(redisClient), config.NewTokenProxy(redisClient))
 	if err != nil { log.Fatalf(err.Error()) }
 	fundFilter := &FundFilter{orderValidator}
 	relay := channels.NewRelay(consumerChannel, publisher, fundFilter)

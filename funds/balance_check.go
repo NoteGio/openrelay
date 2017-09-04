@@ -10,6 +10,7 @@ import (
 
 type BalanceChecker interface {
 	GetBalance(tokenAddress, userAddress [20]byte) (*big.Int, error)
+	GetAllowance(tokenAddress, ownerAddress, spenderAddress [20]byte) (*big.Int, error)
 }
 
 type rpcBalanceChecker struct {
@@ -22,6 +23,14 @@ func (funds *rpcBalanceChecker) GetBalance(tokenAddrBytes, userAddrBytes [20]byt
 		return nil, err
 	}
 	return token.BalanceOf(nil, orCommon.BytesToAddress(userAddrBytes))
+}
+
+func (funds *rpcBalanceChecker) GetAllowance(tokenAddrBytes, ownerAddress, spenderAddress [20]byte) (*big.Int, error) {
+	token, err := tokenModule.NewToken(orCommon.BytesToAddress(tokenAddrBytes), funds.conn)
+	if err != nil {
+		return nil, err
+	}
+	return token.Allowance(nil, orCommon.BytesToAddress(ownerAddress), orCommon.BytesToAddress(spenderAddress))
 }
 
 func NewRpcBalanceChecker(rpcUrl string) (BalanceChecker, error) {

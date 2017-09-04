@@ -4,6 +4,8 @@ import (
 	"os"
 	"github.com/notegio/openrelay/funds"
 	"github.com/notegio/openrelay/types"
+	"github.com/notegio/openrelay/config"
+	"gopkg.in/redis.v3"
 	"log"
 	"encoding/hex"
 	"encoding/json"
@@ -23,9 +25,12 @@ func hexToBytes(address string) [20]byte {
 
 func main() {
 	rpcURL := os.Args[1]
-	orderFile := os.Args[2]
-
-	fundChecker, err := funds.NewRpcOrderValidator(rpcURL)
+	redisURL := os.Args[2]
+	orderFile := os.Args[3]
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: redisURL,
+	})
+	fundChecker, err := funds.NewRpcOrderValidator(rpcURL, config.NewFeeToken(redisClient), config.NewTokenProxy(redisClient))
 	if err != nil {
 		log.Fatalf(err.Error())
 	}

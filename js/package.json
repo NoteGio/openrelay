@@ -16,6 +16,7 @@
   "author": "",
   "license": "AGPL-3.0",
   "dependencies": {
+    "0x.js": "^0.12.1",
     "redis": "^2.8.0",
     "truffle": "^3.4.9",
     "web3": "^0.20.0"

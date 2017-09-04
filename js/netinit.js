@@ -1,6 +1,7 @@
 const IssueTokenFactory = artifacts.require("IssueTokenFactory");
 const IssueToken = artifacts.require("IssueToken");
 const redis = require("redis");
+const ZeroEx = require("0x.js")
 
 function issueToken(redisName, tokenFactory, redisClient) {
     var tokenAddress;
@@ -17,6 +18,7 @@ function issueToken(redisName, tokenFactory, redisClient) {
 
 module.exports = function(done){
     var redisClient = redis.createClient(process.argv[4]);
+    zeroEx = new ZeroEx.ZeroEx(web3.currentProvider);
     IssueTokenFactory.deployed().then((tokenFactory) => {
         return issueToken("feeToken", tokenFactory, redisClient).then(() => {
             return issueToken("tokenX", tokenFactory, redisClient);
@@ -24,6 +26,12 @@ module.exports = function(done){
             return issueToken("tokenY", tokenFactory, redisClient);
         }).then(() => {
             return issueToken("tokenZ", tokenFactory, redisClient);
-        }).then(done)
+        }).then(() => {
+            return zeroEx.proxy.getContractAddressAsync()
+        }).then((contractAddress) => {
+            return new Promise((resolve, reject) => {
+                redisClient.set("tokenProxy::address", contractAddress, resolve)
+            });
+        }).then(done);
     })
 }

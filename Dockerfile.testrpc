@@ -1,0 +1,5 @@
+FROM harshjv/testrpc
+
+ADD 0x-testrpc-snapshot.tar.gz /testrpcdb
+
+CMD ["testrpc", "--networkId", "50", "-p", "8545", "--db", "/testrpcdb", "-m", "concert load couple harbor equip island argue ramp clarify fence smart topic"]

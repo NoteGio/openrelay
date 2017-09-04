@@ -9,7 +9,9 @@ services:
       restart_policy:
         condition: on-failure
   ethnode:
-    image: harshjv/testrpc
+    build:
+      context: ./
+      dockerfile: Dockerfile.testrpc
     ports:
       - "8545"
     deploy:
@@ -89,3 +91,8 @@ services:
     command: ["/project/setup.sh", "redis://${REDIS_HOST:-redis:6379}"]
     depends_on:
       - redis
+  entrypoint:
+    build:
+      context: ./
+      dockerfile: Dockerfile.testinit
+    command: ["node", "/project/hang.js"]
