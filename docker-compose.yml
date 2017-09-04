@@ -19,6 +19,8 @@ services:
       restart_policy:
         condition: on-failure
     command: "--syncmode=light --rpc --rpcaddr 0.0.0.0"
+    volumes:
+      - light-chaindata:/root/.ethereum
   ingest:
     build:
       context: ./
@@ -77,6 +79,7 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
+  # TODO: Add second fund verifier here
   initialize:
     build:
       context: ./
@@ -84,3 +87,5 @@ services:
     command: ["/initialize", "${REDIS_HOST:-redis:6379}", "${ZRX_FEE:-500000000000000000}", "${RELAY_ADDRESS:-C22d5b2951DB72B44CFb8089bb8CD374A3c354eA}"]
     depends_on:
       - redis
+volumes:
+  light-chaindata:
