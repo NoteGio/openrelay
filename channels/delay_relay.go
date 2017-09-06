@@ -3,8 +3,8 @@ package channels
 type DelayRelay struct {
 	*Relay
 	sourcePublisher Publisher
-	sentinel string
-	delayChan chan bool
+	sentinel        string
+	delayChan       chan bool
 }
 
 func (relay *DelayRelay) Flush() {

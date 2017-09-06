@@ -17,7 +17,7 @@ func TestDelayRelay(t *testing.T) {
 	sourcePublisher.Publish("test1")
 	sourcePublisher.Publish("test2")
 	select {
-	case message := <- testConsumer.channel:
+	case message := <-testConsumer.channel:
 		t.Errorf("Published messages shouldn't be available yet. Got '%v'", message)
 	default:
 	}
@@ -36,7 +36,7 @@ func TestDelayRelay(t *testing.T) {
 	testConsumer.ack <- true
 	<-testConsumer.done
 	select {
-	case message := <- testConsumer.channel:
+	case message := <-testConsumer.channel:
 		t.Errorf("Should have exhausted published messages. Got '%v'", message)
 	default:
 	}

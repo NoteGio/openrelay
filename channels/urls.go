@@ -1,8 +1,8 @@
 package channels
 
 import (
-	"gopkg.in/redis.v3"
 	"errors"
+	"gopkg.in/redis.v3"
 	"strings"
 )
 

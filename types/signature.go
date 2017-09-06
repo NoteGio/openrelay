@@ -1,11 +1,11 @@
 package types
 
 import (
+	"encoding/json"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"reflect"
 	"log"
-	"encoding/json"
+	"reflect"
 )
 
 type Signature struct {
@@ -17,8 +17,8 @@ type Signature struct {
 
 type jsonSignature struct {
 	V    json.Number `json:"v"`
-	R    string `json:"r"`
-	S    string `json:"s"`
+	R    string      `json:"r"`
+	S    string      `json:"s"`
 	Hash string
 }
 

@@ -2,8 +2,8 @@ package funds
 
 import (
 	"encoding/hex"
-	"github.com/notegio/openrelay/types"
 	"github.com/notegio/openrelay/config"
+	"github.com/notegio/openrelay/types"
 	"log"
 	"math/big"
 )
@@ -14,8 +14,8 @@ type OrderValidator interface {
 
 type orderValidator struct {
 	balanceChecker BalanceChecker
-	feeToken config.FeeToken
-	tokenProxy config.TokenProxy
+	feeToken       config.FeeToken
+	tokenProxy     config.TokenProxy
 }
 
 func (funds *orderValidator) checkBalance(tokenAddress, userAddress [20]byte, required [32]byte, respond chan bool) {
@@ -51,7 +51,9 @@ func (funds *orderValidator) checkAllowance(tokenAddress, userAddress [20]byte, 
 // fill the order and pay makerFees
 func (funds *orderValidator) ValidateOrder(order *types.Order) bool {
 	feeToken, err := funds.feeToken.Get() //common.HexToAddress("0xe41d2489571d322189246dafa5ebde1f4699f498")
-	if err != nil { return false }
+	if err != nil {
+		return false
+	}
 	makerChan := make(chan bool)
 	feeChan := make(chan bool)
 	makerAllowanceChan := make(chan bool)

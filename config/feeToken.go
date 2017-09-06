@@ -1,9 +1,9 @@
 package config
 
 import (
+	"encoding/hex"
 	"gopkg.in/redis.v3"
 	"time"
-	"encoding/hex"
 )
 
 type FeeToken interface {

@@ -10,12 +10,12 @@ type RelayFilter interface {
 	Filter(Delivery) bool
 }
 
-type IncludeAll struct{
+type IncludeAll struct {
 	counter int64
 }
 
 func (filter *IncludeAll) Filter(delivery Delivery) bool {
-	filter.counter++;
+	filter.counter++
 	log.Printf("Relayed message : '%v'", filter.counter)
 	return true
 }
