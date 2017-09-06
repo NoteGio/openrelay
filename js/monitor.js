@@ -20,7 +20,7 @@ var publishers = require("./publishers");
 
 // TODO: Make sure filter will be recreated if the backend RPC server changes
 
-module.exports = function(redisClient, notificationChannel, filterCreator, web3){
+module.exports = function(redisClient, notificationChannel, filterCreator, web3, transform){
     var blockKey = notificationChannel + "::blocknumber";
     channel = publishers.FromURI(redisClient, notificationChannel);
     return new Promise((resolve, reject) => {
@@ -55,9 +55,9 @@ module.exports = function(redisClient, notificationChannel, filterCreator, web3)
                     redisClient.set(blockKey, web3.eth.blockNumber);
                     lastBlockNumber = web3.eth.blockNumber;
                 }, 5000);
-                channel.QueueMessage(JSON.stringify(data));
+                channel.QueueMessage(JSON.stringify(transform(data)));
             } else {
-                channel.Publish(JSON.stringify(data));
+                channel.Publish(JSON.stringify(transform(data)));
                 if(lastBlockNumber != currentBlock) {
                     redisClient.set(blockKey, currentBlock);
                     lastBlockNumber = currentBlock;

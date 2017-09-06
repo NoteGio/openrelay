@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"log"
+	"strings"
 )
 
 // DelayConsumer Flushes the DelayRelay every time it receives a message. If
@@ -38,16 +39,22 @@ func main() {
 	if redisURL == "" {
 		log.Fatalf("Please specify redis URL")
 	}
+	pubsubClient := redis.NewClient(&redis.Options{
+		Addr: redisURL,
+	})
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: redisURL,
 	})
+	if strings.HasPrefix(src, "topic://") {
+		log.Fatal("Delay relay source must be queue, not topic")
+	}
 	sourceChannel, err := channels.ConsumerFromURI(src, redisClient)
 	if err != nil { log.Fatalf(err.Error())}
 	sourcePublisher, err := channels.PublisherFromURI(src, redisClient)
 	if err != nil { log.Fatalf(err.Error())}
 	destPublisher, err := channels.PublisherFromURI(dest, redisClient)
 	if err != nil { log.Fatalf(err.Error())}
-	signalConsumer, err := channels.ConsumerFromURI(upstreamSignal, redisClient)
+	signalConsumer, err := channels.ConsumerFromURI(upstreamSignal, pubsubClient)
 	if err != nil { log.Fatalf(err.Error())}
 	var signalPublisher channels.Publisher
 	if downstreamSignal != "" {

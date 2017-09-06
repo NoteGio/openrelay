@@ -107,6 +107,11 @@ func (queue *queueConsumerChannel) deleteRedisList(key string) int {
 
 func (queue *queueConsumerChannel) AddConsumer(consumer Consumer) bool {
 	go func() {
+		for queue.deliveryChan == nil {
+			// StartConsuming hasn't been called yet, so we need to wait until the
+			// deliveryChan appears
+			time.Sleep(100 * time.Millisecond)
+		}
 		for delivery := range queue.deliveryChan {
 			consumer.Consume(delivery)
 		}

@@ -37,6 +37,10 @@ function tick() {
     })
 }
 
+function passthrough(data) {
+    return data;
+}
+
 describe('MockMonitor', () => {
     describe('Test message filter', () => {
         var redisClient;
@@ -50,7 +54,7 @@ describe('MockMonitor', () => {
             web3.eth.blockNumber = 1;
             var filter = new MockFilter();
             var channel = publishers.FromURI(null, "mock://testresumption");
-            monitor(redisClient, "mock://testresumption", () => {return filter}, web3).then(() => {
+            monitor(redisClient, "mock://testresumption", () => {return filter}, web3, passthrough).then(() => {
                 filter.trigger("message");
                 return tick();
             }).then(() => {
@@ -77,7 +81,7 @@ describe('MockMonitor', () => {
             web3.eth.blockNumber = 1;
             var filter = new MockFilter();
             var channel = publishers.FromURI(null, "mock://testinitialize");
-            monitor(redisClient, "mock://testinitialize", () => {return filter}, web3).then(() => {
+            monitor(redisClient, "mock://testinitialize", () => {return filter}, web3, passthrough).then(() => {
                 filter.trigger("message");
                 return tick();
             }).then(() => {

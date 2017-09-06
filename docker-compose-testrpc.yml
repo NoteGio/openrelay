@@ -76,6 +76,29 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
+  blockmonitor:
+    build:
+      context: ./
+      dockerfile: Dockerfile.blockmonitor
+    command: ["./node_modules/.bin/truffle", "exec", "blockMonitor.js", "redis://${REDIS_HOST:-redis:6379}", "topic://newblocks", "--network", "testnet"]
+    depends_on:
+      - redis
+      - ethnode
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  simplerelay2:
+    build:
+      context: ./
+      dockerfile: Dockerfile.simplerelay
+    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "topic://released", "queue://done"]
+    depends_on:
+      - redis
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
   # TODO: Add second fund verifier here
   initialize:
     build:
