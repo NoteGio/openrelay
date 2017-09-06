@@ -1,7 +1,7 @@
 package channels
 
 import (
-// "log"
+	"log"
 )
 
 // RelayFilter objects provide a predicate function to determine whether a
@@ -10,9 +10,13 @@ type RelayFilter interface {
 	Filter(Delivery) bool
 }
 
-type IncludeAll struct{}
+type IncludeAll struct{
+	counter int64
+}
 
 func (filter *IncludeAll) Filter(delivery Delivery) bool {
+	filter.counter++;
+	log.Printf("Relayed message : '%v'", filter.counter)
 	return true
 }
 
