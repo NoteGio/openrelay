@@ -134,17 +134,17 @@ func (order *Order) Hash() []byte {
 type jsonOrder struct {
 	Maker                    string        `json:"maker"`
 	Taker                    string        `json:"taker"`
-	MakerToken               string        `json:"makerToken"`
-	TakerToken               string        `json:"takerToken"`
+	MakerToken               string        `json:"makerTokenAddress"`
+	TakerToken               string        `json:"takerTokenAddress"`
 	FeeRecipient             string        `json:"feeRecipient"`
-	ExchangeAddress          string        `json:"exchangeContract"`
+	ExchangeAddress          string        `json:"exchangeContractAddress"`
 	MakerTokenAmount         string        `json:"makerTokenAmount"`
 	TakerTokenAmount         string        `json:"takerTokenAmount"`
 	MakerFee                 string        `json:"makerFee"`
 	TakerFee                 string        `json:"takerFee"`
-	ExpirationTimestampInSec string        `json:"expiration"`
+	ExpirationTimestampInSec string        `json:"expirationUnixTimestampSec"`
 	Salt                     string        `json:"salt"`
-	Signature                jsonSignature `json:"signature"`
+	Signature                jsonSignature `json:"ecSignature"`
 }
 
 func (order *Order) UnmarshalJSON(b []byte) error {
@@ -165,7 +165,7 @@ func (order *Order) UnmarshalJSON(b []byte) error {
 		jOrder.TakerFee,
 		jOrder.ExpirationTimestampInSec,
 		jOrder.Salt,
-		jOrder.Signature.V,
+		string(jOrder.Signature.V),
 		jOrder.Signature.R,
 		jOrder.Signature.S,
 	)

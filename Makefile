@@ -38,3 +38,6 @@ bin/validateorder: $(BASE) cmd/validateorder/main.go
 	cd $(BASE) && $(GOSTATIC) -o bin/validateorder cmd/validateorder/main.go
 
 bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder
+
+test:
+	cd $(BASE)/accounts && go test

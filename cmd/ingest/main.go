@@ -27,7 +27,7 @@ func main() {
 	})
 	affiliateService := affiliates.NewRedisAffiliateService(redisClient)
 	accountService := accounts.NewRedisAccountService(redisClient)
-	publisher := channels.NewRedisTopicPublisher("ingest", redisClient)
+	publisher := channels.NewRedisQueuePublisher("ingest", redisClient)
 	handler := ingest.Handler(publisher, accountService, affiliateService)
 
     http.HandleFunc("/", handler)

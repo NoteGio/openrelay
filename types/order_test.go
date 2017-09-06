@@ -79,7 +79,7 @@ func TestJSONDeserialize(t *testing.T) {
 	newOrder := types.Order{}
 	if orderData, err := ioutil.ReadFile("../formatted_transaction.json"); err == nil {
 		if err := json.Unmarshal(orderData, &newOrder); err != nil {
-			println(err.Error())
+			t.Errorf(err.Error())
 			return
 		}
 	}

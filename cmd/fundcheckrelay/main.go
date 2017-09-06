@@ -8,6 +8,7 @@ import (
 	"gopkg.in/redis.v3"
 	"os"
 	"os/signal"
+	"encoding/hex"
 	"log"
 )
 
@@ -20,7 +21,17 @@ func (filter *FundFilter) Filter(delivery channels.Delivery) bool {
 	orderBytes := [377]byte{}
 	copy(orderBytes[:], msg[:])
 	order := types.OrderFromBytes(orderBytes)
-	return filter.orderValidator.ValidateOrder(order)
+	if !order.Signature.Verify(order.Maker) {
+		log.Printf("Invalid order signature");
+		return false;
+	}
+	valid := filter.orderValidator.ValidateOrder(order)
+	if valid {
+		log.Printf("Order '%v' has funds", hex.EncodeToString(order.Hash()))
+	} else {
+		log.Printf("Order '%v' lacks funds", hex.EncodeToString(order.Hash()))
+	}
+	return valid
 }
 
 func main() {

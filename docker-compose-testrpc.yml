@@ -35,7 +35,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.fundcheckrelay
-    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-ethnode:8545}", "queue://ingest", "topic://instant"]
+    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://ingest", "topic://instant"]
     depends_on:
       - redis
       - ethnode
@@ -95,4 +95,6 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.testinit
+    volumes:
+      - "./js:/project"
     command: ["node", "/project/hang.js"]

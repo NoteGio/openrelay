@@ -44,14 +44,12 @@ func (funds *orderValidator) checkAllowance(tokenAddress, userAddress [20]byte, 
 		respond <- false
 		return
 	}
-	respond <- (requiredInt.Cmp(balance) < 0)
+	respond <- (requiredInt.Cmp(balance) <= 0)
 }
 
 // ValidateOrder makes sure that the maker of an order has sufficient funds to
 // fill the order and pay makerFees
 func (funds *orderValidator) ValidateOrder(order *types.Order) bool {
-	// TODO: Add this to the config module so it can work on different chains
-	// TODO: Validate allowances, not just funds
 	feeToken, err := funds.feeToken.Get() //common.HexToAddress("0xe41d2489571d322189246dafa5ebde1f4699f498")
 	if err != nil { return false }
 	makerChan := make(chan bool)
@@ -60,13 +58,30 @@ func (funds *orderValidator) ValidateOrder(order *types.Order) bool {
 	feeAllowanceChan := make(chan bool)
 	go funds.checkBalance(order.MakerToken, order.Maker, order.MakerTokenAmount, makerChan)
 	go funds.checkBalance(feeToken, order.Maker, order.MakerFee, feeChan)
-	go funds.checkAllowance(order.MakerToken, order.Maker, order.MakerTokenAmount, makerChan)
-	go funds.checkAllowance(feeToken, order.Maker, order.MakerFee, feeChan)
-	return (<-makerChan && <-feeChan && <-makerAllowanceChan && <-feeAllowanceChan)
+	go funds.checkAllowance(order.MakerToken, order.Maker, order.MakerTokenAmount, makerAllowanceChan)
+	go funds.checkAllowance(feeToken, order.Maker, order.MakerFee, feeAllowanceChan)
+	result := true
+	if !<-makerChan {
+		log.Printf("Insufficient maker token funds")
+		result = false
+	}
+	if !<-feeChan {
+		log.Printf("Insufficient fee token funds")
+		result = false
+	}
+	if !<-makerAllowanceChan {
+		log.Printf("Insufficient maker token allowance")
+		result = false
+	}
+	if !<-feeAllowanceChan {
+		log.Printf("Insufficient fee token allowance")
+		result = false
+	}
+	return result
 }
 
 func NewRpcOrderValidator(rpcUrl string, feeToken config.FeeToken, tokenProxy config.TokenProxy) (OrderValidator, error) {
-	if checker, err := NewRpcBalanceChecker(rpcUrl); err != nil {
+	if checker, err := NewRpcBalanceChecker(rpcUrl); err == nil {
 		return &orderValidator{checker, feeToken, tokenProxy}, nil
 	} else {
 		return nil, err
