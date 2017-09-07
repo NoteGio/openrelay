@@ -106,7 +106,7 @@ func (order *Order) fromStrings(maker, taker, makerToken, takerToken, feeRecipie
 	copy(order.ExpirationTimestampInSec[:], expirationTimestampInSecBytes)
 	copy(order.Salt[:], saltBytes)
 	order.Signature = &Signature{}
-	order.Signature.V = byte(sigVInt - 27) // I don't know why we subtract 27 from v, but it's what ethutil.js does, and it works
+	order.Signature.V = byte(sigVInt)
 	copy(order.Signature.S[:], sigSBytes)
 	copy(order.Signature.R[:], sigRBytes)
 	copy(order.Signature.Hash[:], order.Hash())
