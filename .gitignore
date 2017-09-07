@@ -4,3 +4,6 @@ bin/
 node_modules/
 build/
 .node-xmlhttprequest-*
+__pycache__
+.env
+*.pyc
