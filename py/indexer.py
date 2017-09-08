@@ -10,11 +10,11 @@ import util
 logger = logging.getLogger(__name__)
 
 def record_order(data, locker):
-    order_obj = order.FromBytes(data)
+    order_obj = order.Order.FromBytes(data)
     # Make sure that only one process at a time is updating a given order
-    with locker.lock(order.orderHash):
+    with locker.lock(order_obj.orderHash):
         try:
-            dynamo_order = dynamo.DynamoOrder.get(order.orderHash)
+            dynamo_order = dynamo.DynamoOrder.get(order_obj.orderHash)
         except dynamo.DynamoOrder.DoesNotExist:
             dynamo_order = dynamo.DynamoOrder.FromOrder(order_obj)
         # If the incoming record shows a higher makerTokenFilledAmount than

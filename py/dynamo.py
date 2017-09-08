@@ -16,6 +16,8 @@ class DynamoOrderPairhashIndex(GlobalSecondaryIndex):
     """
     class Meta:
         index_name = 'order-pairhash-idx'
+        read_capacity_units = 1
+        write_capacity_units = 1
         projection = IncludeProjection(["data", "makerTokenAmountFilled"])
     pairHash = BinaryAttribute(hash_key=True)
     price = NumberAttribute(range_key=True)
@@ -27,6 +29,8 @@ class DynamoOrderMakerTokenIndex(GlobalSecondaryIndex):
     """
     class Meta:
         index_name = 'order-makertoken-idx'
+        read_capacity_units = 1
+        write_capacity_units = 1
         projection = IncludeProjection(["data", "makerTokenAmountFilled"])
     makerToken = BinaryAttribute(hash_key=True)
 
@@ -37,6 +41,8 @@ class DynamoOrderTakerTokenIndex(GlobalSecondaryIndex):
     """
     class Meta:
         index_name = 'order-takertoken-idx'
+        read_capacity_units = 1
+        write_capacity_units = 1
         projection = IncludeProjection(["data", "makerTokenAmountFilled"])
     takerToken = BinaryAttribute(hash_key=True)
 
@@ -47,6 +53,8 @@ class DynamoOrder(Model):
     """
     class Meta:
         table_name = "Order"
+        read_capacity_units = 1
+        write_capacity_units = 1
         region = os.environ.get("AWS_REGION", "us-east-2")
         try:
             host = os.environ["DYNAMODB_HOST"]
@@ -59,7 +67,9 @@ class DynamoOrder(Model):
     pairHash = BinaryAttribute()
     price = NumberAttribute()
     data = BinaryAttribute()
-    pairHash_index = DynamoOrderPairhashIndex()
+    pairhash_index = DynamoOrderPairhashIndex()
+    makertoken_index = DynamoOrderMakerTokenIndex()
+    takertoken_index = DynamoOrderTakerTokenIndex()
 
     @classmethod
     def FromOrder(cls, order):
@@ -70,7 +80,8 @@ class DynamoOrder(Model):
         self.makerTokenAmountFilled = util.intToBytes(order.makerTokenAmountFilled)
         self.pairHash = order.pairHash
         self.price = order.price
-        self.data = order.data
+        self.data = order.rawdata
+        return self
 
     def ToOrder(self):
         return order.Order.FromBytes(self.data)

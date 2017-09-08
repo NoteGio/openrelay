@@ -121,3 +121,5 @@ services:
     volumes:
       - "./js:/project"
     command: ["node", "/project/hang.js"]
+  dynamo:
+    image: cnadiminti/dynamodb-local
