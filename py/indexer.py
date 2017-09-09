@@ -26,8 +26,8 @@ def record_order(data, locker):
         dynamo_order.save()
 
 
-def record_fill(orderHash, filled_amount, locker):
-    return dynamo.DynamoOrder.addFilled(orderHash, filled_amount, locker)
+# def record_fill(orderHash, filled_amount, locker):
+#     return dynamo.DynamoOrder.addFilled(orderHash, filled_amount, locker)
 
 
 def get_redis_client(redis_url):
@@ -39,28 +39,36 @@ def get_redis_client(redis_url):
     return redis.StrictRedis(host=host, port=int(port), db=0)
 
 
-def index_orders():
+def index_orders(redis_url, order_topic):
+    redisClient = get_redis_client(redis_url)
+    pubsub = redisClient.pubsub()
+    pubsub.subscribe(order_topic)
+    for message in pubsub.listen():
+        if message["type"] == "message":
+            try:
+                record_order(message["data"], redisClient)
+            except Exception:
+                logger.exception("Error recording message")
+
+# def fill_monitor():
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument("redis_url")
+#     parser.add_argument("fill_queue")
+#     args = parser.parse_args
+#
+#     redisClient = get_redis_client(args.redis_url)
+#
+#     while True:
+#         with util.get_queue_message(args.fill_queue, redisClient) as message:
+#             fill = json.loads(message.decode("utf8"))
+
+
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("redis_url")
     parser.add_argument("order_topic")
-    args = parser.parse_args
-
-    redisClient = get_redis_client(args.redis_url)
-    pubsub = redisClient.subscribe(args.order_topic)
-    for message in pubsub.listen():
-        try:
-            record_order(message["data"], redisClient)
-        except Exception:
-            logger.exception()
-
-def fill_monitor():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("redis_url")
-    parser.add_argument("fill_queue")
-    args = parser.parse_args
-
-    redisClient = get_redis_client(args.redis_url)
-
-    while True:
-        with util.get_queue_message(args.fill_queue, redisClient) as message:
-            fill = json.loads(message.decode("utf8"))
+    parser.add_argument("--create", action="store_true", default=False)
+    args = parser.parse_args()
+    if args.create and not dynamo.DynamoOrder.exists():
+        dynamo.DynamoOrder.create_table(wait=True)
+    index_orders(args.redis_url, args.order_topic)

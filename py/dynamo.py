@@ -86,6 +86,9 @@ class DynamoOrder(Model):
     def ToOrder(self):
         return order.Order.FromBytes(self.data)
 
+    def binary(self):
+        return self.data + self.makerTokenAmountFilled
+
     @classmethod
     def addFilled(cls, orderHash, amountFilled, locker):
         with locker.lock("%s::lock" % orderHash):
