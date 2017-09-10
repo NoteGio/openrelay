@@ -8,6 +8,8 @@ from flask import Flask, request, make_response
 
 app = Flask(__name__)
 
+# TODO: require blocknumber argument
+
 def format_response(orders, count, accept):
     items = itertools.islice(orders, count)
     if "application/octet-stream" in accept:
@@ -19,6 +21,15 @@ def format_response(orders, count, accept):
         }))
         resp.headers["Content-Type"] = "application/json"
     return resp
+
+@app.route('/')
+def scan_all():
+    orders = dynamo.DynamoOrder.scan()
+    return format_response(
+        orders,
+        request.args.get("count", 25),
+        request.headers.get("Accept", "")
+    )
 
 @app.route('/mtok/<maker_token>')
 def maker_token_search(maker_token):
@@ -49,7 +60,8 @@ def pair_search(maker_token, taker_token):
         hashlib.sha256(
             util.hexStringToBytes(maker_token) +
             util.hexStringToBytes(taker_token)
-        ).digest()
+        ).digest(),
+        scan_index_forward=(request.args.get("asc", "true") == "true")
     )
     return format_response(
         orders,
