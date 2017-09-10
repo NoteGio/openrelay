@@ -42,6 +42,7 @@ class Order(object):
           "maker": util.bytesToHexString(self.maker),
           "makerFee": str(self.makerFee),
           "makerTokenAmount": str(self.makerTokenAmount),
+          "makerTokenAmountFilled": str(self.makerTokenAmountFilled),
           "salt": str(self.salt),
           "taker": util.bytesToHexString(self.taker),
           "takerFee": str(self.takerFee),

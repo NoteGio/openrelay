@@ -84,7 +84,7 @@ class DynamoOrder(Model):
         return self
 
     def ToOrder(self):
-        return order.Order.FromBytes(self.data)
+        return order.Order.FromBytes(self.binary())
 
     def binary(self):
         return self.data + self.makerTokenAmountFilled
