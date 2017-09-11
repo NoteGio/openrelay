@@ -123,3 +123,23 @@ services:
     command: ["node", "/project/hang.js"]
   dynamo:
     image: cnadiminti/dynamodb-local
+  indexer:
+    build:
+      context: ./
+      dockerfile: Dockerfile.indexer
+    environment:
+      DYNAMODB_HOST: http://dynamo:8000
+      AWS_ACCESS_KEY_ID: x
+      AWS_SECRET_ACCESS_KEY: x
+    command: ["python", "/project/indexer.py", "${REDIS_HOST:-redis:6379}", "released", "--create"]
+    depends_on:
+      - dynamo
+  api:
+    build:
+      context: ./
+      dockerfile: Dockerfile.searchapi
+    environment:
+      DYNAMODB_HOST: http://dynamo:8000
+      AWS_ACCESS_KEY_ID: x
+      AWS_SECRET_ACCESS_KEY: x
+    command: ["python", "/project/api.py"]

@@ -68,3 +68,7 @@ def pair_search(maker_token, taker_token):
         request.args.get("count", 25),
         request.headers.get("Accept", "")
     )
+
+if __name__ == "__main__":
+    import bjoern
+    bjoern.run(app, "0.0.0.0", 8888)

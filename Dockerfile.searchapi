@@ -1,0 +1,9 @@
+FROM python:3.6
+
+ADD ./py /project
+
+RUN apt-get update ; apt-get install -y libev-dev
+
+RUN pip install -r project/requirements/api.txt
+
+CMD ["python", "/project/api.py"]

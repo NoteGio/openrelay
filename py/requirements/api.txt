@@ -1,0 +1,14 @@
+bjoern==2.0.1
+botocore==1.7.7
+click==6.7
+docutils==0.14
+Flask==0.12.2
+itsdangerous==0.24
+Jinja2==2.9.6
+jmespath==0.9.3
+MarkupSafe==1.0
+pynamodb==3.1.0
+pysha3==1.0.2
+python-dateutil==2.6.1
+six==1.10.0
+Werkzeug==0.12.2
