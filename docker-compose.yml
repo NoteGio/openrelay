@@ -79,7 +79,49 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
-  # TODO: Add second fund verifier here
+  blockmonitor:
+    build:
+      context: ./
+      dockerfile: Dockerfile.blockmonitor
+    command: ["./node_modules/.bin/truffle", "exec", "blockMonitor.js", "redis://${REDIS_HOST:-redis:6379}", "topic://newblocks", "--network", "testnet"]
+    depends_on:
+      - ethnode
+  simplerelay2:
+    build:
+      context: ./
+      dockerfile: Dockerfile.simplerelay
+    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-simplerelay
+    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "topic://released", "queue://recheck"]
+  fundcheckrelay2:
+    build:
+      context: ./
+      dockerfile: Dockerfile.fundcheckrelay
+    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://recheck", "queue://indexer"]
+    depends_on:
+      - ethnode
+  dynamo:
+    image: cnadiminti/dynamodb-local
+  indexer:
+    build:
+      context: ./
+      dockerfile: Dockerfile.indexer
+    environment:
+      DYNAMODB_HOST: http://dynamo:8000
+      AWS_ACCESS_KEY_ID: x
+      AWS_SECRET_ACCESS_KEY: x
+    command: ["python", "/project/indexer.py", "${REDIS_HOST:-redis:6379}", "indexer", "--create"]
+    depends_on:
+      - dynamo
+  api:
+    build:
+      context: ./
+      dockerfile: Dockerfile.searchapi
+    environment:
+      DYNAMODB_HOST: http://dynamo:8000
+      AWS_ACCESS_KEY_ID: x
+      AWS_SECRET_ACCESS_KEY: x
+    command: ["python", "/project/api.py"]
+
   initialize:
     build:
       context: ./

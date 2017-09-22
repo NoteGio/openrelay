@@ -92,7 +92,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.simplerelay
-    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "topic://released", "queue://done"]
+    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "topic://released", "queue://indexer"]
     depends_on:
       - redis
     deploy:
@@ -131,7 +131,7 @@ services:
       DYNAMODB_HOST: http://dynamo:8000
       AWS_ACCESS_KEY_ID: x
       AWS_SECRET_ACCESS_KEY: x
-    command: ["python", "/project/indexer.py", "${REDIS_HOST:-redis:6379}", "released", "--create"]
+    command: ["python", "/project/indexer.py", "${REDIS_HOST:-redis:6379}", "indexer", "--create"]
     depends_on:
       - dynamo
   api:
