@@ -39,14 +39,12 @@ def get_redis_client(redis_url):
     return redis.StrictRedis(host=host, port=int(port), db=0)
 
 
-def index_orders(redis_url, order_topic):
+def index_orders(redis_url, order_queue):
     redisClient = get_redis_client(redis_url)
-    pubsub = redisClient.pubsub()
-    pubsub.subscribe(order_topic)
-    for message in pubsub.listen():
-        if message["type"] == "message":
+    while True:
+        with util.get_queue_message(order_queue, redisClient) as message:
             try:
-                record_order(message["data"], redisClient)
+                record_order(message, redisClient)
             except Exception:
                 logger.exception("Error recording message")
 
@@ -66,9 +64,9 @@ def index_orders(redis_url, order_topic):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("redis_url")
-    parser.add_argument("order_topic")
+    parser.add_argument("order_queue")
     parser.add_argument("--create", action="store_true", default=False)
     args = parser.parse_args()
     if args.create and not dynamo.DynamoOrder.exists():
         dynamo.DynamoOrder.create_table(wait=True)
-    index_orders(args.redis_url, args.order_topic)
+    index_orders(args.redis_url, args.order_queue)

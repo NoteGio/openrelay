@@ -18,6 +18,13 @@ import (
 func Handler(publisher channels.Publisher, accounts accountsModule.AccountService, affiliates affiliatesModule.AffiliateService) func(http.ResponseWriter, *http.Request) {
 	var contentType string
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {
+			// Health checks
+			w.WriteHeader(200)
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprintf(w, "{\"ok\": true}")
+			return
+		}
 		if typeVal, ok := r.Header["Content-Type"]; ok {
 			contentType = strings.Split(typeVal[0], ";")[0]
 		} else {

@@ -52,7 +52,7 @@ class DynamoOrder(Model):
     PynamoDB representation of an Order
     """
     class Meta:
-        table_name = "Order"
+        table_name = os.environ.get("ORDER_TABLE_NAME", "Order")
         read_capacity_units = 1
         write_capacity_units = 1
         region = os.environ.get("AWS_REGION", "us-east-2")
