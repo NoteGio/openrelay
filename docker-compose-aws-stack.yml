@@ -1,0 +1,221 @@
+version: "3"
+services:
+  monitor-ethnode:
+    image: ethereum/client-go
+    ports:
+      - "8545"
+      - "30303/tcp"
+      - "30303/udp"
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - engine.labels.enginetype == Ethereum
+    command: "--syncmode=light --rpc --rpcaddr 0.0.0.0"
+    volumes:
+      - monitor-ethnode-volume:/root/.ethereum
+  state-ethnode:
+    image: ethereum/client-go
+    ports:
+      - "8545"
+      - "30303/tcp"
+      - "30303/udp"
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - engine.labels.enginetype == Ethereum
+    command: "--syncmode=light --rpc --rpcaddr 0.0.0.0"
+    volumes:
+      - state-ethnode-volume:/root/.ethereum
+  standby-ethnode:
+    image: ethereum/client-go
+    ports:
+      - "8545"
+      - "30303/tcp"
+      - "30303/udp"
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - engine.labels.enginetype == Ethereum
+    command: "--syncmode=light --rpc --rpcaddr 0.0.0.0"
+    volumes:
+      - standby-ethnode-volume:/root/.ethereum
+  monitor-haproxy:
+    build:
+      context: ./
+      dockerfile: Dockerfile.monproxy
+    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-monproxy
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - engine.labels.enginetype == Ethereum
+  state-haproxy:
+    build:
+      context: ./
+      dockerfile: Dockerfile.stateproxy
+    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-stateproxy
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - engine.labels.enginetype == Ethereum
+  ingest:
+    build:
+      context: ./
+      dockerfile: Dockerfile.ingest
+    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-ingest
+    ports:
+      - "8080:8080"
+    command: ["/ingest", "${REDIS_HOST:-redis:6379}"]
+    deploy:
+      mode: global
+      # endpoint_mode: dnsrr
+      placement:
+        constraints:
+          - engine.labels.enginetype == External
+
+  fundcheckrelay:
+    build:
+      context: ./
+      dockerfile: Dockerfile.fundcheckrelay
+    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-fundcheckrelay
+    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://state-haproxy:8545}", "queue://ingest", "topic://instant"]
+    depends_on:
+      - state-ethnode
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - engine.labels.enginetype == Internal
+  simplerelay:
+    build:
+      context: ./
+      dockerfile: Dockerfile.simplerelay
+    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-simplerelay
+    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "topic://instant", "queue://delay1"]
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - engine.labels.enginetype == Internal
+  delayrelay1:
+    build:
+      context: ./
+      dockerfile: Dockerfile.delayrelay
+    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-delayrelay
+    command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "queue://delay1", "queue://delay2", "topic://delay1trigger"]
+    deploy:
+      replicas: 2
+      placement:
+        constraints:
+          - engine.labels.enginetype == Internal
+  delayrelay2:
+    build:
+      context: ./
+      dockerfile: Dockerfile.delayrelay
+    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-delayrelay
+    command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "queue://delay2", "topic://released", "topic://newblocks", "topic://delay1trigger"]
+    deploy:
+      replicas: 2
+      placement:
+        constraints:
+          - engine.labels.enginetype == Internal
+  blockmonitor:
+    build:
+      context: ./
+      dockerfile: Dockerfile.blockmonitor
+    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-blockmonitor
+    command: ["./node_modules/.bin/truffle", "exec", "blockMonitor.js", "redis://${REDIS_HOST:-redis:6379}", "topic://newblocks", "--network", "main"]
+    depends_on:
+      - monitor-ethnode
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - engine.labels.enginetype == Internal
+  simplerelay2:
+    build:
+      context: ./
+      dockerfile: Dockerfile.simplerelay
+    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-simplerelay
+    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "topic://released", "queue://recheck"]
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - engine.labels.enginetype == Internal
+  fundcheckrelay2:
+    build:
+      context: ./
+      dockerfile: Dockerfile.fundcheckrelay
+    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-fundcheckrelay
+    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://state-haproxy:8545}", "queue://recheck", "queue://indexer"]
+    depends_on:
+      - state-ethnode
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - engine.labels.enginetype == Internal
+  initialize:
+    build:
+      context: ./
+      dockerfile: Dockerfile.initialize
+    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-initialize
+    command: ["/initialize", "${REDIS_HOST:-redis:6379}", "${ZRX_FEE:-500000000000000000}", "${RELAY_ADDRESS:-C22d5b2951DB72B44CFb8089bb8CD374A3c354eA}"]
+    deploy:
+      restart_policy:
+        condition: none
+  indexer:
+    build:
+      context: ./
+      dockerfile: Dockerfile.indexer
+    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-indexer
+    command: ["python", "/project/indexer.py", "${REDIS_HOST:-redis:6379}", "indexer"]
+    environment:
+      ORDER_TABLE_NAME: ${ORDER_TABLE_NAME:-Order}
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - engine.labels.enginetype == Internal
+  api:
+    build:
+      context: ./
+      dockerfile: Dockerfile.searchapi
+    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-searchapi
+    command: ["python", "/project/api.py"]
+    ports:
+      - "8888:8888"
+    environment:
+      ORDER_TABLE_NAME: ${ORDER_TABLE_NAME:-Order}
+    deploy:
+      mode: global
+      # endpoint_mode: dnsrr
+      placement:
+        constraints:
+          - engine.labels.enginetype == External
+
+
+volumes:
+  monitor-ethnode-volume:
+    driver: "cloudstor:aws"
+    driver_opts:
+      size: 25
+      ebstype: gp2
+      backing: relocatable
+  state-ethnode-volume:
+    driver: "cloudstor:aws"
+    driver_opts:
+      size: 25
+      ebstype: gp2
+      backing: relocatable
+  standby-ethnode-volume:
+    driver: "cloudstor:aws"
+    driver_opts:
+      size: 25
+      ebstype: gp2
+      backing: relocatable
