@@ -31,7 +31,8 @@ func (filter *FundFilter) Filter(delivery channels.Delivery) (string, bool) {
 	} else {
 		log.Printf("Order '%v' lacks funds", hex.EncodeToString(order.Hash()))
 	}
-	return string(order.Bytes()), valid
+	orderBytes = order.Bytes()
+	return string(orderBytes[:]), valid
 }
 
 func main() {
