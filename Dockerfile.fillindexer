@@ -1,0 +1,7 @@
+FROM python:3.6
+
+ADD ./py /project
+
+RUN pip install -r project/requirements/indexer.txt
+
+CMD ["python", "/project/fill_indexer.py", "redis:6379", "ordersfilled"]

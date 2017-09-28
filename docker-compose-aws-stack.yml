@@ -149,6 +149,18 @@ services:
       placement:
         constraints:
           - engine.labels.enginetype == Internal
+  fillindexer:
+    build:
+      context: ./
+      dockerfile: Dockerfile.fillindexer
+    command: ["python", "/project/fill_indexer.py", "${REDIS_HOST:-redis:6379}", "ordersfilled"]
+    environment:
+      ORDER_TABLE_NAME: ${ORDER_TABLE_NAME:-Order}
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - engine.labels.enginetype == Internal
   simplerelay2:
     build:
       context: ./
