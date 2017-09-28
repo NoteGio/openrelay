@@ -32,7 +32,7 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 		}
 		order := types.Order{}
 		if contentType == "application/octet-stream" {
-			var data [377]byte
+			var data [409]byte
 			length, err := r.Body.Read(data[:])
 			if length != 377 {
 				w.WriteHeader(400)
