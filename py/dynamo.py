@@ -80,7 +80,7 @@ class DynamoOrder(Model):
         self.makerTokenAmountFilled = util.intToBytes(order.makerTokenAmountFilled)
         self.pairHash = order.pairHash
         self.price = order.price
-        self.data = order.rawdata
+        self.data = order.rawdata[:377]
         return self
 
     def ToOrder(self):

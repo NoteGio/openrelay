@@ -8,7 +8,7 @@ class Order(object):
     @classmethod
     def FromBytes(cls, data):
         self = cls()
-        self.rawdata = data
+        self.rawdata = data[:377]
         self.orderHash = self.digest()
         self.exchangeAddress = data[0:20]
         self.maker = data[20:40]
