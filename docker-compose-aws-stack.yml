@@ -136,6 +136,19 @@ services:
       placement:
         constraints:
           - engine.labels.enginetype == Internal
+  exchangemonitor:
+    build:
+      context: ./
+      dockerfile: Dockerfile.fillmonitor
+    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-fillmonitor
+    command: ["./node_modules/.bin/truffle", "exec", "exchangeMonitor.js", "redis://${REDIS_HOST:-redis:6379}", "queue://ordersfilled", "0xC22d5b2951DB72B44CFb8089bb8CD374A3c354eA", "--network", "main"]
+    depends_on:
+      - monitor-ethnode
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - engine.labels.enginetype == Internal
   simplerelay2:
     build:
       context: ./

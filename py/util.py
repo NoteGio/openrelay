@@ -1,6 +1,7 @@
 import contextlib
 import time
 
+
 def bytesToInt(data):
     total = 0
     for i, byte in enumerate(data[::-1]):
@@ -13,7 +14,7 @@ def intToBytes(value):
     for i in range(32):
         position = value // (256**(31-i))
         byteArray.append(position)
-        value -= position
+        value %= (256**(31-i))
     return bytes(byteArray)
 
 def hexStringToBytes(value):
@@ -54,3 +55,12 @@ def get_queue_message(queue, redisClient):
     except Exception:
         redisClient.lpush("%s::error" % queue, message)
     redisClient.lrem("%s::unacked" % queue, 1, message)
+
+def get_redis_client(redis_url):
+    import redis
+    try:
+        host, port = redis_url.split(":")
+    except ValueError:
+        host = redis_url
+        port = 6379
+    return redis.StrictRedis(host=host, port=int(port), db=0)

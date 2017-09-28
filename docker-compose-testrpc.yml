@@ -18,6 +18,7 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
+    # command: ["testrpc", "--networkId", "50", "--debug", "-p", "8545", "--db", "/testrpcdb", "-m", "concert load couple harbor equip island argue ramp clarify fence smart topic"]
   ingest:
     build:
       context: ./
@@ -88,18 +89,42 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
+  exchangemonitor:
+    build:
+      context: ./
+      dockerfile: Dockerfile.fillmonitor
+    command: ["./node_modules/.bin/truffle", "exec", "exchangeMonitor.js", "redis://${REDIS_HOST:-redis:6379}", "queue://ordersfilled", "0xC22d5b2951DB72B44CFb8089bb8CD374A3c354eA", "--network", "testnet"]
+    depends_on:
+      - ethnode
+  fillindexer:
+    build:
+      context: ./
+      dockerfile: Dockerfile.fillindexer
+    command: ["python", "/project/fill_indexer.py", "${REDIS_HOST:-redis:6379}", "ordersfilled", "-l", "DEBUG"]
+    environment:
+      DYNAMODB_HOST: http://dynamo:8000
+      AWS_ACCESS_KEY_ID: x
+      AWS_SECRET_ACCESS_KEY: x
+    depends_on:
+      - dynamo
   simplerelay2:
     build:
       context: ./
       dockerfile: Dockerfile.simplerelay
-    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "topic://released", "queue://indexer"]
+    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "topic://released", "queue://recheck"]
     depends_on:
       - redis
     deploy:
       replicas: 1
       restart_policy:
         condition: on-failure
-  # TODO: Add second fund verifier here
+  fundcheckrelay2:
+    build:
+      context: ./
+      dockerfile: Dockerfile.fundcheckrelay
+    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://recheck", "queue://indexer"]
+    depends_on:
+      - ethnode
   initialize:
     build:
       context: ./

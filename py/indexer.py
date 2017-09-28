@@ -2,7 +2,6 @@ import argparse
 import logging
 import json
 
-import redis
 import dynamo
 import order
 import util
@@ -30,17 +29,11 @@ def record_order(data, locker):
 #     return dynamo.DynamoOrder.addFilled(orderHash, filled_amount, locker)
 
 
-def get_redis_client(redis_url):
-    try:
-        host, port = redis_url.split(":")
-    except ValueError:
-        host = redis_url
-        port = 6379
-    return redis.StrictRedis(host=host, port=int(port), db=0)
+
 
 
 def index_orders(redis_url, order_queue):
-    redisClient = get_redis_client(redis_url)
+    redisClient = util.get_redis_client(redis_url)
     while True:
         with util.get_queue_message(order_queue, redisClient) as message:
             try:

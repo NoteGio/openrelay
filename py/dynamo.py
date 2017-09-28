@@ -93,7 +93,8 @@ class DynamoOrder(Model):
     def addFilled(cls, orderHash, amountFilled, locker):
         with locker.lock("%s::lock" % orderHash):
             order_dynamo = cls.get(orderHash)
-            totalFilled = util.intToBytes(order_dynamo.makerTokenAmountFilled)
+            totalFilled = util.bytesToInt(order_dynamo.makerTokenAmountFilled)
             totalFilled += amountFilled
-            order_dynamo.makerTokenAmountFilled = util.bytesToInt(totalFilled)
+            order_dynamo.makerTokenAmountFilled = util.intToBytes(totalFilled)
             order_dynamo.save()
+            return order_dynamo

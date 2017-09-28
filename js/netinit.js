@@ -19,8 +19,7 @@ function issueToken(redisName, tokenFactory, redisClient) {
 module.exports = function(done){
     var redisClient = redis.createClient(process.argv[4]);
     zeroEx = new ZeroEx.ZeroEx(web3.currentProvider);
-    // Caution: This is using a private method that may disappear in the future
-    zeroEx.exchange._getZRXTokenAddressAsync().then((address) => {
+    zeroEx.exchange.getZRXTokenAddressAsync().then((address) => {
         redisClient.set("feeToken::address", address.substr(2));
     }).then(() => {
         return IssueTokenFactory.deployed()

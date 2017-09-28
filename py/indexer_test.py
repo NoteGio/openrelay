@@ -4,6 +4,7 @@ import contextlib
 
 import dynamo
 import indexer
+import fill_indexer
 import sample
 import util
 
@@ -33,3 +34,22 @@ class IndexerTestCase(unittest.TestCase):
         self.assertEqual(test_order.orderHash, util.hexStringToBytes(
             "731319211689ccf0327911a0126b0af0854570c1b6cdfeb837b0127e29fe9fd5"
         ))
+
+    def test_fill(self):
+        indexer.record_order(sample.data, Locker())
+        h_ = "731319211689ccf0327911a0126b0af0854570c1b6cdfeb837b0127e29fe9fd5"
+        fill_indexer.process_fill({
+            "orderHash": h_,
+            "filledMakerTokenAmount": 25000000000000000000
+        }, Locker())
+        item = next(dynamo.DynamoOrder.scan())
+        self.assertEqual(
+            util.bytesToInt(item.makerTokenAmountFilled),
+            25000000000000000000
+        )
+        fill_indexer.process_fill({
+            "orderHash": h_,
+            "filledMakerTokenAmount": 25000000000000000000
+        }, Locker())
+        with self.assertRaises(StopIteration):
+            next(dynamo.DynamoOrder.scan())
