@@ -16,14 +16,14 @@ type FundFilter struct {
 	orderValidator funds.OrderValidator
 }
 
-func (filter *FundFilter) Filter(delivery channels.Delivery) bool {
+func (filter *FundFilter) Filter(delivery channels.Delivery) (string, bool) {
 	msg := []byte(delivery.Payload())
 	orderBytes := [409]byte{}
 	copy(orderBytes[:], msg[:])
 	order := types.OrderFromBytes(orderBytes)
 	if !order.Signature.Verify(order.Maker) {
 		log.Printf("Invalid order signature");
-		return false;
+		return "", false;
 	}
 	valid := filter.orderValidator.ValidateOrder(order)
 	if valid {
@@ -31,7 +31,7 @@ func (filter *FundFilter) Filter(delivery channels.Delivery) bool {
 	} else {
 		log.Printf("Order '%v' lacks funds", hex.EncodeToString(order.Hash()))
 	}
-	return valid
+	return string(order.Bytes()), valid
 }
 
 func main() {

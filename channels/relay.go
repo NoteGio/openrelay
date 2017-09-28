@@ -7,17 +7,17 @@ import (
 // RelayFilter objects provide a predicate function to determine whether a
 // message should be passed to the next stage
 type RelayFilter interface {
-	Filter(Delivery) bool
+	Filter(Delivery) (string, bool)
 }
 
 type IncludeAll struct {
 	counter int64
 }
 
-func (filter *IncludeAll) Filter(delivery Delivery) bool {
+func (filter *IncludeAll) Filter(delivery Delivery) (string, bool) {
 	filter.counter++
 	log.Printf("Relayed message : '%v'", filter.counter)
-	return true
+	return delivery.Payload(), true
 }
 
 type Relay struct {
@@ -39,8 +39,8 @@ type RelayConsumer struct {
 }
 
 func (consumer *RelayConsumer) Consume(delivery Delivery) {
-	if consumer.relay.filter.Filter(delivery) {
-		consumer.relay.publisher.Publish(delivery.Payload())
+	if forwardValue, shouldForward := consumer.relay.filter.Filter(delivery); shouldForward {
+		consumer.relay.publisher.Publish(forwardValue)
 	}
 	delivery.Ack()
 }
