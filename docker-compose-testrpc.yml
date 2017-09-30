@@ -168,3 +168,14 @@ services:
       AWS_ACCESS_KEY_ID: x
       AWS_SECRET_ACCESS_KEY: x
     command: ["python", "/project/api.py"]
+  ordercheckenqueue:
+    build:
+      context: ./
+      dockerfile: Dockerfile.queueorders
+    environment:
+      DYNAMODB_HOST: http://dynamo:8000
+      AWS_ACCESS_KEY_ID: x
+      AWS_SECRET_ACCESS_KEY: x
+    command: ["python", "/project/queue_orders.py", "${REDIS_HOST:-redis:6379}", "continuous_recheck", "-r", "-l", "debug"]
+    depends_on:
+      - indexer
