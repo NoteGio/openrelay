@@ -12,15 +12,16 @@ def process_fill(fill, locker):
     orderHash = util.hexStringToBytes(fill["orderHash"])
     dynamo_order = dynamo.DynamoOrder.addFilled(
         orderHash,
-        int(fill["filledTakerTokenAmount"]),
+        int(fill.get("filledTakerTokenAmount", 0)),
+        int(fill.get("cancelledTakerTokenAmount", 0)),
         locker
     )
     order = dynamo_order.ToOrder()
-    total_filled = (
+    total_unavailable = (
         util.bytesToInt(dynamo_order.takerTokenAmountFilled) +
         util.bytesToInt(dynamo_order.takerTokenAmountCancelled)
     )
-    if total_filled >= (order.takerTokenAmount * .99):
+    if total_unavailable >= (order.takerTokenAmount * .99):
         # The order is > 99% filled, delist it.
         dynamo_order.delete()
 

@@ -18,7 +18,7 @@ type FundFilter struct {
 
 func (filter *FundFilter) Filter(delivery channels.Delivery) (string, bool) {
 	msg := []byte(delivery.Payload())
-	orderBytes := [409]byte{}
+	orderBytes := [441]byte{}
 	copy(orderBytes[:], msg[:])
 	order := types.OrderFromBytes(orderBytes)
 	if !order.Signature.Verify(order.Maker) {
