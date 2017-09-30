@@ -18,10 +18,10 @@ def record_order(data, locker):
             dynamo_order = dynamo.DynamoOrder.FromOrder(order_obj)
         # If the incoming record shows a higher makerTokenFilledAmount than
         # we've previously stored, update it
-        stored_filled = util.bytesToInt(dynamo_order.makerTokenAmountFilled)
-        if order_obj.makerTokenAmountFilled > stored_filled:
-            incoming_filled = util.intToBytes(order_obj.makerTokenAmountFilled)
-            dynamo_order.makerTokenAmountFilled = incoming_filled
+        stored_filled = util.bytesToInt(dynamo_order.takerTokenAmountFilled)
+        if order_obj.takerTokenAmountFilled > stored_filled:
+            incoming_filled = util.intToBytes(order_obj.takerTokenAmountFilled)
+            dynamo_order.takerTokenAmountFilled = incoming_filled
         dynamo_order.save()
 
 

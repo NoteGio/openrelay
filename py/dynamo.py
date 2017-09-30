@@ -18,7 +18,7 @@ class DynamoOrderPairhashIndex(GlobalSecondaryIndex):
         index_name = 'order-pairhash-idx'
         read_capacity_units = 1
         write_capacity_units = 1
-        projection = IncludeProjection(["data", "makerTokenAmountFilled"])
+        projection = IncludeProjection(["data", "takerTokenAmountFilled"])
     pairHash = BinaryAttribute(hash_key=True)
     price = NumberAttribute(range_key=True)
 
@@ -31,7 +31,7 @@ class DynamoOrderMakerTokenIndex(GlobalSecondaryIndex):
         index_name = 'order-makertoken-idx'
         read_capacity_units = 1
         write_capacity_units = 1
-        projection = IncludeProjection(["data", "makerTokenAmountFilled"])
+        projection = IncludeProjection(["data", "takerTokenAmountFilled"])
     makerToken = BinaryAttribute(hash_key=True)
 
 
@@ -43,7 +43,7 @@ class DynamoOrderTakerTokenIndex(GlobalSecondaryIndex):
         index_name = 'order-takertoken-idx'
         read_capacity_units = 1
         write_capacity_units = 1
-        projection = IncludeProjection(["data", "makerTokenAmountFilled"])
+        projection = IncludeProjection(["data", "takerTokenAmountFilled"])
     takerToken = BinaryAttribute(hash_key=True)
 
 
@@ -63,7 +63,7 @@ class DynamoOrder(Model):
     orderHash = BinaryAttribute(hash_key=True)
     makerToken = BinaryAttribute()
     takerToken = BinaryAttribute()
-    makerTokenAmountFilled = BinaryAttribute()
+    takerTokenAmountFilled = BinaryAttribute()
     pairHash = BinaryAttribute()
     price = NumberAttribute()
     data = BinaryAttribute()
@@ -77,7 +77,7 @@ class DynamoOrder(Model):
         self.orderHash = order.orderHash
         self.makerToken = order.makerToken
         self.takerToken = order.takerToken
-        self.makerTokenAmountFilled = util.intToBytes(order.makerTokenAmountFilled)
+        self.takerTokenAmountFilled = util.intToBytes(order.takerTokenAmountFilled)
         self.pairHash = order.pairHash
         self.price = order.price
         self.data = order.rawdata[:377]
@@ -87,14 +87,14 @@ class DynamoOrder(Model):
         return order.Order.FromBytes(self.binary())
 
     def binary(self):
-        return self.data + self.makerTokenAmountFilled
+        return self.data + self.takerTokenAmountFilled
 
     @classmethod
     def addFilled(cls, orderHash, amountFilled, locker):
         with locker.lock("%s::lock" % orderHash):
             order_dynamo = cls.get(orderHash)
-            totalFilled = util.bytesToInt(order_dynamo.makerTokenAmountFilled)
+            totalFilled = util.bytesToInt(order_dynamo.takerTokenAmountFilled)
             totalFilled += amountFilled
-            order_dynamo.makerTokenAmountFilled = util.intToBytes(totalFilled)
+            order_dynamo.takerTokenAmountFilled = util.intToBytes(totalFilled)
             order_dynamo.save()
             return order_dynamo

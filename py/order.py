@@ -25,7 +25,7 @@ class Order(object):
         self.sigV = data[312]
         self.sigR = data[313:345]
         self.sigS = data[345:377]
-        self.makerTokenAmountFilled = util.bytesToInt(data[377:409])
+        self.takerTokenAmountFilled = util.bytesToInt(data[377:409])
         self.price = self.takerTokenAmount / self.makerTokenAmount
         self.pairHash = hashlib.sha256(self.makerToken + self.takerToken).digest()
         return self
@@ -42,7 +42,7 @@ class Order(object):
           "maker": util.bytesToHexString(self.maker),
           "makerFee": str(self.makerFee),
           "makerTokenAmount": str(self.makerTokenAmount),
-          "makerTokenAmountFilled": str(self.makerTokenAmountFilled),
+          "takerTokenAmountFilled": str(self.takerTokenAmountFilled),
           "salt": str(self.salt),
           "taker": util.bytesToHexString(self.taker),
           "takerFee": str(self.takerFee),

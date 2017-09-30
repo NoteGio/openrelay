@@ -21,19 +21,19 @@ type Order struct {
 	ExpirationTimestampInSec [32]byte
 	Salt                     [32]byte
 	Signature                *Signature
-	MakerTokenAmountFilled	 [32]byte
+	TakerTokenAmountFilled	 [32]byte
 }
 
 // NewOrder takes string representations of values and converts them into an Order object
-func NewOrder(maker, taker, makerToken, takerToken, feeRecipient, exchangeAddress, makerTokenAmount, takerTokenAmount, makerFee, takerFee, expirationTimestampInSec, salt, sigV, sigR, sigS, makerTokenAmountFilled string) (*Order, error) {
+func NewOrder(maker, taker, makerToken, takerToken, feeRecipient, exchangeAddress, makerTokenAmount, takerTokenAmount, makerFee, takerFee, expirationTimestampInSec, salt, sigV, sigR, sigS, takerTokenAmountFilled string) (*Order, error) {
 	order := Order{}
-	if err := order.fromStrings(maker, taker, makerToken, takerToken, feeRecipient, exchangeAddress, makerTokenAmount, takerTokenAmount, makerFee, takerFee, expirationTimestampInSec, salt, sigV, sigR, sigS, makerTokenAmountFilled); err != nil {
+	if err := order.fromStrings(maker, taker, makerToken, takerToken, feeRecipient, exchangeAddress, makerTokenAmount, takerTokenAmount, makerFee, takerFee, expirationTimestampInSec, salt, sigV, sigR, sigS, takerTokenAmountFilled); err != nil {
 		return nil, err
 	}
 	return &order, nil
 }
 
-func (order *Order) fromStrings(maker, taker, makerToken, takerToken, feeRecipient, exchangeAddress, makerTokenAmount, takerTokenAmount, makerFee, takerFee, expirationTimestampInSec, salt, sigV, sigR, sigS, makerTokenAmountFilled string) error {
+func (order *Order) fromStrings(maker, taker, makerToken, takerToken, feeRecipient, exchangeAddress, makerTokenAmount, takerTokenAmount, makerFee, takerFee, expirationTimestampInSec, salt, sigV, sigR, sigS, takerTokenAmountFilled string) error {
 	makerBytes, err := hexStringToBytes(maker)
 	if err != nil {
 		return err
@@ -94,7 +94,7 @@ func (order *Order) fromStrings(maker, taker, makerToken, takerToken, feeRecipie
 	if err != nil {
 		return err
 	}
-	makerTokenAmountFilledBytes, err := intStringToBytes(makerTokenAmountFilled)
+	takerTokenAmountFilledBytes, err := intStringToBytes(takerTokenAmountFilled)
 	if err != nil {
 		return err
 	}
@@ -115,7 +115,7 @@ func (order *Order) fromStrings(maker, taker, makerToken, takerToken, feeRecipie
 	copy(order.Signature.S[:], sigSBytes)
 	copy(order.Signature.R[:], sigRBytes)
 	copy(order.Signature.Hash[:], order.Hash())
-	copy(order.MakerTokenAmountFilled[:], makerTokenAmountFilledBytes)
+	copy(order.TakerTokenAmountFilled[:], takerTokenAmountFilledBytes)
 	return nil
 }
 
@@ -151,7 +151,7 @@ type jsonOrder struct {
 	ExpirationTimestampInSec string        `json:"expirationUnixTimestampSec"`
 	Salt                     string        `json:"salt"`
 	Signature                jsonSignature `json:"ecSignature"`
-	MakerTokenAmountFilled   string        `json:"makerTokenAmountFilled"`
+	TakerTokenAmountFilled   string        `json:"takerTokenAmountFilled"`
 }
 
 func (order *Order) UnmarshalJSON(b []byte) error {
@@ -159,8 +159,8 @@ func (order *Order) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(b, &jOrder); err != nil {
 		return err
 	}
-	if jOrder.MakerTokenAmountFilled == "" {
-		jOrder.MakerTokenAmountFilled = "0";
+	if jOrder.TakerTokenAmountFilled == "" {
+		jOrder.TakerTokenAmountFilled = "0";
 	}
 	order.fromStrings(
 		jOrder.Maker,
@@ -178,7 +178,7 @@ func (order *Order) UnmarshalJSON(b []byte) error {
 		string(jOrder.Signature.V),
 		jOrder.Signature.R,
 		jOrder.Signature.S,
-		jOrder.MakerTokenAmountFilled,
+		jOrder.TakerTokenAmountFilled,
 	)
 
 	return nil
@@ -201,7 +201,7 @@ func (order *Order) Bytes() [409]byte {
 	output[312] = order.Signature.V
 	copy(output[313:345], order.Signature.R[:])
 	copy(output[345:377], order.Signature.S[:])
-	copy(output[377:409], order.MakerTokenAmountFilled[:])
+	copy(output[377:409], order.TakerTokenAmountFilled[:])
 	return output
 }
 
@@ -223,7 +223,7 @@ func (order *Order) FromBytes(data [409]byte) {
 	copy(order.Signature.R[:], data[313:345])
 	copy(order.Signature.S[:], data[345:377])
 	copy(order.Signature.Hash[:], order.Hash())
-	copy(order.MakerTokenAmountFilled[:], data[377:409])
+	copy(order.TakerTokenAmountFilled[:], data[377:409])
 }
 
 func OrderFromBytes(data [409]byte) *Order {

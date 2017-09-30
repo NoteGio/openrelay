@@ -19,7 +19,7 @@ module.exports = function(done){
             var fillTransform = (data) => {
                 return {
                     orderHash: data.args.orderHash,
-                    filledMakerTokenAmount: data.args.filledMakerTokenAmount,
+                    filledTakerTokenAmount: data.args.filledTakerTokenAmount,
                 }
             }
             var cancelFilterCreator = (options) => {
@@ -28,7 +28,7 @@ module.exports = function(done){
             var cancelTransform = (data) => {
                 return {
                     orderHash: data.args.orderHash,
-                    filledMakerTokenAmount: data.args.cancelledMakerTokenAmount,
+                    cancelledTakerTokenAmount: data.args.cancelledTakerTokenAmount,
                 }
             }
             monitor(redisClient, notifyURL, fillFilterCreator, web3, fillTransform);

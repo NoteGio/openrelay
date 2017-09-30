@@ -15,6 +15,7 @@ def intToBytes(value):
         position = value // (256**(31-i))
         byteArray.append(position)
         value %= (256**(31-i))
+    print(byteArray)
     return bytes(byteArray)
 
 def hexStringToBytes(value):

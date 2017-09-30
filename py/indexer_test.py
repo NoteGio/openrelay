@@ -44,7 +44,7 @@ class IndexerTestCase(unittest.TestCase):
         }, Locker())
         item = next(dynamo.DynamoOrder.scan())
         self.assertEqual(
-            util.bytesToInt(item.makerTokenAmountFilled),
+            util.bytesToInt(item.takerTokenAmountFilled),
             25000000000000000000
         )
         fill_indexer.process_fill({

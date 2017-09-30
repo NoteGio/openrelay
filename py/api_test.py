@@ -31,8 +31,8 @@ class ApiTestCase(unittest.TestCase):
                     util.bytesToHexString(dynamo_order.takerToken)
                 )
                 self.assertEqual(
-                    util.intToBytes(int(order_dict["makerTokenAmountFilled"])),
-                    dynamo_order.makerTokenAmountFilled
+                    util.intToBytes(int(order_dict["takerTokenAmountFilled"])),
+                    dynamo_order.takerTokenAmountFilled
                 )
 
     def test_format_orders_bin(self):
