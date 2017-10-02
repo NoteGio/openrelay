@@ -20,6 +20,14 @@ func (filter *IncludeAll) Filter(delivery Delivery) bool {
 	return true
 }
 
+type InvertFilter struct {
+	Subfilter RelayFilter
+}
+
+func (filter *InvertFilter) Filter(delivery Delivery) bool {
+	return !filter.Subfilter.Filter(delivery)
+}
+
 type Relay struct {
 	consumerChannel ConsumerChannel
 	publisher       Publisher

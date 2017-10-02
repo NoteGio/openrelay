@@ -54,7 +54,11 @@ func main() {
 	if err != nil { log.Fatalf(err.Error()) }
 	orderValidator, err := funds.NewRpcOrderValidator(rpcURL, config.NewFeeToken(redisClient), config.NewTokenProxy(redisClient))
 	if err != nil { log.Fatalf(err.Error()) }
-	fundFilter := &FundFilter{orderValidator}
+	var fundFilter channels.RelayFilter
+	fundFilter = &FundFilter{orderValidator}
+	if os.Args[5] == "--invert" {
+		fundFilter = &channels.InvertFilter{fundFilter}
+	}
 	relay := channels.NewRelay(consumerChannel, publisher, fundFilter)
 	log.Printf("Starting")
 	relay.Start()
