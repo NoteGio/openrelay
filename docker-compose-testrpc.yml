@@ -32,11 +32,23 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
+  fillupdate:
+    build:
+      context: ./
+      dockerfile: Dockerfile.fillupdate
+    command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://ingest", "queue://fundcheck"]
+    depends_on:
+      - redis
+      - ethnode
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
   fundcheckrelay:
     build:
       context: ./
       dockerfile: Dockerfile.fundcheckrelay
-    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://ingest", "topic://instant"]
+    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://fundcheck", "topic://instant"]
     depends_on:
       - redis
       - ethnode
@@ -118,11 +130,23 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
+  fillupdate2:
+    build:
+      context: ./
+      dockerfile: Dockerfile.fillupdate
+    command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://recheck", "queue://recheck2"]
+    depends_on:
+      - redis
+      - ethnode
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
   fundcheckrelay2:
     build:
       context: ./
       dockerfile: Dockerfile.fundcheckrelay
-    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://recheck", "queue://indexer"]
+    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://recheck2", "queue://indexer"]
     depends_on:
       - ethnode
   initialize:
@@ -159,6 +183,7 @@ services:
     command: ["python", "/project/indexer.py", "${REDIS_HOST:-redis:6379}", "indexer", "--create"]
     depends_on:
       - dynamo
+      - redis
   api:
     build:
       context: ./
@@ -169,6 +194,8 @@ services:
       AWS_SECRET_ACCESS_KEY: x
     command: ["python", "/project/api.py"]
   ordercheckenqueue:
+    # This node uses dynamodb to continuously requeue orders to be checked
+    # again on an ongoing basis
     build:
       context: ./
       dockerfile: Dockerfile.queueorders
@@ -179,3 +206,39 @@ services:
     command: ["python", "/project/queue_orders.py", "${REDIS_HOST:-redis:6379}", "continuous_recheck", "-r", "-l", "debug"]
     depends_on:
       - indexer
+  fillupdate_continous:
+    # This node makes sure filled / cancelled values are up to date. Any
+    # changes get forwarded to the indexer, and all orders get forwarded to the
+    # inverted fund checker
+    build:
+      context: ./
+      dockerfile: Dockerfile.fillupdate
+    command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://continuous_recheck", "queue://fund_continuous_recheck", "queue://indexer"]
+    depends_on:
+      - redis
+      - ethnode
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  fundcheckrelay_continuous:
+    # This fund checker passes on orders that have insufficient funds to be
+    # removed from the index
+    build:
+      context: ./
+      dockerfile: Dockerfile.fundcheckrelay
+    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://fund_continuous_recheck", "queue://unindexer", "--invert"]
+    depends_on:
+      - ethnode
+  unindexer:
+    build:
+      context: ./
+      dockerfile: Dockerfile.indexer
+    environment:
+      DYNAMODB_HOST: http://dynamo:8000
+      AWS_ACCESS_KEY_ID: x
+      AWS_SECRET_ACCESS_KEY: x
+    command: ["python", "/project/indexer.py", "${REDIS_HOST:-redis:6379}", "unindexer", "--unindex"]
+    depends_on:
+      - dynamo
+      - redis

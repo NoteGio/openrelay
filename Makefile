@@ -37,7 +37,10 @@ bin/simplerelay: $(BASE) cmd/simplerelay/main.go
 bin/validateorder: $(BASE) cmd/validateorder/main.go
 	cd $(BASE) && $(GOSTATIC) -o bin/validateorder cmd/validateorder/main.go
 
-bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder
+bin/fillupdate: $(BASE) cmd/fillupdate/main.go
+	cd $(BASE) && $(GOSTATIC) -o bin/fillupdate cmd/fillupdate/main.go
+
+bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate
 
 truffleCompile:
 	cd $(BASE)/js ; node_modules/.bin/truffle compile

@@ -118,3 +118,14 @@ func MockChannel() (Publisher, ConsumerChannel) {
 	}
 	return pub, consume
 }
+
+func MockPublisher() (Publisher, chan Delivery) {
+	channel := make(chan Delivery, 5)
+	unacked := &deliveries{}
+	rejected := &deliveries{}
+	return &mockPublisher{
+		channel,
+		unacked,
+		rejected,
+	}, channel
+}

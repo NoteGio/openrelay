@@ -56,7 +56,7 @@ func main() {
 	if err != nil { log.Fatalf(err.Error()) }
 	var fundFilter channels.RelayFilter
 	fundFilter = &FundFilter{orderValidator}
-	if os.Args[5] == "--invert" {
+	if len(os.Args) >= 6 && os.Args[5] == "--invert" {
 		fundFilter = &channels.InvertFilter{fundFilter}
 	}
 	relay := channels.NewRelay(consumerChannel, publisher, fundFilter)

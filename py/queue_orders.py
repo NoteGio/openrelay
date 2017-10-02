@@ -13,6 +13,10 @@ def queue_orders(redisClient, publish_queue, queued_max, length_check_frequency=
     queued = 0
     counter = 0
     for order in dynamo.DynamoOrder.scan():
+        if order.ToOrder().expirationTimestampInSec < time.time():
+            # We can prune expired orders as we go without queueing
+            order.delete()
+            continue
         redisClient.lpush(publish_queue, order.data)
         queued += 1
         counter += 1
