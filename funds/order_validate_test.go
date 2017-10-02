@@ -6,12 +6,13 @@ import (
 	"github.com/notegio/openrelay/config"
 	"github.com/notegio/openrelay/funds"
 	"github.com/notegio/openrelay/types"
+	gethCommon "github.com/ethereum/go-ethereum/common"
 	"math/big"
 	"reflect"
 	"testing"
 )
 
-func createMockBalanceChecker(tokenAddress, userAddress string, tokenAmount int64, feeTokenAmount int64, t *testing.T) funds.BalanceChecker {
+func createMockBalanceChecker(tokenAddress, userAddress string, tokenAmount string, feeTokenAmount string, t *testing.T) funds.BalanceChecker {
 	tokenBytes, err := common.HexToBytes(tokenAddress)
 	if err != nil {
 		t.Errorf(err.Error())
@@ -21,8 +22,10 @@ func createMockBalanceChecker(tokenAddress, userAddress string, tokenAmount int6
 		t.Errorf(err.Error())
 	}
 	feeTokenBytes, _ := common.HexToBytes("e41d2489571d322189246dafa5ebde1f4699f498")
-	tokenInt := big.NewInt(tokenAmount)
-	feeTokenInt := big.NewInt(feeTokenAmount)
+	tokenInt := new(big.Int)
+	tokenInt.SetString(tokenAmount, 10)
+	feeTokenInt := new(big.Int)
+	feeTokenInt.SetString(feeTokenAmount, 10)
 	balanceMap := make(map[[20]byte]map[[20]byte]*big.Int)
 	balanceMap[tokenBytes] = make(map[[20]byte]*big.Int)
 	balanceMap[feeTokenBytes] = make(map[[20]byte]*big.Int)
@@ -35,15 +38,50 @@ func createMockBalanceChecker(tokenAddress, userAddress string, tokenAmount int6
 }
 
 func TestOrderValidate(t *testing.T) {
-	balanceChecker := createMockBalanceChecker("1dad4783cf3fe3085c1426157ab175a6119a04ba", "324454186bb728a3ea55750e0618ff1b18ce6cf8", 0, 0, t)
+	balanceChecker := createMockBalanceChecker("1dad4783cf3fe3085c1426157ab175a6119a04ba", "324454186bb728a3ea55750e0618ff1b18ce6cf8", "0", "0", t)
 	feeTokenAddress, _ := common.HexToBytes("e41d2489571d322189246dafa5ebde1f4699f498")
 	tokenProxyAddress, _ := common.HexToBytes("d4fd252d7d2c9479a8d616f510eac6243b5dddf9")
 	validator := funds.NewOrderValidator(balanceChecker, config.StaticFeeToken(feeTokenAddress), config.StaticTokenProxy(tokenProxyAddress))
-	testOrderBytes, _ := hex.DecodeString("324454186bb728a3ea55750e0618ff1b18ce6cf800000000000000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c000000000000000000000000000000000000000090fe2af704b34e0224bf2299c838e04d4dcf1364000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000059938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b00021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f1")
+	testOrderBytes, _ := hex.DecodeString("90fe2af704b34e0224bf2299c838e04d4dcf1364324454186bb728a3ea55750e0618ff1b18ce6cf800000000000000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000059938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b1b021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f1")
 	var testOrderByteArray [441]byte
 	copy(testOrderByteArray[:], testOrderBytes[:])
 	newOrder := types.OrderFromBytes(testOrderByteArray)
 	if validator.ValidateOrder(newOrder) {
 		t.Errorf("Expected insufficient funds")
+	}
+}
+
+func TestOrderValidateSufficient(t *testing.T) {
+	balanceChecker := createMockBalanceChecker("1dad4783cf3fe3085c1426157ab175a6119a04ba", "324454186bb728a3ea55750e0618ff1b18ce6cf8", "50000000000000000000", "0", t)
+	feeTokenAddress, _ := common.HexToBytes("e41d2489571d322189246dafa5ebde1f4699f498")
+	tokenProxyAddress, _ := common.HexToBytes("d4fd252d7d2c9479a8d616f510eac6243b5dddf9")
+	validator := funds.NewOrderValidator(balanceChecker, config.StaticFeeToken(feeTokenAddress), config.StaticTokenProxy(tokenProxyAddress))
+	testOrderBytes, _ := hex.DecodeString("90fe2af704b34e0224bf2299c838e04d4dcf1364324454186bb728a3ea55750e0618ff1b18ce6cf800000000000000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000059938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b1b021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f1")
+	var testOrderByteArray [441]byte
+	copy(testOrderByteArray[:], testOrderBytes[:])
+	newOrder := types.OrderFromBytes(testOrderByteArray)
+
+	if !validator.ValidateOrder(newOrder) {
+		t.Errorf("Expected sufficient funds")
+	}
+}
+
+func TestOrderValidateSpent(t *testing.T) {
+	// 25000000000000000000 is half of the makerTokenAmount for the sample order
+	balanceChecker := createMockBalanceChecker("1dad4783cf3fe3085c1426157ab175a6119a04ba", "324454186bb728a3ea55750e0618ff1b18ce6cf8", "25000000000000000000", "0", t)
+	feeTokenAddress, _ := common.HexToBytes("e41d2489571d322189246dafa5ebde1f4699f498")
+	tokenProxyAddress, _ := common.HexToBytes("d4fd252d7d2c9479a8d616f510eac6243b5dddf9")
+	validator := funds.NewOrderValidator(balanceChecker, config.StaticFeeToken(feeTokenAddress), config.StaticTokenProxy(tokenProxyAddress))
+	testOrderBytes, _ := hex.DecodeString("90fe2af704b34e0224bf2299c838e04d4dcf1364324454186bb728a3ea55750e0618ff1b18ce6cf800000000000000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000059938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b1b021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f1")
+	var testOrderByteArray [441]byte
+	copy(testOrderByteArray[:], testOrderBytes[:])
+	newOrder := types.OrderFromBytes(testOrderByteArray)
+	filledInt := new(big.Int)
+	// Half the taker token amount for the order
+	filledInt.SetString("500000000000000000", 10)
+	copy(newOrder.TakerTokenAmountFilled[:], gethCommon.LeftPadBytes(filledInt.Bytes(), 32))
+
+	if !validator.ValidateOrder(newOrder) {
+		t.Errorf("Expected sufficient funds")
 	}
 }

@@ -3,6 +3,7 @@ package funds
 import (
 	"errors"
 	"math/big"
+	"encoding/hex"
 )
 
 type mockBalanceChecker struct {
@@ -14,9 +15,9 @@ func (funds *mockBalanceChecker) GetBalance(tokenAddrBytes, userAddrBytes [20]by
 		if balance, ok := tokenMap[userAddrBytes]; ok {
 			return balance, nil
 		}
-		return nil, errors.New("User address not found")
+		return nil, errors.New("(GetBalance) User address not found " + hex.EncodeToString(userAddrBytes[:]))
 	}
-	return nil, errors.New("Token not found")
+	return nil, errors.New("(GetBalance) Token not found " + hex.EncodeToString(tokenAddrBytes[:]))
 }
 
 func (funds *mockBalanceChecker) GetAllowance(tokenAddrBytes, userAddrBytes, senderAddress [20]byte) (*big.Int, error) {
@@ -27,9 +28,9 @@ func (funds *mockBalanceChecker) GetAllowance(tokenAddrBytes, userAddrBytes, sen
 		if balance, ok := tokenMap[userAddrBytes]; ok {
 			return balance, nil
 		}
-		return nil, errors.New("User address not found")
+		return nil, errors.New("(GetAllowance) User address not found " + hex.EncodeToString(userAddrBytes[:]))
 	}
-	return nil, errors.New("Token not found")
+	return nil, errors.New("(GetAllowance) Token not found " + hex.EncodeToString(tokenAddrBytes[:]))
 }
 
 func NewMockBalanceChecker(balanceMap map[[20]byte]map[[20]byte]*big.Int) BalanceChecker {
