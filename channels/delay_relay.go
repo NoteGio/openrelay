@@ -17,12 +17,12 @@ type DelayRelayFilter struct {
 	delayChan chan bool
 }
 
-func (filter *DelayRelayFilter) Filter(delivery Delivery) (string, bool) {
+func (filter *DelayRelayFilter) Filter(delivery Delivery) bool {
 	if delivery.Payload() == filter.sentinel {
 		<-filter.delayChan
-		return "", false
+		return false
 	}
-	return delivery.Payload(), true
+	return true
 }
 
 // NewDelayRelay creates a DelayRelay that consumes from `channel` and relays
