@@ -30,7 +30,7 @@ func main() {
 	publisher := channels.NewRedisQueuePublisher("ingest", redisClient)
 	handler := ingest.Handler(publisher, accountService, affiliateService)
 
-	http.HandleFunc("/", handler)
+	http.HandleFunc("/v0/order", handler)
 	log.Printf("Serving on :%v", port)
 	http.ListenAndServe(":"+port, nil)
 }

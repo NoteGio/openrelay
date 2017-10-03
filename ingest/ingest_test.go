@@ -109,7 +109,7 @@ func TestTooLongBytes(t *testing.T) {
 		t.Errorf("Got unexpected content type", recorder.HeaderMap["Content-Type"])
 	}
 	body := recorder.Body.String()
-	if body != "{\"error\": \"Orders should be exactly 377 bytes\"}" {
+	if body != "{\"code\":100,\"reason\":\"Orders should be exactly 377 bytes\"}" {
 		t.Errorf("Got unexpected body: '%v' - %v", body, len(body))
 	}
 	if len(publisher.messages) != 0 {
@@ -134,7 +134,7 @@ func TestBadRead(t *testing.T) {
 		t.Errorf("Got unexpected content type", recorder.HeaderMap["Content-Type"])
 	}
 	body := recorder.Body.String()
-	if body != "{\"error\": \"Error reading content\"}" {
+	if body != "{\"code\":100,\"reason\":\"Error reading content\"}" {
 		t.Errorf("Got unexpected body: '%v' - %v", body, len(body))
 	}
 	if len(publisher.messages) != 0 {
@@ -159,7 +159,7 @@ func TestBadJSON(t *testing.T) {
 		t.Errorf("Got unexpected content type %v", contentType)
 	}
 	body := recorder.Body.String()
-	if body != "{\"error\": \"Error parsing JSON content\"}" {
+	if body != "{\"code\":101,\"reason\":\"Malformed JSON\"}" {
 		t.Errorf("Got unexpected body: '%v' - %v", body, len(body))
 	}
 	if len(publisher.messages) != 0 {
@@ -184,7 +184,7 @@ func TestJSONBadRead(t *testing.T) {
 		t.Errorf("Got unexpected content type %v", contentType)
 	}
 	body := recorder.Body.String()
-	if body != "{\"error\": \"Error reading content\"}" {
+	if body != "{\"code\":100,\"reason\":\"Error reading content\"}" {
 		t.Errorf("Got unexpected body: '%v' - %v", body, len(body))
 	}
 	if len(publisher.messages) != 0 {
@@ -208,7 +208,7 @@ func TestNoContentType(t *testing.T) {
 		t.Errorf("Got unexpected content type %v", contentType)
 	}
 	body := recorder.Body.String()
-	if body != "{\"error\": \"Unsupported content-type\"}" {
+	if body != "{\"code\":100,\"reason\":\"Unsupported content-type\"}" {
 		t.Errorf("Got unexpected body: '%v' - %v", body, len(body))
 	}
 	if len(publisher.messages) != 0 {
@@ -233,7 +233,7 @@ func TestBadSignature(t *testing.T) {
 		t.Errorf("Got unexpected content type %v", contentType)
 	}
 	body := recorder.Body.String()
-	if body != "{\"error\": \"Invalid order signature\"}" {
+	if body != "{\"code\":100,\"reason\":\"Validation Failed\",\"validationErrors\":[{\"field\":\"ecSignature\",\"code\":1005,\"reason\":\"Signature validation failed\"}]}" {
 		t.Errorf("Got unexpected body: '%v' - %v", body, len(body))
 	}
 	if len(publisher.messages) != 0 {
@@ -261,7 +261,7 @@ func TestInsufficientFee(t *testing.T) {
 		t.Errorf("Got unexpected content type %v", contentType)
 	}
 	body := recorder.Body.String()
-	if body != "{\"error\": \"makerFee + takerFee must be at least 1000\"}" {
+	if body != "{\"code\":100,\"reason\":\"Validation Failed\",\"validationErrors\":[{\"field\":\"makerFee\",\"code\":1004,\"reason\":\"Total fee must be at least: 1000\"},{\"field\":\"takerFee\",\"code\":1004,\"reason\":\"Total fee must be at least: 1000\"}]}" {
 		t.Errorf("Got unexpected body: '%v' - %v", body, len(body))
 	}
 	if len(publisher.messages) != 0 {
@@ -281,7 +281,7 @@ func TestBlacklisted(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	handler(recorder, request)
 	if recorder.Code != 202 {
-		t.Errorf("Expected error code 202, got '%v'", recorder.Code)
+		t.Errorf("Expected code 202, got '%v'", recorder.Code)
 	}
 	if len(publisher.messages) != 0 {
 		t.Errorf("Unexpected message count '%v'", len(publisher.messages))
@@ -303,7 +303,7 @@ func TestNotFeeRecipient(t *testing.T) {
 		t.Errorf("Expected error code 402, got '%v'", recorder.Code)
 	}
 	body := recorder.Body.String()
-	if body != "{\"error\": \"Fee Recipient must be an authorized address\"}" {
+	if body != "{\"code\":100,\"reason\":\"Validation Failed\",\"validationErrors\":[{\"field\":\"feeRecipient\",\"code\":1002,\"reason\":\"Invalid fee recpient\"}]}" {
 		t.Errorf("Got unexpected body: '%v' - %v", body, len(body))
 	}
 	if len(publisher.messages) != 0 {
