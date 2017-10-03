@@ -25,7 +25,7 @@ services:
       dockerfile: Dockerfile.ingest
     ports:
       - "8080"
-    command: ["/ingest", "${REDIS_HOST:-redis:6379}"]
+    command: ["/ingest", "${REDIS_HOST:-redis:6379}", "C22d5b2951DB72B44CFb8089bb8CD374A3c354eA"]
     depends_on:
       - redis
     deploy:

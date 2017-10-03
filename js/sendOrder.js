@@ -56,6 +56,7 @@ module.exports = function(done){
         var req = http.request({
             host: "ingest",
             port: "8080",
+            path: "/v0/order",
             method: "POST",
             headers: {
                 "Content-Type": "application/json"

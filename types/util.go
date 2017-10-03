@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func hexStringToBytes(hexString string) ([]byte, error) {
+func HexStringToBytes(hexString string) ([]byte, error) {
 	return hex.DecodeString(strings.TrimPrefix(hexString, "0x"))
 }
 

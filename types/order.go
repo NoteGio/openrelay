@@ -35,27 +35,27 @@ func NewOrder(maker, taker, makerToken, takerToken, feeRecipient, exchangeAddres
 }
 
 func (order *Order) fromStrings(maker, taker, makerToken, takerToken, feeRecipient, exchangeAddress, makerTokenAmount, takerTokenAmount, makerFee, takerFee, expirationTimestampInSec, salt, sigV, sigR, sigS, takerTokenAmountFilled, takerTokenAmountCancelled string) error {
-	makerBytes, err := hexStringToBytes(maker)
+	makerBytes, err := HexStringToBytes(maker)
 	if err != nil {
 		return err
 	}
-	takerBytes, err := hexStringToBytes(taker)
+	takerBytes, err := HexStringToBytes(taker)
 	if err != nil {
 		return err
 	}
-	makerTokenBytes, err := hexStringToBytes(makerToken)
+	makerTokenBytes, err := HexStringToBytes(makerToken)
 	if err != nil {
 		return err
 	}
-	takerTokenBytes, err := hexStringToBytes(takerToken)
+	takerTokenBytes, err := HexStringToBytes(takerToken)
 	if err != nil {
 		return err
 	}
-	feeRecipientBytes, err := hexStringToBytes(feeRecipient)
+	feeRecipientBytes, err := HexStringToBytes(feeRecipient)
 	if err != nil {
 		return err
 	}
-	exchangeAddressBytes, err := hexStringToBytes(exchangeAddress)
+	exchangeAddressBytes, err := HexStringToBytes(exchangeAddress)
 	if err != nil {
 		return err
 	}
@@ -87,11 +87,11 @@ func (order *Order) fromStrings(maker, taker, makerToken, takerToken, feeRecipie
 	if err != nil {
 		return err
 	}
-	sigRBytes, err := hexStringToBytes(sigR)
+	sigRBytes, err := HexStringToBytes(sigR)
 	if err != nil {
 		return err
 	}
-	sigSBytes, err := hexStringToBytes(sigS)
+	sigSBytes, err := HexStringToBytes(sigS)
 	if err != nil {
 		return err
 	}
