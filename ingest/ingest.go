@@ -13,6 +13,7 @@ import (
 	"math/big"
 	"net/http"
 	"strings"
+	"bytes"
 )
 
 type IngestError struct {
@@ -128,6 +129,27 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 			return
 		}
 		// At this point we've errored out, or we have an Order object
+		emptyBytes := [20]byte{}
+		if !bytes.Equal(order.Taker[:], emptyBytes[:]) {
+			log.Printf("'%v' != '%v'", hex.EncodeToString(order.Taker[:]), hex.EncodeToString(emptyBytes[:]))
+			w.WriteHeader(400)
+			w.Header().Set("Content-Type", "application/json")
+			errResp := IngestError{
+				100,
+				"Validation Failed",
+				[]ValidationError{ValidationError{
+						"taker",
+						1002,
+						"Taker address must be empty",
+					}},
+			}
+			errBytes, err := json.Marshal(errResp)
+			if err != nil {
+				log.Printf(err.Error())
+			}
+			w.Write(errBytes)
+			return
+		}
 		if !order.Signature.Verify(order.Maker) {
 			w.WriteHeader(400)
 			w.Header().Set("Content-Type", "application/json")
