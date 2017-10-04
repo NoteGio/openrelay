@@ -37,6 +37,16 @@ func valInList(val [20]byte, list [][20]byte) bool {
 	return false
 }
 
+func returnError(w http.ResponseWriter, errResp IngestError, status int) {
+	w.WriteHeader(status)
+	w.Header().Set("Content-Type", "application/json")
+	errBytes, err := json.Marshal(errResp)
+	if err != nil {
+		log.Printf(err.Error())
+	}
+	w.Write(errBytes)
+}
+
 func Handler(publisher channels.Publisher, accounts accountsModule.AccountService, affiliates affiliatesModule.AffiliateService) func(http.ResponseWriter, *http.Request) {
 	var contentType string
 	ValidExchangeAddresses := [][20]byte{}
@@ -72,33 +82,19 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 			var data [441]byte
 			length, err := r.Body.Read(data[:])
 			if length != 377 {
-				w.WriteHeader(400)
-				w.Header().Set("Content-Type", "application/json")
-				errResp := IngestError{
+				returnError(w, IngestError{
 					100,
 					"Orders should be exactly 377 bytes",
 					nil,
-				}
-				errBytes, err := json.Marshal(errResp)
-				if err != nil {
-					log.Printf(err.Error())
-				}
-				w.Write(errBytes)
+				}, 400)
 				return
 			} else if err != nil && err != io.EOF {
 				log.Printf(err.Error())
-				w.WriteHeader(500)
-				w.Header().Set("Content-Type", "application/json")
-				errResp := IngestError{
+				returnError(w, IngestError{
 					100,
 					"Error reading content",
 					nil,
-				}
-				errBytes, err := json.Marshal(errResp)
-				if err != nil {
-					log.Printf(err.Error())
-				}
-				w.Write(errBytes)
+				}, 500)
 				return
 			}
 			order.FromBytes(data)
@@ -107,58 +103,35 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 			jsonLength, err := r.Body.Read(data[:])
 			if err != nil && err != io.EOF {
 				log.Printf(err.Error())
-				w.WriteHeader(500)
-				w.Header().Set("Content-Type", "application/json")
-				errResp := IngestError{
+				returnError(w, IngestError{
 					100,
 					"Error reading content",
 					nil,
-				}
-				errBytes, err := json.Marshal(errResp)
-				if err != nil {
-					log.Printf(err.Error())
-				}
-				w.Write(errBytes)
+				}, 500)
 				return
 			}
 			if err := json.Unmarshal(data[:jsonLength], &order); err != nil {
-				w.WriteHeader(400)
-				w.Header().Set("Content-Type", "application/json")
 				log.Printf("%v: '%v'", err.Error(), string(data[:]))
-				errResp := IngestError{
+				returnError(w, IngestError{
 					101,
 					"Malformed JSON",
 					nil,
-				}
-				errBytes, err := json.Marshal(errResp)
-				if err != nil {
-					log.Printf(err.Error())
-				}
-				w.Write(errBytes)
+				}, 400)
 				return
 			}
 		} else {
-			w.WriteHeader(415)
-			w.Header().Set("Content-Type", "application/json")
-			errResp := IngestError{
+			returnError(w, IngestError{
 				100,
 				"Unsupported content-type",
 				nil,
-			}
-			errBytes, err := json.Marshal(errResp)
-			if err != nil {
-				log.Printf(err.Error())
-			}
-			w.Write(errBytes)
+			}, 415)
 			return
 		}
 		// At this point we've errored out, or we have an Order object
 		emptyBytes := [20]byte{}
 		if !bytes.Equal(order.Taker[:], emptyBytes[:]) {
 			log.Printf("'%v' != '%v'", hex.EncodeToString(order.Taker[:]), hex.EncodeToString(emptyBytes[:]))
-			w.WriteHeader(400)
-			w.Header().Set("Content-Type", "application/json")
-			errResp := IngestError{
+			returnError(w, IngestError{
 				100,
 				"Validation Failed",
 				[]ValidationError{ValidationError{
@@ -166,18 +139,11 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 						1002,
 						"Taker address must be empty",
 					}},
-			}
-			errBytes, err := json.Marshal(errResp)
-			if err != nil {
-				log.Printf(err.Error())
-			}
-			w.Write(errBytes)
+			}, 400)
 			return
 		}
 		if !valInList(order.ExchangeAddress, ValidExchangeAddresses) {
-			w.WriteHeader(400)
-			w.Header().Set("Content-Type", "application/json")
-			errResp := IngestError{
+			returnError(w, IngestError{
 				100,
 				"Validation Failed",
 				[]ValidationError{ValidationError{
@@ -185,18 +151,11 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 						1002,
 						"Unknown exchangeContractAddress",
 					}},
-			}
-			errBytes, err := json.Marshal(errResp)
-			if err != nil {
-				log.Printf(err.Error())
-			}
-			w.Write(errBytes)
+			}, 400)
 			return
 		}
 		if !order.Signature.Verify(order.Maker) {
-			w.WriteHeader(400)
-			w.Header().Set("Content-Type", "application/json")
-			errResp := IngestError{
+			returnError(w, IngestError{
 				100,
 				"Validation Failed",
 				[]ValidationError{ValidationError{
@@ -204,12 +163,7 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 						1005,
 						"Signature validation failed",
 					}},
-			}
-			errBytes, err := json.Marshal(errResp)
-			if err != nil {
-				log.Printf(err.Error())
-			}
-			w.Write(errBytes)
+			}, 400)
 			return
 		}
 		// Now that we have a complete order, request the account from redis
@@ -233,10 +187,7 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 		totalFee.Add(makerFee, takerFee)
 		feeRecipient := <-affiliateChan
 		if feeRecipient == nil {
-			w.WriteHeader(402)
-			w.Header().Set("Content-Type", "application/json")
-			// Fee Recipient must be an authorized address
-			errResp := IngestError{
+			returnError(w, IngestError{
 				100,
 				"Validation Failed",
 				[]ValidationError{ValidationError{
@@ -244,12 +195,7 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 						1002,
 						"Invalid fee recpient",
 					}},
-			}
-			errBytes, err := json.Marshal(errResp)
-			if err != nil {
-				log.Printf(err.Error())
-			}
-			w.Write(errBytes)
+			}, 402)
 			return
 		}
 		account := <-makerChan
@@ -260,9 +206,7 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 		// maker.Discount()
 		minFee.Sub(feeRecipient.Fee(), account.Discount())
 		if totalFee.Cmp(minFee) < 0 {
-			w.WriteHeader(402)
-			w.Header().Set("Content-Type", "application/json")
-			errResp := IngestError{
+			returnError(w, IngestError{
 				100,
 				"Validation Failed",
 				[]ValidationError{ValidationError{
@@ -276,12 +220,7 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 						"Total fee must be at least: " + minFee.Text(10),
 					},
 				},
-			}
-			errBytes, err := json.Marshal(errResp)
-			if err != nil {
-				log.Printf(err.Error())
-			}
-			w.Write(errBytes)
+			}, 402)
 			return
 		}
 		if account.Blacklisted() {

@@ -37,42 +37,26 @@ func FeeHandler(publisher channels.Publisher, accounts accountsModule.AccountSer
 		jsonLength, err := r.Body.Read(data[:])
 		if err != nil && err != io.EOF {
 			log.Printf(err.Error())
-			w.WriteHeader(500)
-			w.Header().Set("Content-Type", "application/json")
-			errResp := IngestError{
+			returnError(w, IngestError{
 				100,
 				"Error reading content",
 				nil,
-			}
-			errBytes, err := json.Marshal(errResp)
-			if err != nil {
-				log.Printf(err.Error())
-			}
-			w.Write(errBytes)
+			}, 500)
 			return
 		}
 		if err := json.Unmarshal(data[:jsonLength], &feeInput); err != nil {
-			w.WriteHeader(400)
-			w.Header().Set("Content-Type", "application/json")
 			log.Printf("%v: '%v'", err.Error(), string(data[:]))
-			errResp := IngestError{
+			returnError(w, IngestError{
 				101,
 				"Malformed JSON",
 				nil,
-			}
-			errBytes, err := json.Marshal(errResp)
-			if err != nil {
-				log.Printf(err.Error())
-			}
-			w.Write(errBytes)
+			}, 400)
 			return
 		}
 		makerSlice, err := types.HexStringToBytes(feeInput.Maker)
 		if err != nil && feeInput.Maker != "" {
-			w.WriteHeader(400)
-			w.Header().Set("Content-Type", "application/json")
 			log.Printf("%v: '%v'", err.Error(), string(data[:]))
-			errResp := IngestError{
+			returnError(w, IngestError{
 				100,
 				"Validation failed",
 				[]ValidationError{ValidationError{
@@ -81,20 +65,13 @@ func FeeHandler(publisher channels.Publisher, accounts accountsModule.AccountSer
 						"Invalid address format",
 					},
 				},
-			}
-			errBytes, err := json.Marshal(errResp)
-			if err != nil {
-				log.Printf(err.Error())
-			}
-			w.Write(errBytes)
+			}, 400)
 			return
 		}
 		feeRecipientAddressSlice, err := types.HexStringToBytes(feeInput.FeeRecipient)
 		if err != nil && feeInput.FeeRecipient != "" {
-			w.WriteHeader(400)
-			w.Header().Set("Content-Type", "application/json")
 			log.Printf("%v: '%v'", err.Error(), string(data[:]))
-			errResp := IngestError{
+			returnError(w, IngestError{
 				100,
 				"Validation failed",
 				[]ValidationError{ValidationError{
@@ -103,12 +80,7 @@ func FeeHandler(publisher channels.Publisher, accounts accountsModule.AccountSer
 						"Invalid address format",
 					},
 				},
-			}
-			errBytes, err := json.Marshal(errResp)
-			if err != nil {
-				log.Printf(err.Error())
-			}
-			w.Write(errBytes)
+			}, 400)
 			return
 		}
 		makerAddress := [20]byte{}
@@ -132,10 +104,7 @@ func FeeHandler(publisher channels.Publisher, accounts accountsModule.AccountSer
 		go func() { makerChan <- accounts.Get(makerAddress) }()
 		feeRecipient := <-affiliateChan
 		if feeRecipient == nil {
-			w.WriteHeader(402)
-			w.Header().Set("Content-Type", "application/json")
-			// Fee Recipient must be an authorized address
-			errResp := IngestError{
+			returnError(w, IngestError{
 				100,
 				"Validation Failed",
 				[]ValidationError{ValidationError{
@@ -143,12 +112,7 @@ func FeeHandler(publisher channels.Publisher, accounts accountsModule.AccountSer
 						1002,
 						"Invalid fee recpient",
 					}},
-			}
-			errBytes, err := json.Marshal(errResp)
-			if err != nil {
-				log.Printf(err.Error())
-			}
-			w.Write(errBytes)
+			}, 402)
 			return
 		}
 		account := <-makerChan
