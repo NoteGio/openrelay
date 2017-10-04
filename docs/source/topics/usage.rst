@@ -35,6 +35,11 @@ with a few exceptions.
   of a 201 status code. OpenRelay queues orders for additional validation and
   processing between receipt and listing it in the order book, thus it is more
   correct to respond that the order was "Accepted" rather than "Created".
+* When making GET requests against `/v0/orders` or `/v0/order/[order_hash]`,
+  a blockhash parameter is required. If none is provided, you will get a 302
+  redirect to the same resource with the blockhash parameter provided. This is
+  included to improve caching, and leverages the fact that the orderbook will
+  only change as Ethereum blocks complete.
 
 Binary Format
 -------------

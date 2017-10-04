@@ -212,7 +212,7 @@ services:
       context: ./
       dockerfile: Dockerfile.searchapi
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-searchapi
-    command: ["python", "/project/api.py"]
+    command: ["python", "/project/api.py", "${REDIS_HOST:-redis:6379}", "newblocks"]
     ports:
       - "8888:8888"
     environment:
