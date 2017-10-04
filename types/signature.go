@@ -26,7 +26,7 @@ func (sig *Signature) Verify(address [20]byte) bool {
 	sigBytes := make([]byte, 65)
 	copy(sigBytes[32-len(sig.R):32], sig.R[:])
 	copy(sigBytes[64-len(sig.S):64], sig.S[:])
-	sigBytes[64] = byte(int(sig.V)-27)
+	sigBytes[64] = byte(int(sig.V) - 27)
 	hashedBytes := append([]byte("\x19Ethereum Signed Message:\n32"), sig.Hash[:]...)
 	signedBytes := crypto.Keccak256(hashedBytes)
 	pub, err := crypto.Ecrecover(signedBytes, sigBytes)

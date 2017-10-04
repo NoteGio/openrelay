@@ -2,11 +2,11 @@ package funds_test
 
 import (
 	"encoding/hex"
+	gethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/notegio/openrelay/common"
 	"github.com/notegio/openrelay/config"
 	"github.com/notegio/openrelay/funds"
 	"github.com/notegio/openrelay/types"
-	gethCommon "github.com/ethereum/go-ethereum/common"
 	"math/big"
 	"reflect"
 	"testing"

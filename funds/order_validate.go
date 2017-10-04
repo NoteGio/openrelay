@@ -47,8 +47,7 @@ func (funds *orderValidator) checkAllowance(tokenAddress, userAddress [20]byte, 
 	respond <- (requiredInt.Cmp(balance) <= 0)
 }
 
-
-func getRemainingAmount(numerator, denominator, target []byte) ([]byte) {
+func getRemainingAmount(numerator, denominator, target []byte) []byte {
 	numInt := new(big.Int)
 	denomInt := new(big.Int)
 	targetInt := new(big.Int)

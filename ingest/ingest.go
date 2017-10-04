@@ -1,6 +1,7 @@
 package ingest
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -13,19 +14,18 @@ import (
 	"math/big"
 	"net/http"
 	"strings"
-	"bytes"
 )
 
 type IngestError struct {
-	Code int			`json:"code"`
-	Reason string	`json:"reason"`
+	Code             int               `json:"code"`
+	Reason           string            `json:"reason"`
 	ValidationErrors []ValidationError `json:"validationErrors,omitempty"`
 }
 
 type ValidationError struct {
-	Field string	`json:"field"`
-	Code	int	`json:"code"`
-	Reason string	`json:"reason"`
+	Field  string `json:"field"`
+	Code   int    `json:"code"`
+	Reason string `json:"reason"`
 }
 
 func valInList(val [20]byte, list [][20]byte) bool {
@@ -135,10 +135,10 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 				100,
 				"Validation Failed",
 				[]ValidationError{ValidationError{
-						"taker",
-						1002,
-						"Taker address must be empty",
-					}},
+					"taker",
+					1002,
+					"Taker address must be empty",
+				}},
 			}, 400)
 			return
 		}
@@ -147,10 +147,10 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 				100,
 				"Validation Failed",
 				[]ValidationError{ValidationError{
-						"exchangeContractAddress",
-						1002,
-						"Unknown exchangeContractAddress",
-					}},
+					"exchangeContractAddress",
+					1002,
+					"Unknown exchangeContractAddress",
+				}},
 			}, 400)
 			return
 		}
@@ -159,10 +159,10 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 				100,
 				"Validation Failed",
 				[]ValidationError{ValidationError{
-						"ecSignature",
-						1005,
-						"Signature validation failed",
-					}},
+					"ecSignature",
+					1005,
+					"Signature validation failed",
+				}},
 			}, 400)
 			return
 		}
@@ -191,10 +191,10 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 				100,
 				"Validation Failed",
 				[]ValidationError{ValidationError{
-						"feeRecipient",
-						1002,
-						"Invalid fee recpient",
-					}},
+					"feeRecipient",
+					1002,
+					"Invalid fee recpient",
+				}},
 			}, 402)
 			return
 		}
@@ -210,10 +210,10 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 				100,
 				"Validation Failed",
 				[]ValidationError{ValidationError{
-						"makerFee",
-						1004,
-						"Total fee must be at least: " + minFee.Text(10),
-					},
+					"makerFee",
+					1004,
+					"Total fee must be at least: " + minFee.Text(10),
+				},
 					ValidationError{
 						"takerFee",
 						1004,

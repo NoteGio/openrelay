@@ -8,21 +8,21 @@ import (
 
 // Order represents an 0x order object
 type Order struct {
-	Maker                    [20]byte
-	Taker                    [20]byte
-	MakerToken               [20]byte
-	TakerToken               [20]byte
-	FeeRecipient             [20]byte
-	ExchangeAddress          [20]byte
-	MakerTokenAmount         [32]byte
-	TakerTokenAmount         [32]byte
-	MakerFee                 [32]byte
-	TakerFee                 [32]byte
-	ExpirationTimestampInSec [32]byte
-	Salt                     [32]byte
-	Signature                *Signature
-	TakerTokenAmountFilled	 [32]byte
-	TakerTokenAmountCancelled	[32]byte
+	Maker                     [20]byte
+	Taker                     [20]byte
+	MakerToken                [20]byte
+	TakerToken                [20]byte
+	FeeRecipient              [20]byte
+	ExchangeAddress           [20]byte
+	MakerTokenAmount          [32]byte
+	TakerTokenAmount          [32]byte
+	MakerFee                  [32]byte
+	TakerFee                  [32]byte
+	ExpirationTimestampInSec  [32]byte
+	Salt                      [32]byte
+	Signature                 *Signature
+	TakerTokenAmountFilled    [32]byte
+	TakerTokenAmountCancelled [32]byte
 }
 
 // NewOrder takes string representations of values and converts them into an Order object
@@ -144,21 +144,21 @@ func (order *Order) Hash() []byte {
 }
 
 type jsonOrder struct {
-	Maker                    string        `json:"maker"`
-	Taker                    string        `json:"taker"`
-	MakerToken               string        `json:"makerTokenAddress"`
-	TakerToken               string        `json:"takerTokenAddress"`
-	FeeRecipient             string        `json:"feeRecipient"`
-	ExchangeAddress          string        `json:"exchangeContractAddress"`
-	MakerTokenAmount         string        `json:"makerTokenAmount"`
-	TakerTokenAmount         string        `json:"takerTokenAmount"`
-	MakerFee                 string        `json:"makerFee"`
-	TakerFee                 string        `json:"takerFee"`
-	ExpirationTimestampInSec string        `json:"expirationUnixTimestampSec"`
-	Salt                     string        `json:"salt"`
-	Signature                jsonSignature `json:"ecSignature"`
-	TakerTokenAmountFilled   string        `json:"takerTokenAmountFilled"`
-	TakerTokenAmountCancelled string       `json:"takerTokenAmountCancelled"`
+	Maker                     string        `json:"maker"`
+	Taker                     string        `json:"taker"`
+	MakerToken                string        `json:"makerTokenAddress"`
+	TakerToken                string        `json:"takerTokenAddress"`
+	FeeRecipient              string        `json:"feeRecipient"`
+	ExchangeAddress           string        `json:"exchangeContractAddress"`
+	MakerTokenAmount          string        `json:"makerTokenAmount"`
+	TakerTokenAmount          string        `json:"takerTokenAmount"`
+	MakerFee                  string        `json:"makerFee"`
+	TakerFee                  string        `json:"takerFee"`
+	ExpirationTimestampInSec  string        `json:"expirationUnixTimestampSec"`
+	Salt                      string        `json:"salt"`
+	Signature                 jsonSignature `json:"ecSignature"`
+	TakerTokenAmountFilled    string        `json:"takerTokenAmountFilled"`
+	TakerTokenAmountCancelled string        `json:"takerTokenAmountCancelled"`
 }
 
 func (order *Order) UnmarshalJSON(b []byte) error {
@@ -167,10 +167,10 @@ func (order *Order) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	if jOrder.TakerTokenAmountFilled == "" {
-		jOrder.TakerTokenAmountFilled = "0";
+		jOrder.TakerTokenAmountFilled = "0"
 	}
 	if jOrder.TakerTokenAmountCancelled == "" {
-		jOrder.TakerTokenAmountCancelled = "0";
+		jOrder.TakerTokenAmountCancelled = "0"
 	}
 	order.fromStrings(
 		jOrder.Maker,

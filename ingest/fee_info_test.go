@@ -24,7 +24,7 @@ func TestFeeRecipientAndMakerProvided(t *testing.T) {
 	handler(recorder, request)
 	if recorder.Code != 200 {
 		t.Errorf("Expected error code 200, got '%v'", recorder.Code)
-		t.Errorf("Body: '%v'", recorder.Body.String() )
+		t.Errorf("Body: '%v'", recorder.Body.String())
 	}
 	body := recorder.Body.String()
 	if body != "{\"makerFee\":\"0\",\"takerFee\":\"0\",\"feeRecipient\":\"0x0000000000000000000000000000000000000000\",\"takerToSpecify\":\"0x0000000000000000000000000000000000000000\"}" {
@@ -44,7 +44,7 @@ func TestFeeRecipientAndMakerDefault(t *testing.T) {
 	handler(recorder, request)
 	if recorder.Code != 200 {
 		t.Errorf("Expected error code 200, got '%v'", recorder.Code)
-		t.Errorf("Body: '%v'", recorder.Body.String() )
+		t.Errorf("Body: '%v'", recorder.Body.String())
 	}
 	body := recorder.Body.String()
 	if body != "{\"makerFee\":\"0\",\"takerFee\":\"0\",\"feeRecipient\":\"0x0000000000000000000000000000000000000000\",\"takerToSpecify\":\"0x0000000000000000000000000000000000000000\"}" {

@@ -1,9 +1,9 @@
 package funds
 
 import (
+	"encoding/hex"
 	"errors"
 	"math/big"
-	"encoding/hex"
 )
 
 type mockBalanceChecker struct {

@@ -1,30 +1,29 @@
 package ingest
 
 import (
+	"encoding/hex"
+	"encoding/json"
 	accountsModule "github.com/notegio/openrelay/accounts"
 	affiliatesModule "github.com/notegio/openrelay/affiliates"
 	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/types"
-	"math/big"
-	"encoding/json"
-	"encoding/hex"
-	"net/http"
-	"log"
 	"io"
-
+	"log"
+	"math/big"
+	"net/http"
 )
 
 // FeeInputPayload only considers maker and feeRecipient when calculating fees.
 // Everything else will be ignored.
 type FeeInputPayload struct {
-	Maker string `json:"maker"`
+	Maker        string `json:"maker"`
 	FeeRecipient string `json:"feeRecipient"`
 }
 
 type FeeResponse struct {
-	MakerFee string `json:"makerFee"`
-	TakerFee string `json:"takerFee"`
-	FeeRecpient string `json:"feeRecipient"`
+	MakerFee       string `json:"makerFee"`
+	TakerFee       string `json:"takerFee"`
+	FeeRecpient    string `json:"feeRecipient"`
 	TakerToSpecify string `json:"takerToSpecify"`
 }
 
@@ -60,10 +59,10 @@ func FeeHandler(publisher channels.Publisher, accounts accountsModule.AccountSer
 				100,
 				"Validation failed",
 				[]ValidationError{ValidationError{
-						"maker",
-						1001,
-						"Invalid address format",
-					},
+					"maker",
+					1001,
+					"Invalid address format",
+				},
 				},
 			}, 400)
 			return
@@ -75,10 +74,10 @@ func FeeHandler(publisher channels.Publisher, accounts accountsModule.AccountSer
 				100,
 				"Validation failed",
 				[]ValidationError{ValidationError{
-						"feeRecipient",
-						1001,
-						"Invalid address format",
-					},
+					"feeRecipient",
+					1001,
+					"Invalid address format",
+				},
 				},
 			}, 400)
 			return
@@ -108,10 +107,10 @@ func FeeHandler(publisher channels.Publisher, accounts accountsModule.AccountSer
 				100,
 				"Validation Failed",
 				[]ValidationError{ValidationError{
-						"feeRecipient",
-						1002,
-						"Invalid fee recpient",
-					}},
+					"feeRecipient",
+					1002,
+					"Invalid fee recpient",
+				}},
 			}, 402)
 			return
 		}

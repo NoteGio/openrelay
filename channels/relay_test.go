@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-type TestFilter struct { }
+type TestFilter struct{}
 
 func (filter *TestFilter) Filter(delivery channels.Delivery) bool {
 	return delivery.Payload() == "test"
@@ -39,7 +39,7 @@ func TestInvertFilter(t *testing.T) {
 	sourcePublisher.Publish("test")
 	sourcePublisher.Publish("abc")
 	message := <-testConsumer.channel
-if message != "abc" {
+	if message != "abc" {
 		t.Errorf("Message did not get relayed")
 	}
 }

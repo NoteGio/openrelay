@@ -325,7 +325,7 @@ func TestValid(t *testing.T) {
 	handler(recorder, request)
 	if recorder.Code != 202 {
 		t.Errorf("Expected error code 202, got '%v'", recorder.Code)
-		t.Errorf("Body: '%v'", recorder.Body.String() )
+		t.Errorf("Body: '%v'", recorder.Body.String())
 	}
 	if len(publisher.messages) != 1 {
 		t.Errorf("Unexpected message count '%v'", len(publisher.messages))

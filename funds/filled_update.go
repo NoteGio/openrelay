@@ -1,13 +1,13 @@
 package funds
 
 import (
-	"math/big"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/notegio/openrelay/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	orCommon "github.com/notegio/openrelay/common"
-  "github.com/notegio/openrelay/exchangecontract"
+	"github.com/notegio/openrelay/exchangecontract"
+	"github.com/notegio/openrelay/types"
+	"math/big"
 )
 
 type FilledLookup interface {
@@ -52,6 +52,7 @@ func (filled *rpcFilledLookup) GetAmountFilled(order *types.Order) ([32]byte, er
 	copy(filledAmount[:], cancelledSlice)
 	return filledAmount, nil
 }
+
 // TODO: Test FilledChecker
 // TODO: Make FundCheckRelay update order with TakerTokenAmountFilled
 
@@ -65,9 +66,10 @@ func NewRpcFilledLookup(rpcUrl string) (FilledLookup, error) {
 
 type MockFilledLookup struct {
 	cancelled *big.Int
-	filled *big.Int
-	err error
+	filled    *big.Int
+	err       error
 }
+
 func (filled *MockFilledLookup) GetAmountCancelled(order *types.Order) ([32]byte, error) {
 	result := [32]byte{}
 	if filled.err != nil {
@@ -87,7 +89,7 @@ func (filled *MockFilledLookup) GetAmountFilled(order *types.Order) ([32]byte, e
 	return result, nil
 }
 
-func NewMockFilledLookup(cancelled, filled string, err error) FilledLookup{
+func NewMockFilledLookup(cancelled, filled string, err error) FilledLookup {
 	cancelledInt := new(big.Int)
 	cancelledInt.SetString(cancelled, 10)
 	filledInt := new(big.Int)

@@ -8,7 +8,7 @@ import (
 	"reflect"
 )
 
-func doLookup(order *types.Order, oldValue [32]byte, lookupFn func(*types.Order)([32]byte, error), valChan chan [32]byte, changeChan chan bool) {
+func doLookup(order *types.Order, oldValue [32]byte, lookupFn func(*types.Order) ([32]byte, error), valChan chan [32]byte, changeChan chan bool) {
 	value, err := lookupFn(order)
 	if err != nil {
 		log.Printf(err.Error())
@@ -19,9 +19,9 @@ func doLookup(order *types.Order, oldValue [32]byte, lookupFn func(*types.Order)
 }
 
 type FillConsumer struct {
-	allPublisher channels.Publisher
+	allPublisher    channels.Publisher
 	changePublisher channels.Publisher
-	lookup FilledLookup
+	lookup          FilledLookup
 }
 
 func (consumer *FillConsumer) Consume(msg channels.Delivery) {
@@ -33,8 +33,8 @@ func (consumer *FillConsumer) Consume(msg channels.Delivery) {
 	changes := make(chan bool, 2)
 	go doLookup(order, order.TakerTokenAmountCancelled, consumer.lookup.GetAmountCancelled, cancelledChan, changes)
 	go doLookup(order, order.TakerTokenAmountFilled, consumer.lookup.GetAmountFilled, filledChan, changes)
-	order.TakerTokenAmountCancelled = <- cancelledChan
-	order.TakerTokenAmountFilled = <- filledChan
+	order.TakerTokenAmountCancelled = <-cancelledChan
+	order.TakerTokenAmountFilled = <-filledChan
 	orderBytes = order.Bytes()
 	payload := string(orderBytes[:])
 	consumer.allPublisher.Publish(payload)
@@ -43,6 +43,6 @@ func (consumer *FillConsumer) Consume(msg channels.Delivery) {
 	}
 }
 
-func NewFillConsumer(allPublisher channels.Publisher, changePublisher channels.Publisher, lookup FilledLookup) (FillConsumer) {
+func NewFillConsumer(allPublisher channels.Publisher, changePublisher channels.Publisher, lookup FilledLookup) FillConsumer {
 	return FillConsumer{allPublisher, changePublisher, lookup}
 }
