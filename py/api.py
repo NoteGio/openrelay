@@ -5,8 +5,10 @@ import json
 import hashlib
 
 from flask import Flask, request, make_response, redirect
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 # TODO: require blocknumber argument
 

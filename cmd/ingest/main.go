@@ -10,6 +10,7 @@ import (
 	"gopkg.in/redis.v3"
 	"os"
 	"log"
+	"github.com/rs/cors"
 )
 
 func main() {
@@ -39,8 +40,10 @@ func main() {
 	handler := ingest.Handler(publisher, accountService, affiliateService)
 	feeHandler := ingest.FeeHandler(publisher, accountService, affiliateService, defaultFeeRecipientBytes)
 
-	http.HandleFunc("/v0/order", handler)
-	http.HandleFunc("/v0/fees", feeHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v0/order", handler)
+	mux.HandleFunc("/v0/fees", feeHandler)
+	corsHandler := cors.Default().Handler(mux)
 	log.Printf("Serving on :%v", port)
-	http.ListenAndServe(":"+port, nil)
+	http.ListenAndServe(":"+port, corsHandler)
 }
