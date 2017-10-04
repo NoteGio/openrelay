@@ -7,6 +7,7 @@ Welcome to OpenRelay's documentation!
 =====================================
 
 .. toctree::
+   topics/usage
    topics/design
    :maxdepth: 2
    :caption: Contents:
