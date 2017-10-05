@@ -1,7 +1,10 @@
 version: "3"
 services:
   monitor-ethnode:
-    image: ethereum/client-go
+    build:
+      context: ./
+      dockerfile: Dockerfile.ethnode
+    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-ethnode
     ports:
       - "8545"
       - "30303/tcp"
@@ -11,11 +14,13 @@ services:
       placement:
         constraints:
           - engine.labels.enginetype == Ethereum
-    command: "--syncmode=light --rpc --rpcaddr 0.0.0.0"
     volumes:
       - monitor-ethnode-volume:/root/.ethereum
   state-ethnode:
-    image: ethereum/client-go
+    build:
+      context: ./
+      dockerfile: Dockerfile.ethnode
+    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-ethnode
     ports:
       - "8545"
       - "30303/tcp"
@@ -29,7 +34,10 @@ services:
     volumes:
       - state-ethnode-volume:/root/.ethereum
   standby-ethnode:
-    image: ethereum/client-go
+    build:
+      context: ./
+      dockerfile: Dockerfile.ethnode
+    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-ethnode
     ports:
       - "8545"
       - "30303/tcp"
@@ -69,7 +77,7 @@ services:
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-ingest
     ports:
       - "8080:8080"
-    command: ["/ingest", "${REDIS_HOST:-redis:6379}"]
+    command: ["/ingest", "${REDIS_HOST:-redis:6379}", "C22d5b2951DB72B44CFb8089bb8CD374A3c354eA"]
     deploy:
       mode: global
       # endpoint_mode: dnsrr
@@ -77,14 +85,25 @@ services:
         constraints:
           - engine.labels.enginetype == External
 
+  fillupdate:
+    build:
+      context: ./
+      dockerfile: Dockerfile.fillupdate
+    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-fillupdate
+    command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://state-haproxy:8545}", "queue://ingest", "queue://fundcheck"]
+    deploy:
+      mode: global
+      # endpoint_mode: dnsrr
+      placement:
+        constraints:
+          - engine.labels.enginetype == Internal
+
   fundcheckrelay:
     build:
       context: ./
       dockerfile: Dockerfile.fundcheckrelay
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-fundcheckrelay
     command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://state-haproxy:8545}", "queue://ingest", "topic://instant"]
-    depends_on:
-      - state-ethnode
     deploy:
       mode: global
       placement:
@@ -129,8 +148,6 @@ services:
       dockerfile: Dockerfile.blockmonitor
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-blockmonitor
     command: ["./node_modules/.bin/truffle", "exec", "blockMonitor.js", "redis://${REDIS_HOST:-redis:6379}", "topic://newblocks", "--network", "main"]
-    depends_on:
-      - monitor-ethnode
     deploy:
       replicas: 1
       placement:
@@ -142,8 +159,6 @@ services:
       dockerfile: Dockerfile.fillmonitor
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-fillmonitor
     command: ["./node_modules/.bin/truffle", "exec", "exchangeMonitor.js", "redis://${REDIS_HOST:-redis:6379}", "queue://ordersfilled", "0xC22d5b2951DB72B44CFb8089bb8CD374A3c354eA", "--network", "main"]
-    depends_on:
-      - monitor-ethnode
     deploy:
       replicas: 1
       placement:
@@ -153,6 +168,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.fillindexer
+    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-fillindexer
     command: ["python", "/project/fill_indexer.py", "${REDIS_HOST:-redis:6379}", "ordersfilled"]
     environment:
       ORDER_TABLE_NAME: ${ORDER_TABLE_NAME:-Order}
@@ -172,14 +188,23 @@ services:
       placement:
         constraints:
           - engine.labels.enginetype == Internal
+  fillupdate2:
+    build:
+      context: ./
+      dockerfile: Dockerfile.fillupdate
+    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-fillupdate
+    command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://state-haproxy:8545}", "queue://recheck", "queue://recheck2"]
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - engine.labels.enginetype == Internal
   fundcheckrelay2:
     build:
       context: ./
       dockerfile: Dockerfile.fundcheckrelay
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-fundcheckrelay
-    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://state-haproxy:8545}", "queue://recheck", "queue://indexer"]
-    depends_on:
-      - state-ethnode
+    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://state-haproxy:8545}", "queue://recheck2", "queue://indexer"]
     deploy:
       mode: global
       placement:
@@ -223,7 +248,61 @@ services:
       placement:
         constraints:
           - engine.labels.enginetype == External
-
+  ordercheckenqueue:
+    # This node uses dynamodb to continuously requeue orders to be checked
+    # again on an ongoing basis
+    build:
+      context: ./
+      dockerfile: Dockerfile.queueorders
+    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-queueorders
+    environment:
+      ORDER_TABLE_NAME: ${ORDER_TABLE_NAME:-Order}
+    command: ["python", "/project/queue_orders.py", "${REDIS_HOST:-redis:6379}", "continuous_recheck", "-r"]
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - engine.labels.enginetype == Internal
+  fillupdate_continous:
+    # This node makes sure filled / cancelled values are up to date. Any
+    # changes get forwarded to the indexer, and all orders get forwarded to the
+    # inverted fund checker
+    build:
+      context: ./
+      dockerfile: Dockerfile.fillupdate
+    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-fillupdate
+    command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://state-haproxy:8545}", "queue://continuous_recheck", "queue://fund_continuous_recheck", "queue://indexer"]
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - engine.labels.enginetype == Internal
+  fundcheckrelay_continuous:
+    # This fund checker passes on orders that have insufficient funds to be
+    # removed from the index
+    build:
+      context: ./
+      dockerfile: Dockerfile.fundcheckrelay
+    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-fundcheckrelay
+    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://state-haproxy:8545}", "queue://fund_continuous_recheck", "queue://unindexer", "--invert"]
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - engine.labels.enginetype == Internal
+  unindexer:
+    build:
+      context: ./
+      dockerfile: Dockerfile.indexer
+    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-indexer
+    environment:
+      ORDER_TABLE_NAME: ${ORDER_TABLE_NAME:-Order}
+    command: ["python", "/project/indexer.py", "${REDIS_HOST:-redis:6379}", "unindexer", "--unindex"]
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - engine.labels.enginetype == Internal
 
 volumes:
   monitor-ethnode-volume:

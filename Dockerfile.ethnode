@@ -1,0 +1,7 @@
+FROM ethereum/client-go
+
+ADD docker-cfg/run-eth.sh /run-eth.sh
+
+RUN chmod +x /run-eth.sh
+
+ENTRYPOINT ["/run-eth.sh"]
