@@ -46,6 +46,15 @@ module.exports = function(redisClient, notificationChannel, filterCreator, web3,
         var watcher = filterCreator({fromBlock: blockNumber, toBlock: "latest"});
         lastBlockNumber = blockNumber;
         watcher.watch((err, data) => {
+            if(err) {
+                console.log(err);
+                // If we get an error, exit. Docker should restart the process,
+                // and it can go through the resumption process.
+                //
+                // We may need to recover more gracefully, but we'll try this
+                // for now.
+                process.exit(1);
+            }
             currentBlock = web3.eth.blockNumber;
             if(resuming){
                 clearTimeout(resumptionTimeout);

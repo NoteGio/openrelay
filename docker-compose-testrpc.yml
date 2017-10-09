@@ -181,7 +181,7 @@ services:
       DYNAMODB_HOST: http://dynamo:8000
       AWS_ACCESS_KEY_ID: x
       AWS_SECRET_ACCESS_KEY: x
-    command: ["python", "/project/api.py", "${REDIS_HOST:-redis:6379}", "newblocks"]
+    command: ["python", "/project/api.py", "${REDIS_HOST:-redis:6379}", "newblocks", "-l", "debug"]
   ordercheckenqueue:
     # This node uses dynamodb to continuously requeue orders to be checked
     # again on an ongoing basis

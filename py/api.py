@@ -5,14 +5,20 @@ import json
 import hashlib
 import threading
 import argparse
+import logging
 from functools import wraps
 
-from flask import Flask, request, make_response, redirect
+from flask import Flask, request, make_response, url_for
 from flask_cors import CORS
 
 app = Flask(__name__)
+app.config.update({
+    "PREFERRED_URL_SCHEME": "https"
+})
 CORS(app)
 blockhash = "pending"
+
+logger = logging.getLogger(__name__)
 
 
 def format_response(orders, count, accept):
@@ -53,21 +59,31 @@ def req_blockhash(fn):
             if "?" in request.full_path.rstrip("?"):
                 new_path = "%s&blockhash=%s" % (
                     request.full_path.rstrip("?"),
-                    blockhash.decode("utf8").strip('"')
+                    blockhash
                 )
             else:
                 new_path = "%s?blockhash=%s" % (
                     request.full_path.rstrip("?"),
-                    blockhash.decode("utf8").strip('"')
+                    blockhash
                 )
-            return redirect(new_path, 307)
+            if new_path.startswith("http://"):
+                scheme = request.headers.get("X-Forwarded-Proto", "http")
+                new_path = scheme + new_path[len("http"):]
+            resp = make_response('', 307)
+            resp.headers["Location"] = new_path
+            resp.autocorrect_location_header = False
+            logger.debug("redirect to %s" % resp.headers["Location"])
+            return resp
         else:
             return fn(*args, **kwargs)
     return wrapper
 
 @app.route('/')
 def root():
-    return redirect('/v0/orders')
+    resp = make_response('', 302)
+    resp.headers["Location"] = "/v0/orders"
+    resp.autocorrect_location_header = False
+    return resp
 
 @app.route('/v0/orders')
 @req_blockhash
@@ -161,13 +177,16 @@ def populate_blockhash(redis_url, topic_name):
     # Get block number initially. The pubsub channel will give us block hashes,
     # but from a caching perspective they should all be unique, which is the
     # important part.
-    blockhash = r.get("topic://%s::blocknumber" % topic_name)
+    try:
+        blockhash = r.get("topic://%s::blocknumber" % topic_name).decode("utf8")
+    except Exception:
+        pass
     p = r.pubsub()
     p.subscribe(topic_name)
     for message in p.listen():
         if message.get("type") == "message":
             try:
-                blockhash = message["data"]
+                blockhash = json.loads(message["data"])
             except KeyError:
                 pass
 
@@ -177,7 +196,10 @@ if __name__ == "__main__":
     parser.add_argument("redis_url")
     parser.add_argument("topic_name")
     parser.add_argument("--port", type=int, default=8888)
+    parser.add_argument("--log-level", "-l", default="info")
     args = parser.parse_args()
+
+    logging.basicConfig(level=getattr(logging, args.log_level.upper()))
 
     blockhashThread = threading.Thread(
         target=populate_blockhash, args=(args.redis_url, args.topic_name))
