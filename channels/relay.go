@@ -30,7 +30,7 @@ func (filter *InvertFilter) Filter(delivery Delivery) bool {
 
 type Relay struct {
 	consumerChannel ConsumerChannel
-	publisher       Publisher
+	publishers      []Publisher
 	filter          RelayFilter
 }
 
@@ -48,15 +48,17 @@ type RelayConsumer struct {
 
 func (consumer *RelayConsumer) Consume(delivery Delivery) {
 	if consumer.relay.filter.Filter(delivery) {
-		consumer.relay.publisher.Publish(delivery.Payload())
+		for _, publisher := range consumer.relay.publishers {
+			publisher.Publish(delivery.Payload())
+		}
 	}
 	delivery.Ack()
 }
 
-func NewRelay(channel ConsumerChannel, publisher Publisher, filter RelayFilter) Relay {
+func NewRelay(channel ConsumerChannel, publishers []Publisher, filter RelayFilter) Relay {
 	relay := Relay{
 		channel,
-		publisher,
+		publishers,
 		filter,
 	}
 	relay.consumerChannel.AddConsumer(&RelayConsumer{&relay})

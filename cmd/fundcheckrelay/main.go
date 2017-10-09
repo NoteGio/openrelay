@@ -38,7 +38,6 @@ func main() {
 	redisURL := os.Args[1]
 	rpcURL := os.Args[2]
 	src := os.Args[3]
-	dest := os.Args[4]
 	if redisURL == "" {
 		log.Fatalf("Please specify redis URL")
 	}
@@ -48,18 +47,27 @@ func main() {
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: redisURL,
 	})
+	publishers := []channels.Publisher{}
 	consumerChannel, err := channels.ConsumerFromURI(src, redisClient)
 	if err != nil { log.Fatalf(err.Error()) }
-	publisher, err := channels.PublisherFromURI(dest, redisClient)
-	if err != nil { log.Fatalf(err.Error()) }
+	invert := false
+	for _, arg := range os.Args[4:] {
+		if arg == "--invert" {
+			invert = true
+		} else {
+			publisher, err := channels.PublisherFromURI(arg, redisClient)
+			if err != nil { log.Fatalf(err.Error()) }
+			publishers = append(publishers, publisher)
+		}
+	}
 	orderValidator, err := funds.NewRpcOrderValidator(rpcURL, config.NewFeeToken(redisClient), config.NewTokenProxy(redisClient))
 	if err != nil { log.Fatalf(err.Error()) }
 	var fundFilter channels.RelayFilter
 	fundFilter = &FundFilter{orderValidator}
-	if len(os.Args) >= 6 && os.Args[5] == "--invert" {
+	if invert {
 		fundFilter = &channels.InvertFilter{fundFilter}
 	}
-	relay := channels.NewRelay(consumerChannel, publisher, fundFilter)
+	relay := channels.NewRelay(consumerChannel, publishers, fundFilter)
 	log.Printf("Starting")
 	relay.Start()
 	c := make(chan os.Signal, 1)

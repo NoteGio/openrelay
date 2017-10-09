@@ -48,21 +48,10 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.fundcheckrelay
-    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://fundcheck", "topic://instant"]
+    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://fundcheck", "queue://delay1", "topic://instant-broadcast"]
     depends_on:
       - redis
       - ethnode
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: on-failure
-  simplerelay:
-    build:
-      context: ./
-      dockerfile: Dockerfile.simplerelay
-    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "topic://instant", "queue://delay1"]
-    depends_on:
-      - redis
     deploy:
       replicas: 1
       restart_policy:
@@ -71,7 +60,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.delayrelay
-    command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "queue://delay1", "queue://delay2", "queue://delay1trigger"]
+    command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "queue://delay1", "queue://delay2", "topic://delay1trigger"]
     depends_on:
       - redis
     deploy:
@@ -82,7 +71,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.delayrelay
-    command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "queue://delay2", "topic://released", "topic://newblocks", "queue://delay1trigger"]
+    command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "queue://delay2", "queue://released", "topic://newblocks", "topic://delay1trigger"]
     depends_on:
       - redis
     deploy:
@@ -123,7 +112,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.simplerelay
-    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "topic://released", "queue://recheck"]
+    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://released", "queue://recheck", "topic://released-broadcast"]
     depends_on:
       - redis
     deploy:

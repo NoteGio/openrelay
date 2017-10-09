@@ -40,7 +40,7 @@ func NewDelayRelay(sourcePublisher Publisher, channel ConsumerChannel, publisher
 	relay := DelayRelay{
 		&Relay{
 			channel,
-			publisher,
+			[]Publisher{publisher},
 			&DelayRelayFilter{sentinel, delayChan},
 		},
 		sourcePublisher,

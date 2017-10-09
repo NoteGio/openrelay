@@ -11,7 +11,6 @@ import (
 func main() {
 	redisURL := os.Args[1]
 	src := os.Args[2]
-	dest := os.Args[3]
 	if redisURL == "" {
 		log.Fatalf("Please specify redis URL")
 	}
@@ -20,9 +19,13 @@ func main() {
 	})
 	consumerChannel, err := channels.ConsumerFromURI(src, redisClient)
 	if err != nil { log.Fatalf(err.Error())}
-	publisher, err := channels.PublisherFromURI(dest, redisClient)
-	if err != nil { log.Fatalf(err.Error())}
-	relay := channels.NewRelay(consumerChannel, publisher, &channels.IncludeAll{})
+	publishers := []channels.Publisher{}
+	for _, arg := range os.Args[3:] {
+		publisher, err := channels.PublisherFromURI(arg, redisClient)
+		if err != nil { log.Fatalf(err.Error())}
+		publishers = append(publishers, publisher)
+	}
+	relay := channels.NewRelay(consumerChannel, publishers, &channels.IncludeAll{})
 	log.Printf("Starting")
 	relay.Start()
 	c := make(chan os.Signal, 1)

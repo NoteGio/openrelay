@@ -103,20 +103,9 @@ services:
       context: ./
       dockerfile: Dockerfile.fundcheckrelay
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-fundcheckrelay
-    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://state-haproxy:8545}", "queue://ingest", "topic://instant"]
+    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://state-haproxy:8545}", "queue://ingest", "queue://delay1", "topic://instant-broadcast"]
     deploy:
       mode: global
-      placement:
-        constraints:
-          - engine.labels.enginetype == Internal
-  simplerelay:
-    build:
-      context: ./
-      dockerfile: Dockerfile.simplerelay
-    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-simplerelay
-    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "topic://instant", "queue://delay1"]
-    deploy:
-      replicas: 1
       placement:
         constraints:
           - engine.labels.enginetype == Internal
@@ -127,7 +116,7 @@ services:
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-delayrelay
     command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "queue://delay1", "queue://delay2", "topic://delay1trigger"]
     deploy:
-      replicas: 2
+      mode: global
       placement:
         constraints:
           - engine.labels.enginetype == Internal
@@ -136,9 +125,9 @@ services:
       context: ./
       dockerfile: Dockerfile.delayrelay
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-delayrelay
-    command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "queue://delay2", "topic://released", "topic://newblocks", "topic://delay1trigger"]
+    command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "queue://delay2", "queue://released", "topic://newblocks", "topic://delay1trigger"]
     deploy:
-      replicas: 2
+      mode: global
       placement:
         constraints:
           - engine.labels.enginetype == Internal
@@ -182,9 +171,9 @@ services:
       context: ./
       dockerfile: Dockerfile.simplerelay
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-simplerelay
-    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "topic://released", "queue://recheck"]
+    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://released", "queue://recheck", "topic://released-broadcast"]
     deploy:
-      replicas: 1
+      mode: global
       placement:
         constraints:
           - engine.labels.enginetype == Internal
