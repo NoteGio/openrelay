@@ -72,6 +72,8 @@ def req_blockhash(fn):
             resp = make_response('', 307)
             resp.headers["Location"] = new_path
             resp.autocorrect_location_header = False
+            resp.cache_control.max_age = 5
+            resp.cache_control.public = True
             logger.debug("redirect to %s" % resp.headers["Location"])
             return resp
         else:
