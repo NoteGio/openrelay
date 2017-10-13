@@ -68,7 +68,7 @@ func main() {
 		fundFilter = &channels.InvertFilter{fundFilter}
 	}
 	relay := channels.NewRelay(consumerChannel, publishers, fundFilter)
-	log.Printf("Starting")
+	log.Printf("Starting fundcheck")
 	relay.Start()
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)

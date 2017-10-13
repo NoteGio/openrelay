@@ -103,7 +103,7 @@ services:
       context: ./
       dockerfile: Dockerfile.fundcheckrelay
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-fundcheckrelay
-    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://state-haproxy:8545}", "queue://ingest", "queue://delay1", "topic://instant-broadcast"]
+    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://state-haproxy:8545}", "queue://fundcheck", "queue://delay1", "topic://instant-broadcast"]
     deploy:
       mode: global
       placement:

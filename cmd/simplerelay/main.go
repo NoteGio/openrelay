@@ -26,7 +26,7 @@ func main() {
 		publishers = append(publishers, publisher)
 	}
 	relay := channels.NewRelay(consumerChannel, publishers, &channels.IncludeAll{})
-	log.Printf("Starting")
+	log.Printf("Starting simple relay '%v' -> '%v'", src, os.Args[3:])
 	relay.Start()
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)

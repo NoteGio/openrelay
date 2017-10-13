@@ -43,7 +43,7 @@ func main() {
 	fillConsumer := funds.NewFillConsumer(allPublisher, changePublisher, lookup)
 	consumerChannel.AddConsumer(&fillConsumer)
 	consumerChannel.StartConsuming()
-	log.Printf("Starting to consume on '%v'", src)
+	log.Printf("Starting fillupdate consumer on '%v'", src)
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	for _ = range c {

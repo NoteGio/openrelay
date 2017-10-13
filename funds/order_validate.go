@@ -64,6 +64,7 @@ func getRemainingAmount(numerator, denominator, target []byte) []byte {
 func (funds *orderValidator) ValidateOrder(order *types.Order) bool {
 	feeToken, err := funds.feeToken.Get() //common.HexToAddress("0xe41d2489571d322189246dafa5ebde1f4699f498")
 	if err != nil {
+		log.Printf("Error getting fee token '%v'", err.Error())
 		return false
 	}
 	makerChan := make(chan bool)

@@ -65,7 +65,7 @@ func main() {
 	}
 
 	relay := channels.NewDelayRelay(sourcePublisher, sourceChannel, destPublisher, "pause")
-	log.Printf("started")
+	log.Printf("Starting delayrelay '%v' - '%v'", src, dest)
 	relay.Start()
 	signalConsumer.AddConsumer(&DelayConsumer{&relay, signalPublisher})
 	signalConsumer.StartConsuming()
