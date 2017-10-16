@@ -140,7 +140,7 @@ any other relay implementing the
     var openrelayBaseURL = "https://api.openrelay.xyz";
     var feePromise = rp({
         method: 'POST',
-        uri: openrelayBaseURL + "/v0/fees",
+        uri: openrelayBaseURL + "/v0.0/fees",
         body: order,
         json: true,
     }).then((feeResponse) => {
@@ -261,7 +261,7 @@ library:
 
     rp({
         method: 'POST',
-        uri: openrelayBaseURL + "/v0/order",
+        uri: openrelayBaseURL + "/v0.0/order",
         body: order,
         json: true,
     })
@@ -285,7 +285,7 @@ request-promise library from the previous tutorial,
 
     rp({
         method: 'GET',
-        uri: openrelayBaseURL + "/v0/orders",
+        uri: openrelayBaseURL + "/v0.0/orders",
         json: true,
     }).then((orders) => {
         for(var order of orders) {
@@ -309,7 +309,7 @@ could search for:
 
     rp({
         method: 'GET',
-        uri: openrelayBaseURL + "/v0/orders?makerTokenAddress=0xe41d2489571d322189246dafa5ebde1f4699f498&takerTokenAddress=0x2956356cd2a2bf3202f771f50d3d14a367b48070",
+        uri: openrelayBaseURL + "/v0.0/orders?makerTokenAddress=0xe41d2489571d322189246dafa5ebde1f4699f498&takerTokenAddress=0x2956356cd2a2bf3202f771f50d3d14a367b48070",
         json: true,
     }).then((orders) => {
         for(var order of orders) {

@@ -18,7 +18,7 @@ func TestFeeRecipientAndMakerProvided(t *testing.T) {
 		[]byte("{\"maker\": \"0x0000000000000000000000000000000000000000\", \"feeRecipient\": \"0000000000000000000000000000000000000000\", \"takerTokenAmount\": \"100\", \"makerTokenAmount\": \"100\"}"),
 		nil,
 	}
-	request, _ := http.NewRequest("POST", "/v0/fees", reader)
+	request, _ := http.NewRequest("POST", "/v0.0/fees", reader)
 	request.Header["Content-Type"] = []string{"application/json"}
 	recorder := httptest.NewRecorder()
 	handler(recorder, request)
@@ -38,7 +38,7 @@ func TestFeeRecipientAndMakerDefault(t *testing.T) {
 		[]byte("{\"takerTokenAmount\": \"100\", \"makerTokenAmount\": \"100\"}"),
 		nil,
 	}
-	request, _ := http.NewRequest("POST", "/v0/fees", reader)
+	request, _ := http.NewRequest("POST", "/v0.0/fees", reader)
 	request.Header["Content-Type"] = []string{"application/json"}
 	recorder := httptest.NewRecorder()
 	handler(recorder, request)
