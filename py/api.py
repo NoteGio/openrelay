@@ -83,11 +83,11 @@ def req_blockhash(fn):
 @app.route('/')
 def root():
     resp = make_response('', 302)
-    resp.headers["Location"] = "/v0/orders"
+    resp.headers["Location"] = "/v0.0/orders"
     resp.autocorrect_location_header = False
     return resp
 
-@app.route('/v0/orders')
+@app.route('/v0.0/orders')
 @req_blockhash
 def orders():
     for field in UNSUPPORTED_FIELDS:
@@ -120,7 +120,7 @@ def orders():
         request.headers.get("Accept", "")
     )
 
-@app.route('/v0/order/<order_hash>')
+@app.route('/v0.0/order/<order_hash>')
 @req_blockhash
 def single_order(order_hash):
     order = dynamo.DynamoOrder.get(util.hexStringToBytes(order_hash))

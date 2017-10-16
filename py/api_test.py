@@ -21,7 +21,7 @@ class ApiTestCase(unittest.TestCase):
         with self.app.app_context():
             res = api.format_response(self.orders, 25, "application/json")
             data = json.loads(res.data.decode("utf8"))
-            for order_dict, dynamo_order in zip(data["orders"], self.orders):
+            for order_dict, dynamo_order in zip(data, self.orders):
                 self.assertEqual(
                     order_dict["makerTokenAddress"],
                     util.bytesToHexString(dynamo_order.makerToken)
@@ -38,8 +38,8 @@ class ApiTestCase(unittest.TestCase):
     def test_format_orders_bin(self):
         with self.app.app_context():
             res = api.format_response(self.orders, 25, "application/octet-stream")
-            bin_orders = [res.data[409*i:409*(i+1)]
-                          for i in range(len(res.data) // 409)]
+            bin_orders = [res.data[441*i:441*(i+1)]
+                          for i in range(len(res.data) // 441)]
 
             for bin_order, dynamo_order in zip(bin_orders, self.orders):
                 cmp_order = order.Order.FromBytes(bin_order)
