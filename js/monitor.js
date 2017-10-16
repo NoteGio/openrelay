@@ -48,6 +48,8 @@ module.exports = function(redisClient, notificationChannel, filterCreator, web3,
         watcher.watch((err, data) => {
             if(err) {
                 console.log(err);
+                var stack = new Error().stack
+                console.log( stack )
                 // If we get an error, exit. Docker should restart the process,
                 // and it can go through the resumption process.
                 //

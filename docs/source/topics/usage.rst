@@ -53,7 +53,7 @@ Binary Format
 -------------
 
 In addition to the JSON format from the 0x Standard Relayer API, OpenRelay
-supports a binary format which uses less bandwidth and hash shorter processing
+supports a binary format which uses less bandwidth and has shorter processing
 times. That binary format consists of:
 
     ============ ========== ========================== =========

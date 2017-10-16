@@ -71,7 +71,10 @@ gotest: testredis
 
 pytest: testdynamo
 	cd $(BASE)/py && DYNAMODB_HOST="http://localhost:8000" $(BASE)/py/.env/bin/nosetests
+	docker stop `cat $(BASE)/tmp/dynamo.containerid`
 	docker rm `cat $(BASE)/tmp/dynamo.containerid`
 
+jstest: testredis
+	cd $(BASE)/js && REDIS_URL=localhost:6379 node_modules/.bin/mocha
 
-test: gotest pytest
+test: jstest gotest pytest

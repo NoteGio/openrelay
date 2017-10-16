@@ -55,7 +55,7 @@ describe('MockMonitor', () => {
             var filter = new MockFilter();
             var channel = publishers.FromURI(null, "mock://testresumption");
             monitor(redisClient, "mock://testresumption", () => {return filter}, web3, passthrough).then(() => {
-                filter.trigger("message");
+                filter.trigger(null, "message");
                 return tick();
             }).then(() => {
                 assert.equal(channel.messages.length, 0);
@@ -69,7 +69,7 @@ describe('MockMonitor', () => {
                     }, 5001)
                 });
             }).then(() => {
-                filter.trigger("message2");
+                filter.trigger(null, "message2");
                 return tick();
             }).then(() => {
                 assert.equal(channel.messages.length, 2);
@@ -82,7 +82,7 @@ describe('MockMonitor', () => {
             var filter = new MockFilter();
             var channel = publishers.FromURI(null, "mock://testinitialize");
             monitor(redisClient, "mock://testinitialize", () => {return filter}, web3, passthrough).then(() => {
-                filter.trigger("message");
+                filter.trigger(null, "message");
                 return tick();
             }).then(() => {
                 assert.equal(channel.messages.length, 1);
