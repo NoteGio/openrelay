@@ -25,7 +25,7 @@ func (filter *FundFilter) Filter(delivery channels.Delivery) bool {
 		log.Printf("Invalid order signature");
 		return false;
 	}
-	valid := filter.orderValidator.ValidateOrder(order)
+	valid, err := filter.orderValidator.ValidateOrder(order)
 	if valid {
 		log.Printf("Order '%v' has funds", hex.EncodeToString(order.Hash()))
 	} else {

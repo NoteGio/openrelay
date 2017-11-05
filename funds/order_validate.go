@@ -6,10 +6,13 @@ import (
 	"github.com/notegio/openrelay/types"
 	"log"
 	"math/big"
+	"encoding/json"
+	"net/url"
+	"fmt"
 )
 
 type OrderValidator interface {
-	ValidateOrder(order *types.Order) bool
+	ValidateOrder(order *types.Order) (bool, error)
 }
 
 type orderValidator struct {
@@ -18,33 +21,38 @@ type orderValidator struct {
 	tokenProxy     config.TokenProxy
 }
 
-func (funds *orderValidator) checkBalance(tokenAddress, userAddress [20]byte, required []byte, respond chan bool) {
+type boolOrErr struct {
+	success bool
+	err error
+}
+
+func (funds *orderValidator) checkBalance(tokenAddress, userAddress [20]byte, required []byte, respond chan boolOrErr) {
 	requiredInt := new(big.Int)
 	requiredInt.SetBytes(required[:])
 	balance, err := funds.balanceChecker.GetBalance(tokenAddress, userAddress)
 	if err != nil {
 		log.Printf("'%v': '%v', '%v'", err.Error(), hex.EncodeToString(tokenAddress[:]), hex.EncodeToString(userAddress[:]))
-		respond <- false
+		respond <- boolOrErr{false, err}
 		return
 	}
-	respond <- (requiredInt.Cmp(balance) <= 0)
+	respond <- boolOrErr{(requiredInt.Cmp(balance) <= 0), nil}
 }
 
-func (funds *orderValidator) checkAllowance(tokenAddress, userAddress [20]byte, required []byte, respond chan bool) {
+func (funds *orderValidator) checkAllowance(tokenAddress, userAddress [20]byte, required []byte, respond chan boolOrErr) {
 	requiredInt := new(big.Int)
 	requiredInt.SetBytes(required[:])
 	proxyAddress, err := funds.tokenProxy.Get()
 	if err != nil {
-		respond <- false
+		respond <- boolOrErr{false, err}
 		return
 	}
 	balance, err := funds.balanceChecker.GetAllowance(tokenAddress, userAddress, proxyAddress)
 	if err != nil {
 		log.Printf("'%v': '%v', '%v'", err.Error(), hex.EncodeToString(tokenAddress[:]), hex.EncodeToString(userAddress[:]))
-		respond <- false
+		respond <- boolOrErr{false, err}
 		return
 	}
-	respond <- (requiredInt.Cmp(balance) <= 0)
+	respond <- boolOrErr{(requiredInt.Cmp(balance) <= 0), nil}
 }
 
 func getRemainingAmount(numerator, denominator, target []byte) []byte {
@@ -61,16 +69,16 @@ func getRemainingAmount(numerator, denominator, target []byte) []byte {
 // ValidateOrder makes sure that the maker of an order has sufficient funds to
 // fill the order and pay makerFees. This assumes that TakerAmountFilled and
 // TakerAmountCancelled reflect
-func (funds *orderValidator) ValidateOrder(order *types.Order) bool {
+func (funds *orderValidator) ValidateOrder(order *types.Order) (bool, error) {
 	feeToken, err := funds.feeToken.Get() //common.HexToAddress("0xe41d2489571d322189246dafa5ebde1f4699f498")
 	if err != nil {
 		log.Printf("Error getting fee token '%v'", err.Error())
-		return false
+		return false, err
 	}
-	makerChan := make(chan bool)
-	feeChan := make(chan bool)
-	makerAllowanceChan := make(chan bool)
-	feeAllowanceChan := make(chan bool)
+	makerChan := make(chan boolOrErr)
+	feeChan := make(chan boolOrErr)
+	makerAllowanceChan := make(chan boolOrErr)
+	feeAllowanceChan := make(chan boolOrErr)
 	unavailableAmount := new(big.Int)
 	cancelledAmount := new(big.Int)
 	cancelledAmount.SetBytes(order.TakerTokenAmountCancelled[:])
@@ -101,23 +109,55 @@ func (funds *orderValidator) ValidateOrder(order *types.Order) bool {
 		feeAllowanceChan,
 	)
 	result := true
-	if !<-makerChan {
+	if chanResult := <-makerChan; !chanResult.success{
 		log.Printf("Insufficient maker token funds")
+		if chanResult.err != nil {
+			switch v := chanResult.err.(type) {
+			case *json.SyntaxError, *url.Error:
+				panic(fmt.Sprintf("RPC Communication Failed: '%v'", v))
+			default:
+				return false, chanResult.err
+			}
+		}
 		result = false
 	}
-	if !<-feeChan {
+	if chanResult := <-feeChan; !chanResult.success {
 		log.Printf("Insufficient fee token funds")
+		if chanResult.err != nil {
+			switch v := chanResult.err.(type) {
+			case *json.SyntaxError, *url.Error:
+				panic(fmt.Sprintf("RPC Communication Failed: '%v'", v))
+			default:
+				return false, chanResult.err
+			}
+		}
 		result = false
 	}
-	if !<-makerAllowanceChan {
+	if chanResult := <-makerAllowanceChan; !chanResult.success {
 		log.Printf("Insufficient maker token allowance")
+		if chanResult.err != nil {
+			switch v := chanResult.err.(type) {
+			case *json.SyntaxError, *url.Error:
+				panic(fmt.Sprintf("RPC Communication Failed: '%v'", v))
+			default:
+				return false, chanResult.err
+			}
+		}
 		result = false
 	}
-	if !<-feeAllowanceChan {
+	if chanResult := <-feeAllowanceChan; !chanResult.success {
 		log.Printf("Insufficient fee token allowance")
+		if chanResult.err != nil {
+			switch v := chanResult.err.(type) {
+			case *json.SyntaxError, *url.Error:
+				panic(fmt.Sprintf("RPC Communication Failed: '%v'", v))
+			default:
+				return false, chanResult.err
+			}
+		}
 		result = false
 	}
-	return result
+	return result, nil
 }
 
 func NewRpcOrderValidator(rpcUrl string, feeToken config.FeeToken, tokenProxy config.TokenProxy) (OrderValidator, error) {

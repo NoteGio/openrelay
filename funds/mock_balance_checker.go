@@ -36,3 +36,19 @@ func (funds *mockBalanceChecker) GetAllowance(tokenAddrBytes, userAddrBytes, sen
 func NewMockBalanceChecker(balanceMap map[[20]byte]map[[20]byte]*big.Int) BalanceChecker {
 	return &mockBalanceChecker{balanceMap}
 }
+
+type errorMockBalanceChecker struct {
+	err error
+}
+
+func (funds *errorMockBalanceChecker) GetBalance(tokenAddrBytes, userAddrBytes [20]byte) (*big.Int, error) {
+	return nil, funds.err
+}
+
+func (funds *errorMockBalanceChecker) GetAllowance(tokenAddrBytes, userAddrBytes, senderAddress [20]byte) (*big.Int, error) {
+	return nil, funds.err
+}
+
+func NewErrorMockBalanceChecker(err error) BalanceChecker {
+	return &errorMockBalanceChecker{err}
+}
