@@ -45,11 +45,11 @@ bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize 
 truffleCompile:
 	cd $(BASE)/js ; node_modules/.bin/truffle compile
 
-testredis:
+testredis: $(BASE)/tmp/redis.containerid
 	mkdir -p $(BASE)/tmp
 	docker run -d -p 6379:6379 redis  > $(BASE)/tmp/redis.containerid
 
-testdynamo:
+testdynamo: $(BASE)/tmp/dynamo.containerid
 	mkdir -p $(BASE)/tmp
 	docker run -d -p 8000:8000 cnadiminti/dynamodb-local > $(BASE)/tmp/dynamo.containerid
 
