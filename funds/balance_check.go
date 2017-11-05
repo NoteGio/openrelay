@@ -40,6 +40,9 @@ func NewRpcBalanceChecker(rpcUrl string) (BalanceChecker, error) {
 		return nil, err
 	}
 	if _, err = conn.HeaderByNumber(context.Background(), nil); err != nil {
+		// This is just here so that an RpcBalanceChecker can't be instantiated
+		// successfully if the RPC server isn't responding properly. What RPC
+		// function we call isn't important, but HeaderByNumber is pretty cheap.
 		return nil, err
 	}
 	return &rpcBalanceChecker{conn}, nil
