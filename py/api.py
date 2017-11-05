@@ -173,6 +173,25 @@ def pair_search(maker_token, taker_token):
     )
     return format_response(orders, count, request.headers.get("Accept", ""))
 
+@app.before_request
+def before_request():
+    logger.debug('%s %s %s %s pending',
+                  request.remote_addr,
+                  request.method,
+                  request.scheme,
+                  request.full_path)
+
+@app.after_request
+def after_request(response):
+    logger.debug('%s %s %s %s %s',
+                  request.remote_addr,
+                  request.method,
+                  request.scheme,
+                  request.full_path,
+                  response.status)
+    return response
+
+
 def populate_blockhash(redis_url, topic_name):
     global blockhash
     r = util.get_redis_client(redis_url)
