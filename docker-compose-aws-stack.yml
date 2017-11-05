@@ -5,6 +5,11 @@ services:
       context: ./
       dockerfile: Dockerfile.ethnode
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-ethnode
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: monitor-ethnode
+        # awslogs-create-group: "true"
     ports:
       - "8545"
       - "30303/tcp"
@@ -21,6 +26,11 @@ services:
       context: ./
       dockerfile: Dockerfile.ethnode
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-ethnode
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: state-ethnode
+        # awslogs-create-group: "true"
     ports:
       - "8545"
       - "30303/tcp"
@@ -38,6 +48,11 @@ services:
       context: ./
       dockerfile: Dockerfile.ethnode
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-ethnode
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: standby-ethnode
+        # awslogs-create-group: "true"
     ports:
       - "8545"
       - "30303/tcp"
@@ -55,6 +70,11 @@ services:
       context: ./
       dockerfile: Dockerfile.monproxy
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-monproxy
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: monproxy
+        # awslogs-create-group: "true"
     deploy:
       mode: global
       placement:
@@ -65,6 +85,11 @@ services:
       context: ./
       dockerfile: Dockerfile.stateproxy
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-stateproxy
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: stateproxy
+        # awslogs-create-group: "true"
     deploy:
       mode: global
       placement:
@@ -75,6 +100,11 @@ services:
       context: ./
       dockerfile: Dockerfile.ingest
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-ingest
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: ingest
+        # awslogs-create-group: "true"
     ports:
       - "8080:8080"
     command: ["/ingest", "${REDIS_HOST:-redis:6379}", "C22d5b2951DB72B44CFb8089bb8CD374A3c354eA"]
@@ -90,6 +120,11 @@ services:
       context: ./
       dockerfile: Dockerfile.fillupdate
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-fillupdate
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: fillupdate
+        # awslogs-create-group: "true"
     command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://state-haproxy:8545}", "queue://ingest", "queue://fundcheck"]
     deploy:
       mode: global
@@ -103,6 +138,11 @@ services:
       context: ./
       dockerfile: Dockerfile.fundcheckrelay
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-fundcheckrelay
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: fundcheckrelay
+        # awslogs-create-group: "true"
     command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://state-haproxy:8545}", "queue://fundcheck", "queue://delay1", "topic://instant-broadcast"]
     deploy:
       mode: global
@@ -114,6 +154,11 @@ services:
       context: ./
       dockerfile: Dockerfile.delayrelay
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-delayrelay
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: delayrelay1
+        # awslogs-create-group: "true"
     command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "queue://delay1", "queue://delay2", "topic://delay1trigger"]
     deploy:
       mode: global
@@ -125,6 +170,11 @@ services:
       context: ./
       dockerfile: Dockerfile.delayrelay
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-delayrelay
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: delayrelay2
+        # awslogs-create-group: "true"
     command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "queue://delay2", "queue://released", "topic://newblocks", "topic://delay1trigger"]
     deploy:
       mode: global
@@ -136,6 +186,11 @@ services:
       context: ./
       dockerfile: Dockerfile.blockmonitor
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-blockmonitor
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: blockmonitor
+        # awslogs-create-group: "true"
     command: ["./node_modules/.bin/truffle", "exec", "blockMonitor.js", "redis://${REDIS_HOST:-redis:6379}", "topic://newblocks", "--network", "main"]
     deploy:
       replicas: 1
@@ -147,6 +202,11 @@ services:
       context: ./
       dockerfile: Dockerfile.fillmonitor
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-fillmonitor
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: fillmonitor
+        # awslogs-create-group: "true"
     command: ["./node_modules/.bin/truffle", "exec", "exchangeMonitor.js", "redis://${REDIS_HOST:-redis:6379}", "queue://ordersfilled", "0xC22d5b2951DB72B44CFb8089bb8CD374A3c354eA", "--network", "main"]
     deploy:
       replicas: 1
@@ -158,6 +218,11 @@ services:
       context: ./
       dockerfile: Dockerfile.fillindexer
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-fillindexer
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: fillindexer
+        # awslogs-create-group: "true"
     command: ["python", "/project/fill_indexer.py", "${REDIS_HOST:-redis:6379}", "ordersfilled"]
     environment:
       ORDER_TABLE_NAME: ${ORDER_TABLE_NAME:-Order}
@@ -171,6 +236,11 @@ services:
       context: ./
       dockerfile: Dockerfile.simplerelay
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-simplerelay
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: simplerelay2
+        # awslogs-create-group: "true"
     command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://released", "queue://recheck", "topic://released-broadcast"]
     deploy:
       mode: global
@@ -182,6 +252,11 @@ services:
       context: ./
       dockerfile: Dockerfile.fillupdate
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-fillupdate
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: fillupdate2
+        # awslogs-create-group: "true"
     command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://state-haproxy:8545}", "queue://recheck", "queue://recheck2"]
     deploy:
       mode: global
@@ -193,6 +268,11 @@ services:
       context: ./
       dockerfile: Dockerfile.fundcheckrelay
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-fundcheckrelay
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: fundcheckrelay2
+        # awslogs-create-group: "true"
     command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://state-haproxy:8545}", "queue://recheck2", "queue://indexer"]
     deploy:
       mode: global
@@ -204,6 +284,11 @@ services:
       context: ./
       dockerfile: Dockerfile.initialize
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-initialize
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: initialize
+        # awslogs-create-group: "true"
     command: ["/initialize", "${REDIS_HOST:-redis:6379}", "${ZRX_FEE:-500000000000000000}", "${RELAY_ADDRESS:-C22d5b2951DB72B44CFb8089bb8CD374A3c354eA}"]
     deploy:
       restart_policy:
@@ -213,6 +298,11 @@ services:
       context: ./
       dockerfile: Dockerfile.indexer
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-indexer
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: indexer
+        # awslogs-create-group: "true"
     command: ["python", "/project/indexer.py", "${REDIS_HOST:-redis:6379}", "indexer"]
     environment:
       ORDER_TABLE_NAME: ${ORDER_TABLE_NAME:-Order}
@@ -226,7 +316,12 @@ services:
       context: ./
       dockerfile: Dockerfile.searchapi
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-searchapi
-    command: ["python", "/project/api.py", "${REDIS_HOST:-redis:6379}", "newblocks"]
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: searchapi
+        # awslogs-create-group: "true"
+    command: ["python", "/project/api.py", "${REDIS_HOST:-redis:6379}", "newblocks", "-l", "debug"]
     ports:
       - "8888:8888"
     environment:
@@ -244,6 +339,11 @@ services:
       context: ./
       dockerfile: Dockerfile.queueorders
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-queueorders
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: queueorders
+        # awslogs-create-group: "true"
     environment:
       ORDER_TABLE_NAME: ${ORDER_TABLE_NAME:-Order}
     command: ["python", "/project/queue_orders.py", "${REDIS_HOST:-redis:6379}", "continuous_recheck", "-r"]
@@ -260,6 +360,11 @@ services:
       context: ./
       dockerfile: Dockerfile.fillupdate
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-fillupdate
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: fillupdate-continuous
+        # awslogs-create-group: "true"
     command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://state-haproxy:8545}", "queue://continuous_recheck", "queue://fund_continuous_recheck", "queue://indexer"]
     deploy:
       mode: global
@@ -273,6 +378,11 @@ services:
       context: ./
       dockerfile: Dockerfile.fundcheckrelay
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-fundcheckrelay
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: fundcheckrelay-continuous
+        # awslogs-create-group: "true"
     command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://state-haproxy:8545}", "queue://fund_continuous_recheck", "queue://unindexer", "--invert"]
     deploy:
       mode: global
@@ -284,6 +394,11 @@ services:
       context: ./
       dockerfile: Dockerfile.indexer
     image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-indexer
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: unindexer
+        # awslogs-create-group: "true"
     environment:
       ORDER_TABLE_NAME: ${ORDER_TABLE_NAME:-Order}
     command: ["python", "/project/indexer.py", "${REDIS_HOST:-redis:6379}", "unindexer", "--unindex"]
