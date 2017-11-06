@@ -61,7 +61,9 @@ func main() {
 		}
 	}
 	orderValidator, err := funds.NewRpcOrderValidator(rpcURL, config.NewFeeToken(redisClient), config.NewTokenProxy(redisClient))
-	if err != nil { log.Fatalf(err.Error()) }
+	if err != nil {
+		log.Fatalf("Error creating RpcOrderValidator: '%v'", err.Error())
+	}
 	var fundFilter channels.RelayFilter
 	fundFilter = &FundFilter{orderValidator}
 	if invert {
