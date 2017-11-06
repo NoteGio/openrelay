@@ -56,6 +56,7 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
+    restart: on-failure
   delayrelay1:
     build:
       context: ./
@@ -138,6 +139,7 @@ services:
     command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://recheck2", "queue://indexer"]
     depends_on:
       - ethnode
+    restart: on-failure
   initialize:
     build:
       context: ./
@@ -219,6 +221,7 @@ services:
     command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://fund_continuous_recheck", "queue://unindexer", "--invert"]
     depends_on:
       - ethnode
+    restart: on-failure
   unindexer:
     build:
       context: ./

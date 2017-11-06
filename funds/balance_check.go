@@ -1,6 +1,7 @@
 package funds
 
 import (
+	"context"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/ethclient"
 	orCommon "github.com/notegio/openrelay/common"
@@ -20,7 +21,7 @@ type rpcBalanceChecker struct {
 func (funds *rpcBalanceChecker) GetBalance(tokenAddrBytes, userAddrBytes [20]byte) (*big.Int, error) {
 	token, err := tokenModule.NewToken(orCommon.BytesToAddress(tokenAddrBytes), funds.conn)
 	if err != nil {
-		return nil, err
+			return nil, err
 	}
 	return token.BalanceOf(nil, orCommon.BytesToAddress(userAddrBytes))
 }
@@ -36,6 +37,12 @@ func (funds *rpcBalanceChecker) GetAllowance(tokenAddrBytes, ownerAddress, spend
 func NewRpcBalanceChecker(rpcUrl string) (BalanceChecker, error) {
 	conn, err := ethclient.Dial(rpcUrl)
 	if err != nil {
+		return nil, err
+	}
+	if _, err = conn.SyncProgress(context.Background()); err != nil {
+		// This is just here so that an RpcBalanceChecker can't be instantiated
+		// successfully if the RPC server isn't responding properly. What RPC
+		// function we call isn't important, but SyncProgress is pretty cheap.
 		return nil, err
 	}
 	return &rpcBalanceChecker{conn}, nil

@@ -25,7 +25,7 @@ func (filter *FundFilter) Filter(delivery channels.Delivery) bool {
 		log.Printf("Invalid order signature");
 		return false;
 	}
-	valid := filter.orderValidator.ValidateOrder(order)
+	valid, _ := filter.orderValidator.ValidateOrder(order)
 	if valid {
 		log.Printf("Order '%v' has funds", hex.EncodeToString(order.Hash()))
 	} else {
@@ -61,7 +61,9 @@ func main() {
 		}
 	}
 	orderValidator, err := funds.NewRpcOrderValidator(rpcURL, config.NewFeeToken(redisClient), config.NewTokenProxy(redisClient))
-	if err != nil { log.Fatalf(err.Error()) }
+	if err != nil {
+		log.Fatalf("Error creating RpcOrderValidator: '%v'", err.Error())
+	}
 	var fundFilter channels.RelayFilter
 	fundFilter = &FundFilter{orderValidator}
 	if invert {
