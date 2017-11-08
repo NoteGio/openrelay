@@ -41,6 +41,7 @@ func (consumer *FillConsumer) Consume(msg channels.Delivery) {
 	if (<-changes || <-changes) && consumer.changePublisher != nil {
 		consumer.changePublisher.Publish(payload)
 	}
+	msg.Ack()
 }
 
 func NewFillConsumer(allPublisher channels.Publisher, changePublisher channels.Publisher, lookup FilledLookup) FillConsumer {
