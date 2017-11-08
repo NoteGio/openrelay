@@ -41,6 +41,7 @@ def delete_order(data, locker):
         except dynamo.DynamoOrder.DoesNotExist:
             pass
         else:
+            logger.info("Deleting order %s" % util.bytesToHexString(order_obj.orderHash))
             dynamo_order.delete()
 
 
