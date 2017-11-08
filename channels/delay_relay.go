@@ -19,6 +19,7 @@ type DelayRelayFilter struct {
 
 func (filter *DelayRelayFilter) Filter(delivery Delivery) bool {
 	if delivery.Payload() == filter.sentinel {
+		delivery.Ack()
 		<-filter.delayChan
 		return false
 	}
