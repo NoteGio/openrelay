@@ -6,8 +6,6 @@ import (
 	"github.com/notegio/openrelay/types"
 	"log"
 	"math/big"
-	"encoding/json"
-	"net/url"
 	"fmt"
 )
 
@@ -109,51 +107,43 @@ func (funds *orderValidator) ValidateOrder(order *types.Order) (bool, error) {
 		feeAllowanceChan,
 	)
 	result := true
-	if chanResult := <-makerChan; !chanResult.success{
-		log.Printf("Insufficient maker token funds")
+	if chanResult := <-makerChan; !chanResult.success {
+		log.Printf("Insufficient fee token allowance")
 		if chanResult.err != nil {
-			switch v := chanResult.err.(type) {
-			case *json.SyntaxError, *url.Error:
-				panic(fmt.Sprintf("RPC Communication Failed: '%v'", v))
-			default:
+			if chanResult.err.Error() == "no contract code at given address" {
 				return false, chanResult.err
 			}
+			panic(fmt.Sprintf("RPC Communication Failed: '%v'", chanResult.err.Error()))
 		}
 		result = false
 	}
 	if chanResult := <-feeChan; !chanResult.success {
-		log.Printf("Insufficient fee token funds")
+		log.Printf("Insufficient fee token allowance")
 		if chanResult.err != nil {
-			switch v := chanResult.err.(type) {
-			case *json.SyntaxError, *url.Error:
-				panic(fmt.Sprintf("RPC Communication Failed: '%v'", v))
-			default:
+			if chanResult.err.Error() == "no contract code at given address" {
 				return false, chanResult.err
 			}
+			panic(fmt.Sprintf("RPC Communication Failed: '%v'", chanResult.err.Error()))
 		}
 		result = false
 	}
 	if chanResult := <-makerAllowanceChan; !chanResult.success {
-		log.Printf("Insufficient maker token allowance")
+		log.Printf("Insufficient fee token allowance")
 		if chanResult.err != nil {
-			switch v := chanResult.err.(type) {
-			case *json.SyntaxError, *url.Error:
-				panic(fmt.Sprintf("RPC Communication Failed: '%v'", v))
-			default:
+			if chanResult.err.Error() == "no contract code at given address" {
 				return false, chanResult.err
 			}
+			panic(fmt.Sprintf("RPC Communication Failed: '%v'", chanResult.err.Error()))
 		}
 		result = false
 	}
 	if chanResult := <-feeAllowanceChan; !chanResult.success {
 		log.Printf("Insufficient fee token allowance")
 		if chanResult.err != nil {
-			switch v := chanResult.err.(type) {
-			case *json.SyntaxError, *url.Error:
-				panic(fmt.Sprintf("RPC Communication Failed: '%v'", v))
-			default:
+			if chanResult.err.Error() == "no contract code at given address" {
 				return false, chanResult.err
 			}
+			panic(fmt.Sprintf("RPC Communication Failed: '%v'", chanResult.err.Error()))
 		}
 		result = false
 	}
