@@ -20,7 +20,8 @@
     "bignumber.js": "^4.1.0",
     "redis": "^2.8.0",
     "truffle": "^3.4.9",
-    "web3": "^0.20.0"
+    "web3": "^0.20.0",
+    "web3-provider-engine": "^13.3.3"
   },
   "devDependencies": {
     "uuid": "^3.1.0"

@@ -57,22 +57,25 @@ module.exports = function(redisClient, notificationChannel, filterCreator, web3,
                 // for now.
                 process.exit(1);
             }
-            currentBlock = web3.eth.blockNumber;
             if(resuming){
                 clearTimeout(resumptionTimeout);
                 resumptionTimeout = setTimeout(function(){
-                    resuming = false;
-                    channel.FlushQueue();
-                    redisClient.set(blockKey, web3.eth.blockNumber);
-                    lastBlockNumber = web3.eth.blockNumber;
+                    web3.eth.getBlockNumber((currentBlock) => {
+                        resuming = false;
+                        channel.FlushQueue();
+                        redisClient.set(blockKey, currentBlock);
+                        lastBlockNumber = currentBlock;
+                    })
                 }, 5000);
                 channel.QueueMessage(JSON.stringify(transform(data)));
             } else {
-                channel.Publish(JSON.stringify(transform(data)));
-                if(lastBlockNumber != currentBlock) {
-                    redisClient.set(blockKey, currentBlock);
-                    lastBlockNumber = currentBlock;
-                }
+                web3.eth.getBlockNumber((currentBlock) => {
+                    channel.Publish(JSON.stringify(transform(data)));
+                    if(lastBlockNumber != currentBlock) {
+                        redisClient.set(blockKey, currentBlock);
+                        lastBlockNumber = currentBlock;
+                    }
+                });
             }
 
         });
