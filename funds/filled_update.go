@@ -1,6 +1,7 @@
 package funds
 
 import (
+	"encoding/hex"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -8,6 +9,7 @@ import (
 	"github.com/notegio/openrelay/exchangecontract"
 	"github.com/notegio/openrelay/types"
 	"math/big"
+	"log"
 )
 
 type FilledLookup interface {
@@ -23,12 +25,15 @@ func (filled *rpcFilledLookup) GetAmountCancelled(order *types.Order) ([32]byte,
 	cancelledAmount := [32]byte{}
 	exchange, err := exchangecontract.NewExchange(orCommon.BytesToAddress(order.ExchangeAddress), filled.conn)
 	if err != nil {
+		log.Printf("Error intializing exchange contract '%v': '%v'", hex.EncodeToString(order.ExchangeAddress[:]), err.Error())
 		return cancelledAmount, err
 	}
 	hash := [32]byte{}
 	copy(hash[:], order.Hash())
 	amount, err := exchange.Cancelled(nil, hash)
 	if err != nil {
+		orderBytes := order.Bytes()
+		log.Printf("Error getting cancelled amount for order '%v': '%v'", hex.EncodeToString(orderBytes[:]), err.Error())
 		return cancelledAmount, err
 	}
 	cancelledSlice := common.LeftPadBytes(amount.Bytes(), 32)
@@ -40,12 +45,15 @@ func (filled *rpcFilledLookup) GetAmountFilled(order *types.Order) ([32]byte, er
 	filledAmount := [32]byte{}
 	exchange, err := exchangecontract.NewExchange(orCommon.BytesToAddress(order.ExchangeAddress), filled.conn)
 	if err != nil {
+		log.Printf("Error intializing exchange contract '%v': '%v'", hex.EncodeToString(order.ExchangeAddress[:]), err.Error())
 		return filledAmount, err
 	}
 	hash := [32]byte{}
 	copy(hash[:], order.Hash())
 	amount, err := exchange.Filled(nil, hash)
 	if err != nil {
+		orderBytes := order.Bytes()
+		log.Printf("Error getting filled amount for order '%v': '%v'", hex.EncodeToString(orderBytes[:]), err.Error())
 		return filledAmount, err
 	}
 	cancelledSlice := common.LeftPadBytes(amount.Bytes(), 32)
