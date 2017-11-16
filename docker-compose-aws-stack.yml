@@ -1,94 +1,5 @@
 version: "3"
 services:
-  monitor-ethnode:
-    build:
-      context: ./
-      dockerfile: Dockerfile.ethnode
-    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-ethnode
-    logging:
-      driver: awslogs
-      options:
-        awslogs-group: monitor-ethnode
-        # awslogs-create-group: "true"
-    ports:
-      - "8545"
-      - "30303/tcp"
-      - "30303/udp"
-    deploy:
-      replicas: 1
-      placement:
-        constraints:
-          - engine.labels.enginetype == Ethereum
-  state-ethnode:
-    build:
-      context: ./
-      dockerfile: Dockerfile.ethnode
-    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-ethnode
-    logging:
-      driver: awslogs
-      options:
-        awslogs-group: state-ethnode
-        # awslogs-create-group: "true"
-    ports:
-      - "8545"
-      - "30303/tcp"
-      - "30303/udp"
-    deploy:
-      replicas: 1
-      placement:
-        constraints:
-          - engine.labels.enginetype == Ethereum
-    command: "--syncmode=light --rpc --rpcaddr 0.0.0.0"
-  standby-ethnode:
-    build:
-      context: ./
-      dockerfile: Dockerfile.ethnode
-    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-ethnode
-    logging:
-      driver: awslogs
-      options:
-        awslogs-group: standby-ethnode
-        # awslogs-create-group: "true"
-    ports:
-      - "8545"
-      - "30303/tcp"
-      - "30303/udp"
-    deploy:
-      replicas: 1
-      placement:
-        constraints:
-          - engine.labels.enginetype == Ethereum
-    command: "--syncmode=light --rpc --rpcaddr 0.0.0.0"
-  monitor-haproxy:
-    build:
-      context: ./
-      dockerfile: Dockerfile.monproxy
-    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-monproxy
-    logging:
-      driver: awslogs
-      options:
-        awslogs-group: monproxy
-        # awslogs-create-group: "true"
-    deploy:
-      mode: global
-      placement:
-        constraints:
-          - engine.labels.enginetype == Ethereum
-  state-haproxy:
-    build:
-      context: ./
-      dockerfile: Dockerfile.stateproxy
-    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-stateproxy
-    logging:
-      driver: awslogs
-      options:
-        awslogs-group: stateproxy
-        # awslogs-create-group: "true"
-    deploy:
-      mode: global
-      placement:
-        constraints:
-          - engine.labels.enginetype == Ethereum
   ingest:
     build:
       context: ./
@@ -119,7 +30,7 @@ services:
       options:
         awslogs-group: fillupdate
         # awslogs-create-group: "true"
-    command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://state-haproxy:8545}", "queue://ingest", "queue://fundcheck"]
+    command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_URL:-http://state-haproxy:8545}", "queue://ingest", "queue://fundcheck"]
     deploy:
       mode: global
       # endpoint_mode: dnsrr
@@ -137,7 +48,7 @@ services:
       options:
         awslogs-group: fundcheckrelay
         # awslogs-create-group: "true"
-    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://state-haproxy:8545}", "queue://fundcheck", "queue://delay1", "topic://instant-broadcast"]
+    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_URL:-http://state-haproxy:8545}", "queue://fundcheck", "queue://delay1", "topic://instant-broadcast"]
     deploy:
       mode: global
       placement:
@@ -186,6 +97,9 @@ services:
         awslogs-group: blockmonitor
         # awslogs-create-group: "true"
     command: ["./node_modules/.bin/truffle", "exec", "blockMonitor.js", "redis://${REDIS_HOST:-redis:6379}", "topic://newblocks", "--network", "main"]
+    environment:
+      ETHEREUM_URL: "${ETHEREUM_URL:-http://ethnode:8545}"
+      USE_FILTER_PROVIDER: "1"
     deploy:
       replicas: 1
       placement:
@@ -202,6 +116,9 @@ services:
         awslogs-group: fillmonitor
         # awslogs-create-group: "true"
     command: ["./node_modules/.bin/truffle", "exec", "exchangeMonitor.js", "redis://${REDIS_HOST:-redis:6379}", "queue://ordersfilled", "0xC22d5b2951DB72B44CFb8089bb8CD374A3c354eA", "--network", "main"]
+    environment:
+      ETHEREUM_URL: "${ETHEREUM_URL:-http://ethnode:8545}"
+      USE_FILTER_PROVIDER: "1"
     deploy:
       replicas: 1
       placement:
@@ -251,7 +168,7 @@ services:
       options:
         awslogs-group: fillupdate2
         # awslogs-create-group: "true"
-    command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://state-haproxy:8545}", "queue://recheck", "queue://recheck2"]
+    command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_URL:-http://state-haproxy:8545}", "queue://recheck", "queue://recheck2"]
     deploy:
       mode: global
       placement:
@@ -267,7 +184,7 @@ services:
       options:
         awslogs-group: fundcheckrelay2
         # awslogs-create-group: "true"
-    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://state-haproxy:8545}", "queue://recheck2", "queue://indexer"]
+    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_URL:-http://state-haproxy:8545}", "queue://recheck2", "queue://indexer"]
     deploy:
       mode: global
       placement:
@@ -359,7 +276,7 @@ services:
       options:
         awslogs-group: fillupdate-continuous
         # awslogs-create-group: "true"
-    command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://state-haproxy:8545}", "queue://continuous_recheck", "queue://fund_continuous_recheck", "queue://indexer"]
+    command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_URL:-http://state-haproxy:8545}", "queue://continuous_recheck", "queue://fund_continuous_recheck", "queue://indexer"]
     deploy:
       mode: global
       placement:
@@ -377,7 +294,7 @@ services:
       options:
         awslogs-group: fundcheckrelay-continuous
         # awslogs-create-group: "true"
-    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://state-haproxy:8545}", "queue://fund_continuous_recheck", "queue://unindexer", "--invert"]
+    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_URL:-http://state-haproxy:8545}", "queue://fund_continuous_recheck", "queue://unindexer", "--invert"]
     deploy:
       mode: global
       placement:
