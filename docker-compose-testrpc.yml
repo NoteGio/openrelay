@@ -83,10 +83,14 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.blockmonitor
-    command: ["./node_modules/.bin/truffle", "exec", "blockMonitor.js", "redis://${REDIS_HOST:-redis:6379}", "topic://newblocks", "--network", "testnet"]
+    command: ["./node_modules/.bin/truffle", "exec", "blockMonitor.js", "redis://${REDIS_HOST:-redis:6379}", "topic://newblocks", "--network", "main"]
+    environment:
+      ETHEREUM_URL: "http://ethnode:8545"
+      USE_FILTER_PROVIDER: "1"
     depends_on:
       - redis
       - ethnode
+    restart: on-failure
     deploy:
       replicas: 1
       restart_policy:
@@ -95,7 +99,10 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.fillmonitor
-    command: ["./node_modules/.bin/truffle", "exec", "exchangeMonitor.js", "redis://${REDIS_HOST:-redis:6379}", "queue://ordersfilled", "0xC22d5b2951DB72B44CFb8089bb8CD374A3c354eA", "--network", "testnet"]
+    command: ["./node_modules/.bin/truffle", "exec", "exchangeMonitor.js", "redis://${REDIS_HOST:-redis:6379}", "queue://ordersfilled", "0xC22d5b2951DB72B44CFb8089bb8CD374A3c354eA", "--network", "main"]
+    environment:
+      ETHEREUM_URL: "http://ethnode:8545"
+      USE_FILTER_PROVIDER: "1"
     depends_on:
       - ethnode
   fillindexer:
@@ -152,6 +159,8 @@ services:
       context: ./
       dockerfile: Dockerfile.testinit
     command: ["/project/setup.sh", "redis://${REDIS_HOST:-redis:6379}"]
+    environment:
+      ETHEREUM_URL: "http://ethnode:8545"
     depends_on:
       - redis
   entrypoint:
