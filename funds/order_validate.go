@@ -108,7 +108,7 @@ func (funds *orderValidator) ValidateOrder(order *types.Order) (bool, error) {
 	)
 	result := true
 	if chanResult := <-makerChan; !chanResult.success {
-		log.Printf("Insufficient fee token allowance")
+		log.Printf("Insufficient maker token funds")
 		if chanResult.err != nil {
 			if chanResult.err.Error() == "no contract code at given address" {
 				return false, chanResult.err
@@ -128,7 +128,7 @@ func (funds *orderValidator) ValidateOrder(order *types.Order) (bool, error) {
 		result = false
 	}
 	if chanResult := <-makerAllowanceChan; !chanResult.success {
-		log.Printf("Insufficient fee token allowance")
+		log.Printf("Insufficient makers token allowance")
 		if chanResult.err != nil {
 			if chanResult.err.Error() == "no contract code at given address" {
 				return false, chanResult.err
