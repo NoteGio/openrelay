@@ -19,8 +19,6 @@ services:
       placement:
         constraints:
           - engine.labels.enginetype == Ethereum
-    volumes:
-      - monitor-ethnode-volume:/root/.ethereum
   state-ethnode:
     build:
       context: ./
@@ -41,8 +39,6 @@ services:
         constraints:
           - engine.labels.enginetype == Ethereum
     command: "--syncmode=light --rpc --rpcaddr 0.0.0.0"
-    volumes:
-      - state-ethnode-volume:/root/.ethereum
   standby-ethnode:
     build:
       context: ./
@@ -63,8 +59,6 @@ services:
         constraints:
           - engine.labels.enginetype == Ethereum
     command: "--syncmode=light --rpc --rpcaddr 0.0.0.0"
-    volumes:
-      - standby-ethnode-volume:/root/.ethereum
   monitor-haproxy:
     build:
       context: ./
@@ -407,23 +401,3 @@ services:
       placement:
         constraints:
           - engine.labels.enginetype == Internal
-
-volumes:
-  monitor-ethnode-volume:
-    driver: "cloudstor:aws"
-    driver_opts:
-      size: 25
-      ebstype: gp2
-      backing: relocatable
-  state-ethnode-volume:
-    driver: "cloudstor:aws"
-    driver_opts:
-      size: 25
-      ebstype: gp2
-      backing: relocatable
-  standby-ethnode-volume:
-    driver: "cloudstor:aws"
-    driver_opts:
-      size: 25
-      ebstype: gp2
-      backing: relocatable

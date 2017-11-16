@@ -118,7 +118,7 @@ func (funds *orderValidator) ValidateOrder(order *types.Order) (bool, error) {
 		result = false
 	}
 	if chanResult := <-feeChan; !chanResult.success {
-		log.Printf("Insufficient fee token funds")
+		log.Printf("Insufficient fee token allowance")
 		if chanResult.err != nil {
 			if chanResult.err.Error() == "no contract code at given address" {
 				return false, chanResult.err
