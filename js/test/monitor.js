@@ -13,7 +13,12 @@ function MockRedisClient() {
 }
 
 function MockWeb3(blockNumber) {
-    this.eth = {blockNumber: blockNumber || 0}
+    this.eth = {
+        blockNumber: blockNumber || 0,
+        getBlockNumber(cb) {
+            cb(null, this.blockNumber);
+        }
+    }
     this.addBlock = () => {
         this.eth.blockNumber++;
     }
