@@ -2,6 +2,7 @@ package affiliates
 
 import (
 	"math/big"
+	"github.com/notegio/openrelay/types"
 )
 
 type Affiliate interface {
@@ -9,6 +10,6 @@ type Affiliate interface {
 }
 
 type AffiliateService interface {
-	Get([20]byte) (Affiliate, error)
-	Set([20]byte, Affiliate) error
+	Get(*types.Address) (Affiliate, error)
+	Set(*types.Address, Affiliate) error
 }

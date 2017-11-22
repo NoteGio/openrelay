@@ -3,9 +3,14 @@ package common
 import (
 	"encoding/hex"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/notegio/openrelay/types"
 )
 
 func BytesToAddress(data [20]byte) common.Address {
+	return common.HexToAddress(hex.EncodeToString(data[:]))
+}
+
+func ToGethAddress(data *types.Address) common.Address {
 	return common.HexToAddress(hex.EncodeToString(data[:]))
 }
 

@@ -6,32 +6,33 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	orCommon "github.com/notegio/openrelay/common"
 	tokenModule "github.com/notegio/openrelay/token"
+	"github.com/notegio/openrelay/types"
 	"math/big"
 )
 
 type BalanceChecker interface {
-	GetBalance(tokenAddress, userAddress [20]byte) (*big.Int, error)
-	GetAllowance(tokenAddress, ownerAddress, spenderAddress [20]byte) (*big.Int, error)
+	GetBalance(tokenAddress, userAddress *types.Address) (*big.Int, error)
+	GetAllowance(tokenAddress, ownerAddress, spenderAddress *types.Address) (*big.Int, error)
 }
 
 type rpcBalanceChecker struct {
 	conn bind.ContractBackend
 }
 
-func (funds *rpcBalanceChecker) GetBalance(tokenAddrBytes, userAddrBytes [20]byte) (*big.Int, error) {
-	token, err := tokenModule.NewToken(orCommon.BytesToAddress(tokenAddrBytes), funds.conn)
+func (funds *rpcBalanceChecker) GetBalance(tokenAddrBytes, userAddrBytes *types.Address) (*big.Int, error) {
+	token, err := tokenModule.NewToken(orCommon.ToGethAddress(tokenAddrBytes), funds.conn)
 	if err != nil {
 			return nil, err
 	}
-	return token.BalanceOf(nil, orCommon.BytesToAddress(userAddrBytes))
+	return token.BalanceOf(nil, orCommon.ToGethAddress(userAddrBytes))
 }
 
-func (funds *rpcBalanceChecker) GetAllowance(tokenAddrBytes, ownerAddress, spenderAddress [20]byte) (*big.Int, error) {
-	token, err := tokenModule.NewToken(orCommon.BytesToAddress(tokenAddrBytes), funds.conn)
+func (funds *rpcBalanceChecker) GetAllowance(tokenAddrBytes, ownerAddress, spenderAddress *types.Address) (*big.Int, error) {
+	token, err := tokenModule.NewToken(orCommon.ToGethAddress(tokenAddrBytes), funds.conn)
 	if err != nil {
 		return nil, err
 	}
-	return token.Allowance(nil, orCommon.BytesToAddress(ownerAddress), orCommon.BytesToAddress(spenderAddress))
+	return token.Allowance(nil, orCommon.ToGethAddress(ownerAddress), orCommon.ToGethAddress(spenderAddress))
 }
 
 func NewRpcBalanceChecker(rpcUrl string) (BalanceChecker, error) {

@@ -3,6 +3,7 @@ package accounts
 import (
 	"encoding/json"
 	"github.com/notegio/openrelay/config"
+	"github.com/notegio/openrelay/types"
 	"gopkg.in/redis.v3"
 	"math/big"
 )
@@ -12,7 +13,7 @@ type redisAccountService struct {
 	baseFee     config.BaseFee
 }
 
-func (accountService *redisAccountService) Get(address [20]byte) Account {
+func (accountService *redisAccountService) Get(address *types.Address) Account {
 	acct := &account{false, new(big.Int), 0, 0}
 	acctJSON, err := accountService.redisClient.Get("account::" + string(address[:])).Result()
 	if err != nil {
@@ -30,7 +31,7 @@ func (accountService *redisAccountService) Get(address [20]byte) Account {
 	return acct
 }
 
-func (accountService *redisAccountService) Set(address [20]byte, acct Account) error {
+func (accountService *redisAccountService) Set(address *types.Address, acct Account) error {
 	data, err := json.Marshal(acct)
 	if err != nil {
 		return err

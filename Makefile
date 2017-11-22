@@ -29,7 +29,7 @@ bin/ingest: $(BASE) cmd/ingest/main.go
 	cd $(BASE) && $(GOSTATIC) -o bin/ingest cmd/ingest/main.go
 
 bin/initialize: $(BASE) cmd/initialize/main.go
-	cd $(BASE) && CGO_ENABLED=0 $(GOSTATIC) -o bin/initialize cmd/initialize/main.go
+	cd $(BASE) && $(GOSTATIC) -o bin/initialize cmd/initialize/main.go
 
 bin/simplerelay: $(BASE) cmd/simplerelay/main.go
 	cd $(BASE) && CGO_ENABLED=0 $(GOSTATIC) -o bin/simplerelay cmd/simplerelay/main.go

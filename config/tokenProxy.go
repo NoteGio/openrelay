@@ -4,39 +4,41 @@ import (
 	"encoding/hex"
 	"gopkg.in/redis.v3"
 	"time"
+	"github.com/notegio/openrelay/types"
+
 )
 
 type TokenProxy interface {
-	Get() ([20]byte, error)
-	Set([20]byte) error
+	Get() (*types.Address, error)
+	Set(*types.Address) error
 }
 
 type staticTokenProxy struct {
-	value [20]byte
+	value *types.Address
 }
 
-func (tokenProxy *staticTokenProxy) Get() ([20]byte, error) {
+func (tokenProxy *staticTokenProxy) Get() (*types.Address, error) {
 	return tokenProxy.value, nil
 }
 
-func (tokenProxy *staticTokenProxy) Set(address [20]byte) error {
+func (tokenProxy *staticTokenProxy) Set(address *types.Address) error {
 	tokenProxy.value = address
 	return nil
 }
 
 type redisTokenProxy struct {
 	redisClient     *redis.Client
-	cachedValue     [20]byte
+	cachedValue     *types.Address
 	cacheExpiration int64
 }
 
-func (tokenProxy *redisTokenProxy) Get() ([20]byte, error) {
+func (tokenProxy *redisTokenProxy) Get() (*types.Address, error) {
 	if tokenProxy.cacheExpiration > time.Now().Unix() {
 		// The token proxy shouldn't change often, but it doesn't hurt to check
 		// periodically.
 		return tokenProxy.cachedValue, nil
 	}
-	result := [20]byte{}
+	result := &types.Address{}
 	val, err := tokenProxy.redisClient.Get("tokenProxy::address").Result()
 	if err != nil {
 		return result, err
@@ -50,14 +52,14 @@ func (tokenProxy *redisTokenProxy) Get() ([20]byte, error) {
 	return result, nil
 }
 
-func (tokenProxy *redisTokenProxy) Set(value [20]byte) error {
+func (tokenProxy *redisTokenProxy) Set(value *types.Address) error {
 	return tokenProxy.redisClient.Set("tokenProxy::address", hex.EncodeToString(value[:]), 0).Err()
 }
 
 func NewTokenProxy(client *redis.Client) TokenProxy {
-	return &redisTokenProxy{client, [20]byte{}, 0}
+	return &redisTokenProxy{client, &types.Address{}, 0}
 }
 
-func StaticTokenProxy(address [20]byte) TokenProxy {
+func StaticTokenProxy(address *types.Address) TokenProxy {
 	return &staticTokenProxy{address}
 }

@@ -13,17 +13,17 @@ import (
 )
 
 type FilledLookup interface {
-	GetAmountCancelled(order *types.Order) ([32]byte, error)
-	GetAmountFilled(order *types.Order) ([32]byte, error)
+	GetAmountCancelled(order *types.Order) (*types.Uint256, error)
+	GetAmountFilled(order *types.Order) (*types.Uint256, error)
 }
 
 type rpcFilledLookup struct {
 	conn bind.ContractBackend
 }
 
-func (filled *rpcFilledLookup) GetAmountCancelled(order *types.Order) ([32]byte, error) {
-	cancelledAmount := [32]byte{}
-	exchange, err := exchangecontract.NewExchange(orCommon.BytesToAddress(order.ExchangeAddress), filled.conn)
+func (filled *rpcFilledLookup) GetAmountCancelled(order *types.Order) (*types.Uint256, error) {
+	cancelledAmount := &types.Uint256{}
+	exchange, err := exchangecontract.NewExchange(orCommon.ToGethAddress(order.ExchangeAddress), filled.conn)
 	if err != nil {
 		log.Printf("Error intializing exchange contract '%v': '%v'", hex.EncodeToString(order.ExchangeAddress[:]), err.Error())
 		return cancelledAmount, err
@@ -41,9 +41,9 @@ func (filled *rpcFilledLookup) GetAmountCancelled(order *types.Order) ([32]byte,
 	return cancelledAmount, nil
 }
 
-func (filled *rpcFilledLookup) GetAmountFilled(order *types.Order) ([32]byte, error) {
-	filledAmount := [32]byte{}
-	exchange, err := exchangecontract.NewExchange(orCommon.BytesToAddress(order.ExchangeAddress), filled.conn)
+func (filled *rpcFilledLookup) GetAmountFilled(order *types.Order) (*types.Uint256, error) {
+	filledAmount := &types.Uint256{}
+	exchange, err := exchangecontract.NewExchange(orCommon.ToGethAddress(order.ExchangeAddress), filled.conn)
 	if err != nil {
 		log.Printf("Error intializing exchange contract '%v': '%v'", hex.EncodeToString(order.ExchangeAddress[:]), err.Error())
 		return filledAmount, err
@@ -78,19 +78,19 @@ type MockFilledLookup struct {
 	err       error
 }
 
-func (filled *MockFilledLookup) GetAmountCancelled(order *types.Order) ([32]byte, error) {
-	result := [32]byte{}
+func (filled *MockFilledLookup) GetAmountCancelled(order *types.Order) (*types.Uint256, error) {
+	result := &types.Uint256{}
 	if filled.err != nil {
-		return [32]byte{}, filled.err
+		return result, filled.err
 	}
 	filledSlice := common.LeftPadBytes(filled.cancelled.Bytes(), 32)
 	copy(result[:], filledSlice)
 	return result, nil
 }
-func (filled *MockFilledLookup) GetAmountFilled(order *types.Order) ([32]byte, error) {
-	result := [32]byte{}
+func (filled *MockFilledLookup) GetAmountFilled(order *types.Order) (*types.Uint256, error) {
+	result := &types.Uint256{}
 	if filled.err != nil {
-		return [32]byte{}, filled.err
+		return result, filled.err
 	}
 	filledSlice := common.LeftPadBytes(filled.filled.Bytes(), 32)
 	copy(result[:], filledSlice)

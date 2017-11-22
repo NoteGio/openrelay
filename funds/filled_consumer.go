@@ -8,7 +8,7 @@ import (
 	"reflect"
 )
 
-func doLookup(order *types.Order, oldValue [32]byte, lookupFn func(*types.Order) ([32]byte, error), valChan chan [32]byte, changeChan chan bool) {
+func doLookup(order *types.Order, oldValue *types.Uint256, lookupFn func(*types.Order) (*types.Uint256, error), valChan chan *types.Uint256, changeChan chan bool) {
 	value, err := lookupFn(order)
 	if err != nil {
 		log.Printf(err.Error())
@@ -28,8 +28,8 @@ func (consumer *FillConsumer) Consume(msg channels.Delivery) {
 	orderBytes := [441]byte{}
 	copy(orderBytes[:], []byte(msg.Payload()))
 	order := types.OrderFromBytes(orderBytes)
-	cancelledChan := make(chan [32]byte)
-	filledChan := make(chan [32]byte)
+	cancelledChan := make(chan *types.Uint256)
+	filledChan := make(chan *types.Uint256)
 	changes := make(chan bool, 2)
 	go doLookup(order, order.TakerTokenAmountCancelled, consumer.lookup.GetAmountCancelled, cancelledChan, changes)
 	go doLookup(order, order.TakerTokenAmountFilled, consumer.lookup.GetAmountFilled, filledChan, changes)

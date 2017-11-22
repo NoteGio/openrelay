@@ -5,6 +5,7 @@ import (
 	"gopkg.in/redis.v3"
 	"github.com/notegio/openrelay/config"
 	"github.com/notegio/openrelay/affiliates"
+	"github.com/notegio/openrelay/types"
 	"math/big"
 	"os"
 	"fmt"
@@ -25,7 +26,7 @@ func main() {
 	affiliateService := affiliates.NewRedisAffiliateService(redisClient)
 	for _, address := range(authorizedAddresses) {
 		if addressBytes, err := hex.DecodeString(address); err == nil {
-			addressArray := [20]byte{}
+			addressArray := &types.Address{}
 			copy(addressArray[:], addressBytes[:])
 			affiliate := affiliates.NewAffiliate(baseFeeInt, 100)
 			affiliateService.Set(addressArray, affiliate)
