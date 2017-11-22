@@ -8,12 +8,12 @@ import (
 )
 
 type mockBalanceChecker struct {
-	balances map[*types.Address]map[*types.Address]*big.Int
+	balances map[types.Address]map[types.Address]*big.Int
 }
 
 func (funds *mockBalanceChecker) GetBalance(tokenAddrBytes, userAddrBytes *types.Address) (*big.Int, error) {
-	if tokenMap, ok := funds.balances[tokenAddrBytes]; ok {
-		if balance, ok := tokenMap[userAddrBytes]; ok {
+	if tokenMap, ok := funds.balances[*tokenAddrBytes]; ok {
+		if balance, ok := tokenMap[*userAddrBytes]; ok {
 			return balance, nil
 		}
 		return nil, errors.New("(GetBalance) User address not found " + hex.EncodeToString(userAddrBytes[:]))
@@ -25,8 +25,8 @@ func (funds *mockBalanceChecker) GetAllowance(tokenAddrBytes, userAddrBytes, sen
 	// For now I'm just making GetAllowance match GetBalance for the mock version.
 	// Eventually we'll need to test differences between allowance and balance, but
 	// for now this will do.
-	if tokenMap, ok := funds.balances[tokenAddrBytes]; ok {
-		if balance, ok := tokenMap[userAddrBytes]; ok {
+	if tokenMap, ok := funds.balances[*tokenAddrBytes]; ok {
+		if balance, ok := tokenMap[*userAddrBytes]; ok {
 			return balance, nil
 		}
 		return nil, errors.New("(GetAllowance) User address not found " + hex.EncodeToString(userAddrBytes[:]))
@@ -34,7 +34,7 @@ func (funds *mockBalanceChecker) GetAllowance(tokenAddrBytes, userAddrBytes, sen
 	return nil, errors.New("(GetAllowance) Token not found " + hex.EncodeToString(tokenAddrBytes[:]))
 }
 
-func NewMockBalanceChecker(balanceMap map[*types.Address]map[*types.Address]*big.Int) BalanceChecker {
+func NewMockBalanceChecker(balanceMap map[types.Address]map[types.Address]*big.Int) BalanceChecker {
 	return &mockBalanceChecker{balanceMap}
 }
 

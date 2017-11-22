@@ -6,6 +6,7 @@ import (
 	"gopkg.in/redis.v3"
 	"os"
 	"testing"
+	"time"
 )
 
 type testConsumer struct {
@@ -24,7 +25,7 @@ func (consumer *testConsumer) Consume(msg channels.Delivery) {
 	consumer.done <- true
 }
 
-func ChannelSendTest(publisher channels.Publisher, consumerChannel channels.ConsumerChannel, t *testing.T) {
+func ChannelSendTest(publisher channels.Publisher, consumerChannel channels.ConsumerChannel, delay time.Duration, t *testing.T) {
 	fmt.Println("ChannelSendTest")
 	// fmt.Println(publisher)
 	consumer := &testConsumer{make(chan string), make(chan bool), make(chan bool)}
@@ -32,6 +33,10 @@ func ChannelSendTest(publisher channels.Publisher, consumerChannel channels.Cons
 	consumerChannel.AddConsumer(consumer)
 	// fmt.Println("Added consumer")
 	consumerChannel.StartConsuming()
+	// If a topic consumer isn't subscribed by the time we start publishing,
+	// it won't get the message and we'll hang forever. This delay ensures
+	// topic consumers have time to get subscribed.
+	time.Sleep(delay)
 	// fmt.Println("Started consumer")
 	publisher.Publish("test")
 	// fmt.Println("Published message")
@@ -44,7 +49,7 @@ func ChannelSendTest(publisher channels.Publisher, consumerChannel channels.Cons
 	_ = <-consumer.done
 }
 
-func ReturnUnackedTest(publisher channels.Publisher, consumerChannel channels.ConsumerChannel, t *testing.T) {
+func ReturnUnackedTest(publisher channels.Publisher, consumerChannel channels.ConsumerChannel, delay time.Duration, t *testing.T) {
 	fmt.Println("ReturnUnackedTest")
 	// fmt.Println(publisher)
 	consumer := &testConsumer{make(chan string), make(chan bool), make(chan bool)}
@@ -53,6 +58,10 @@ func ReturnUnackedTest(publisher channels.Publisher, consumerChannel channels.Co
 	// fmt.Println("Added consumer")
 	consumerChannel.StartConsuming()
 	// fmt.Println("Started consumer")
+	// If a topic consumer isn't subscribed by the time we start publishing,
+	// it won't get the message and we'll hang forever. This delay ensures
+	// topic consumers have time to get subscribed.
+	time.Sleep(delay)
 	publisher.Publish("test")
 	// fmt.Println("Published message")
 	result := <-consumer.channel
@@ -69,7 +78,7 @@ func ReturnUnackedTest(publisher channels.Publisher, consumerChannel channels.Co
 	// fmt.Println("done here")
 }
 
-func AckTest(publisher channels.Publisher, consumerChannel channels.ConsumerChannel, t *testing.T) {
+func AckTest(publisher channels.Publisher, consumerChannel channels.ConsumerChannel, delay time.Duration, t *testing.T) {
 	fmt.Println("AckTest")
 	// fmt.Println(publisher)
 	consumer := &testConsumer{make(chan string), make(chan bool), make(chan bool)}
@@ -78,6 +87,10 @@ func AckTest(publisher channels.Publisher, consumerChannel channels.ConsumerChan
 	// fmt.Println("Added consumer")
 	consumerChannel.StartConsuming()
 	// fmt.Println("Started consumer")
+	// If a topic consumer isn't subscribed by the time we start publishing,
+	// it won't get the message and we'll hang forever. This delay ensures
+	// topic consumers have time to get subscribed.
+	time.Sleep(delay)
 	publisher.Publish("test")
 	// fmt.Println("Published message")
 	result := <-consumer.channel
@@ -92,7 +105,7 @@ func AckTest(publisher channels.Publisher, consumerChannel channels.ConsumerChan
 	}
 }
 
-func RejectTest(publisher channels.Publisher, consumerChannel channels.ConsumerChannel, t *testing.T) {
+func RejectTest(publisher channels.Publisher, consumerChannel channels.ConsumerChannel, delay time.Duration, t *testing.T) {
 	fmt.Println("RejectTest")
 	// fmt.Println(publisher)
 	consumer := &testConsumer{make(chan string), make(chan bool), make(chan bool)}
@@ -101,6 +114,10 @@ func RejectTest(publisher channels.Publisher, consumerChannel channels.ConsumerC
 	// fmt.Println("Added consumer")
 	consumerChannel.StartConsuming()
 	// fmt.Println("Started consumer")
+	// If a topic consumer isn't subscribed by the time we start publishing,
+	// it won't get the message and we'll hang forever. This delay ensures
+	// topic consumers have time to get subscribed.
+	time.Sleep(delay)
 	publisher.Publish("test")
 	// fmt.Println("Published message")
 	result := <-consumer.channel
@@ -120,19 +137,19 @@ func RejectTest(publisher channels.Publisher, consumerChannel channels.ConsumerC
 
 func TestMockChannelSend(t *testing.T) {
 	publisher, consumerChannel := channels.MockChannel()
-	ChannelSendTest(publisher, consumerChannel, t)
+	ChannelSendTest(publisher, consumerChannel, 0, t)
 }
 func TestMockReturnUnacked(t *testing.T) {
 	publisher, consumerChannel := channels.MockChannel()
-	ReturnUnackedTest(publisher, consumerChannel, t)
+	ReturnUnackedTest(publisher, consumerChannel, 0, t)
 }
 func TestMockAck(t *testing.T) {
 	publisher, consumerChannel := channels.MockChannel()
-	AckTest(publisher, consumerChannel, t)
+	AckTest(publisher, consumerChannel, 0, t)
 }
 func TestMockReject(t *testing.T) {
 	publisher, consumerChannel := channels.MockChannel()
-	RejectTest(publisher, consumerChannel, t)
+	RejectTest(publisher, consumerChannel, 0, t)
 }
 
 func redisCleanup(redisClient *redis.Client, consumerChannel channels.ConsumerChannel) {
@@ -155,7 +172,7 @@ func TestRedisQueueChannelSend(t *testing.T) {
 	publisher := channels.NewRedisQueuePublisher("test_queue", redisClient)
 	consumerChannel := channels.NewQueueConsumerChannel("test_queue", redisClient)
 	defer redisCleanup(redisClient, consumerChannel)
-	ChannelSendTest(publisher, consumerChannel, t)
+	ChannelSendTest(publisher, consumerChannel, 0, t)
 }
 func TestRedisQueueReturnUnacked(t *testing.T) {
 	redisURL := os.Getenv("REDIS_URL")
@@ -169,7 +186,7 @@ func TestRedisQueueReturnUnacked(t *testing.T) {
 	publisher := channels.NewRedisQueuePublisher("test_queue", redisClient)
 	consumerChannel := channels.NewQueueConsumerChannel("test_queue", redisClient)
 	defer redisCleanup(redisClient, consumerChannel)
-	ReturnUnackedTest(publisher, consumerChannel, t)
+	ReturnUnackedTest(publisher, consumerChannel, 0, t)
 }
 func TestRedisQueueAck(t *testing.T) {
 	redisURL := os.Getenv("REDIS_URL")
@@ -183,7 +200,7 @@ func TestRedisQueueAck(t *testing.T) {
 	publisher := channels.NewRedisQueuePublisher("test_queue", redisClient)
 	consumerChannel := channels.NewQueueConsumerChannel("test_queue", redisClient)
 	defer redisCleanup(redisClient, consumerChannel)
-	AckTest(publisher, consumerChannel, t)
+	AckTest(publisher, consumerChannel, 0, t)
 }
 func TestRedisQueueReject(t *testing.T) {
 	redisURL := os.Getenv("REDIS_URL")
@@ -197,7 +214,7 @@ func TestRedisQueueReject(t *testing.T) {
 	publisher := channels.NewRedisQueuePublisher("test_queue", redisClient)
 	consumerChannel := channels.NewQueueConsumerChannel("test_queue", redisClient)
 	defer redisCleanup(redisClient, consumerChannel)
-	RejectTest(publisher, consumerChannel, t)
+	RejectTest(publisher, consumerChannel, 0, t)
 }
 
 func TestRedisTopicChannelSend(t *testing.T) {
@@ -212,7 +229,7 @@ func TestRedisTopicChannelSend(t *testing.T) {
 	publisher := channels.NewRedisTopicPublisher("test_topic", redisClient)
 	consumerChannel := channels.NewTopicConsumerChannel("test_topic", redisClient)
 	defer consumerChannel.StopConsuming()
-	ChannelSendTest(publisher, consumerChannel, t)
+	ChannelSendTest(publisher, consumerChannel, 1 * time.Second, t)
 }
 func TestRedisTopicAck(t *testing.T) {
 	redisURL := os.Getenv("REDIS_URL")
@@ -226,5 +243,5 @@ func TestRedisTopicAck(t *testing.T) {
 	publisher := channels.NewRedisTopicPublisher("test_topic", redisClient)
 	consumerChannel := channels.NewTopicConsumerChannel("test_topic", redisClient)
 	defer consumerChannel.StopConsuming()
-	AckTest(publisher, consumerChannel, t)
+	AckTest(publisher, consumerChannel, 1 * time.Second, t)
 }

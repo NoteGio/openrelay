@@ -3,6 +3,7 @@ package affiliates_test
 import (
 	"encoding/hex"
 	"github.com/notegio/openrelay/affiliates"
+	"github.com/notegio/openrelay/types"
 	"github.com/notegio/openrelay/config"
 	"gopkg.in/redis.v3"
 	"math/big"
@@ -29,7 +30,7 @@ func TestGetMissingAffiliate(t *testing.T) {
 	}
 	service := affiliates.NewRedisAffiliateService(redisClient)
 	address, _ := hex.DecodeString("1000000000000000000000000000000000000000")
-	var addressArray [20]byte
+	addressArray := &types.Address{}
 	copy(addressArray[:], address[:])
 	_, err := service.Get(addressArray)
 	if err == nil {
@@ -51,7 +52,7 @@ func TestSetAffiliate(t *testing.T) {
 	service := affiliates.NewRedisAffiliateService(redisClient)
 	affiliate := affiliates.NewAffiliate(new(big.Int), 100)
 	address, _ := hex.DecodeString("0000000000000000000000000000000000000000")
-	var addressArray [20]byte
+	addressArray := &types.Address{}
 	copy(addressArray[:], address[:])
 	err := service.Set(addressArray, affiliate)
 	if err != nil {
