@@ -37,7 +37,7 @@ func getDb() (*gorm.DB, error) {
 	return db, err
 }
 
-func TestQueryOrder(t *testing.T) {
+func TestSaveOrder(t *testing.T) {
 	db, err := getDb()
 	if err != nil {
 		t.Errorf(err.Error())
@@ -59,7 +59,7 @@ func TestQueryOrder(t *testing.T) {
 	}
 }
 
-func TestSaveOrder(t *testing.T) {
+func TestQueryOrder(t *testing.T) {
 	db, err := getDb()
 	if err != nil {
 		t.Errorf(err.Error())
@@ -89,5 +89,8 @@ func TestSaveOrder(t *testing.T) {
 			hex.EncodeToString(dbBytes[:]),
 			hex.EncodeToString(orderBytes[:]),
 		)
+	}
+	if dbOrder.Filled {
+		t.Errorf("Order unexpectedly marked as filled")
 	}
 }
