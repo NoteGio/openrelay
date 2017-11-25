@@ -76,6 +76,7 @@ func (order *Order) Initialize() {
 	order.Salt = &Uint256{}
 	order.TakerTokenAmountFilled = &Uint256{}
 	order.TakerTokenAmountCancelled = &Uint256{}
+	order.Signature = &Signature{}
 }
 
 // NewOrder takes string representations of values and converts them into an Order object

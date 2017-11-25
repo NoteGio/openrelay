@@ -30,13 +30,15 @@ func (order *Order) Save(db *gorm.DB, status int64) (*gorm.DB) {
 	order.OrderHash = order.Hash()
 	remainingAmount := new(big.Int)
 	remainingAmount.SetBytes(order.TakerTokenAmount[:])
+	// We want to consider it filled once it's 99% filled
+	remainingAmount.Mul(remainingAmount, new(big.Int).SetInt64(99))
+	remainingAmount.Div(remainingAmount, new(big.Int).SetInt64(100))
 	remainingAmount.Sub(remainingAmount, new(big.Int).SetBytes(order.TakerTokenAmountFilled[:]))
 	remainingAmount.Sub(remainingAmount, new(big.Int).SetBytes(order.TakerTokenAmountCancelled[:]))
 	updates := map[string]interface{}{
 		"taker_token_amount_filled": order.TakerTokenAmountFilled,
 		"taker_token_amount_cancelled": order.TakerTokenAmountCancelled,
 		"status": status,
-		"update_at": time.Now(),
 	}
 	if remainingAmount.Cmp(new(big.Int).SetInt64(0)) <= 0 {
 		updates["status"] = StatusFilled
@@ -48,8 +50,6 @@ func (order *Order) Save(db *gorm.DB, status int64) (*gorm.DB) {
 	if updateScope.RowsAffected > 0 {
 		return updateScope
 	}
-	order.CreatedAt = time.Now()
-	order.UpdatedAt = order.CreatedAt
 	order.Status = status
 	return db.Create(order)
 }
