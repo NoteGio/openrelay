@@ -1,0 +1,5 @@
+FROM scratch
+
+COPY bin/indexer /indexer
+
+CMD ["/indexer", "redis:6379", "queue://indexer", "postgres", "postgres", "/run/secrets/postgress_password"]

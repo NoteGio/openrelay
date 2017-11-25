@@ -1,0 +1,5 @@
+FROM scratch
+
+COPY bin/fillindexer /fillindexer
+
+CMD ["/fillindexer", "redis:6379", "queue://pgordersfilled", "postgres", "postgres", "/run/secrets/postgress_password"]

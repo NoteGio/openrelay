@@ -12,6 +12,8 @@ services:
     image: postgres
     ports:
       - "5432"
+    environment:
+      POSTGRES_PASSWORD: secret
     deploy:
       replicas: 1
       restart_policy:
@@ -117,14 +119,26 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.fillindexer
-    command: ["python", "/project/fill_indexer.py", "${REDIS_HOST:-redis:6379}", "ordersfilled", "-l", "DEBUG"]
+    command: ["python", "/project/fill_indexer.py", "${REDIS_HOST:-redis:6379}", "dynamodbordersfilled", "-l", "DEBUG"]
     environment:
       DYNAMODB_HOST: http://dynamo:8000
       AWS_ACCESS_KEY_ID: x
       AWS_SECRET_ACCESS_KEY: x
     depends_on:
       - dynamo
-  simplerelay2:
+
+  pgfillindexer:
+    build:
+      context: ./
+      dockerfile: Dockerfile.pgfillindexer
+    command: ["/fillindexer", "redis:6379", "queue://pgordersfilled", "postgres", "postgres"]
+    environment:
+      POSTGRES_PASSWORD: secret
+    depends_on:
+      - dynamo
+    restart: on-failure
+
+  simplerelayreleased:
     build:
       context: ./
       dockerfile: Dockerfile.simplerelay
@@ -151,7 +165,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.fundcheckrelay
-    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://recheck2", "queue://indexer"]
+    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://recheck2", "queue://preindex"]
     depends_on:
       - ethnode
     restart: on-failure
@@ -190,6 +204,17 @@ services:
     depends_on:
       - postgres
       - redis
+    restart: on-failure
+  pgautomigrate:
+    build:
+      context: ./
+      dockerfile: Dockerfile.automigrate
+    environment:
+      POSTGRES_PASSWORD: secret
+    command: ["/automigrate", "postgres", "postgres"]
+    depends_on:
+      - postgres
+    restart: on-failure
   indexer:
     build:
       context: ./
@@ -239,11 +264,22 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
-  simplerelay3:
+  simplerelayindexer:
     build:
       context: ./
       dockerfile: Dockerfile.simplerelay
     command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://preindex", "queue://indexer", "queue://pgindexer"]
+    depends_on:
+      - redis
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  simplerelayfillindexer:
+    build:
+      context: ./
+      dockerfile: Dockerfile.simplerelay
+    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://ordersfilled", "queue://dynamodbordersfilled", "queue://pgordersfilled"]
     depends_on:
       - redis
     deploy:
@@ -283,3 +319,4 @@ services:
     depends_on:
       - postgres
       - redis
+    restart: on-failure

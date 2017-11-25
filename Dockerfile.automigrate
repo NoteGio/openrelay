@@ -1,0 +1,5 @@
+FROM scratch
+
+COPY bin/automigrate /automigrate
+
+CMD ["/automigrate", "postgres", "postgres", "/run/secrets/postgress_password"]

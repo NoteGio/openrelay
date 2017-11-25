@@ -55,7 +55,13 @@ bin/fillupdate: $(BASE) cmd/fillupdate/main.go
 bin/indexer: $(BASE) cmd/indexer/main.go
 	cd $(BASE) && $(GOSTATIC) -o bin/indexer cmd/indexer/main.go
 
-bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate bin/indexer
+bin/fillindexer: $(BASE) cmd/fillindexer/main.go
+	cd $(BASE) && $(GOSTATIC) -o bin/fillindexer cmd/fillindexer/main.go
+
+bin/automigrate: $(BASE) cmd/automigrate/main.go
+	cd $(BASE) && $(GOSTATIC) -o bin/automigrate cmd/automigrate/main.go
+
+bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate bin/indexer bin/fillindexer bin/automigrate
 
 truffleCompile:
 	cd $(BASE)/js ; node_modules/.bin/truffle compile
