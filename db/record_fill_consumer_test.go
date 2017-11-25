@@ -1,38 +1,17 @@
 package db_test
 
 import (
+	"github.com/notegio/openrelay/channels"
 	dbModule "github.com/notegio/openrelay/db"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"time"
 	"testing"
-	"fmt"
-	"math/big"
-	"encoding/json"
 	"reflect"
+	"math/big"
+	"fmt"
 )
 
-
-func TestIndexOrder(t *testing.T) {
-	db, err := getDb()
-	if err != nil {
-		t.Errorf(err.Error())
-		return
-	}
-	tx := db.Begin()
-	defer func(){
-		tx.Rollback()
-		db.Close()
-	}()
-	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
-		t.Errorf(err.Error())
-	}
-	indexer := dbModule.NewIndexer(tx, dbModule.StatusOpen)
-	order := sampleOrder()
-	if err := indexer.Index(order); err != nil {
-		t.Errorf(err.Error())
-	}
-}
-
-func TestFillIndex(t *testing.T) {
+func TestFillConsumer(t *testing.T) {
 	db, err := getDb()
 	if err != nil {
 		t.Errorf(err.Error())
@@ -57,13 +36,14 @@ func TestFillIndex(t *testing.T) {
 		order.Hash(),
 		takerTokenAmount.String(),
 	)
-	fillRecord := &dbModule.FillRecord{}
-	if err := json.Unmarshal([]byte(fillString), fillRecord); err != nil {
-		t.Errorf(err.Error())
-	}
-	if err := indexer.RecordFill(fillRecord); err != nil {
-		t.Errorf(err.Error())
-	}
+	publisher, channel := channels.MockChannel()
+	consumer := dbModule.NewRecordFillConsumer(tx)
+	channel.AddConsumer(consumer)
+	channel.StartConsuming()
+	defer channel.StopConsuming()
+	publisher.Publish(fillString)
+	time.Sleep(100 * time.Millisecond)
+
 	dbOrder := &dbModule.Order{}
 	dbOrder.Initialize()
 	tx.Model(&dbModule.Order{}).Where("order_hash = ?", order.Hash()).First(dbOrder)
