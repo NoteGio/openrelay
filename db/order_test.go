@@ -54,7 +54,7 @@ func TestSaveOrder(t *testing.T) {
 	order := sampleOrder()
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *order
-	if err := dbOrder.Save(tx).Error; err != nil {
+	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
 		t.Errorf(err.Error())
 	}
 }
@@ -76,7 +76,7 @@ func TestQueryOrder(t *testing.T) {
 	order := sampleOrder()
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *order
-	if err := dbOrder.Save(tx).Error; err != nil {
+	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
 		t.Errorf(err.Error())
 	}
 	dbOrder = &dbModule.Order{}
@@ -90,7 +90,7 @@ func TestQueryOrder(t *testing.T) {
 			hex.EncodeToString(orderBytes[:]),
 		)
 	}
-	if dbOrder.Filled {
-		t.Errorf("Order unexpectedly marked as filled")
+	if dbOrder.Status != dbModule.StatusOpen {
+		t.Errorf("Order unexpectedly not open - %v", dbOrder.Status)
 	}
 }

@@ -7,14 +7,15 @@ import (
 
 type Indexer struct {
 	db *gorm.DB
+	status int64
 }
 
 func (indexer *Indexer) Index(order *types.Order) (error) {
 	dbOrder := Order{}
 	dbOrder.Order = *order
-	return dbOrder.Save(indexer.db).Error
+	return dbOrder.Save(indexer.db, indexer.status).Error
 }
 
-func NewIndexer(db *gorm.DB) (*Indexer) {
-	return &Indexer{db}
+func NewIndexer(db *gorm.DB, status int64) (*Indexer) {
+	return &Indexer{db, status}
 }

@@ -21,6 +21,9 @@ dockerstop:
 	docker stop `cat $(BASE)/tmp/redis.containerid` || true
 	docker rm `cat $(BASE)/tmp/redis.containerid` || true
 	rm $(BASE)/tmp/redis.containerid || true
+	docker stop `cat $(BASE)/tmp/postgres.containerid` || true
+	docker rm `cat $(BASE)/tmp/postgres.containerid` || true
+	rm $(BASE)/tmp/postgres.containerid || true
 
 nodesetup:
 	cd $(BASE)/js ; npm install
@@ -49,7 +52,10 @@ bin/validateorder: $(BASE) cmd/validateorder/main.go
 bin/fillupdate: $(BASE) cmd/fillupdate/main.go
 	cd $(BASE) && $(GOSTATIC) -o bin/fillupdate cmd/fillupdate/main.go
 
-bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate
+bin/indexer: $(BASE) cmd/indexer/main.go
+	cd $(BASE) && $(GOSTATIC) -o bin/indexer cmd/indexer/main.go
+
+bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate bin/indexer
 
 truffleCompile:
 	cd $(BASE)/js ; node_modules/.bin/truffle compile
@@ -57,6 +63,10 @@ truffleCompile:
 $(BASE)/tmp/redis.containerid:
 	mkdir -p $(BASE)/tmp
 	docker run -d -p 6379:6379 redis  > $(BASE)/tmp/redis.containerid
+
+$(BASE)/tmp/postgres.containerid:
+	mkdir -p $(BASE)/tmp
+	docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=secret postgres > $(BASE)/tmp/postgres.containerid
 
 $(BASE)/tmp/dynamo.containerid:
 	mkdir -p $(BASE)/tmp
@@ -68,13 +78,14 @@ py/.env:
 	$(BASE)/py/.env/bin/pip install -r $(BASE)/py/requirements/indexer.txt
 	$(BASE)/py/.env/bin/pip install nose
 
-gotest: $(BASE)/tmp/redis.containerid
+gotest: $(BASE)/tmp/redis.containerid $(BASE)/tmp/postgres.containerid
 	cd $(BASE)/funds && go test
 	cd $(BASE)/channels &&  REDIS_URL=localhost:6379 go test
 	cd $(BASE)/accounts &&  REDIS_URL=localhost:6379 go test
 	cd $(BASE)/affiliates &&  REDIS_URL=localhost:6379 go test
 	cd $(BASE)/types && go test
 	cd $(BASE)/ingest && go test
+	cd $(BASE)/db &&  POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
 
 pytest: $(BASE)/tmp/dynamo.containerid
 	cd $(BASE)/py && DYNAMODB_HOST="http://localhost:8000" $(BASE)/py/.env/bin/nosetests

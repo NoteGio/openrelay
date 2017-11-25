@@ -8,6 +8,14 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
+  postgres:
+    image: postgres
+    ports:
+      - "5432"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
   ethnode:
     build:
       context: ./
@@ -172,6 +180,16 @@ services:
     command: ["node", "/project/hang.js"]
   dynamo:
     image: cnadiminti/dynamodb-local
+  pgindexer:
+    build:
+      context: ./
+      dockerfile: Dockerfile.pgindexer
+    environment:
+      POSTGRES_PASSWORD: secret
+    command: ["/indexer", "${REDIS_HOST:-redis:6379}", "queue://pgindexer", "postgres", "postgres"]
+    depends_on:
+      - postgres
+      - redis
   indexer:
     build:
       context: ./
@@ -213,7 +231,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.fillupdate
-    command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://continuous_recheck", "queue://fund_continuous_recheck", "queue://indexer"]
+    command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://continuous_recheck", "queue://fund_continuous_recheck", "queue://preindex"]
     depends_on:
       - redis
       - ethnode
@@ -221,13 +239,25 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
+  simplerelay3:
+    build:
+      context: ./
+      dockerfile: Dockerfile.simplerelay
+    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://preindex", "queue://indexer", "queue://pgindexer"]
+    depends_on:
+      - redis
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
   fundcheckrelay_continuous:
     # This fund checker passes on orders that have insufficient funds to be
     # removed from the index
     build:
       context: ./
       dockerfile: Dockerfile.fundcheckrelay
-    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://fund_continuous_recheck", "queue://unindexer", "--invert"]
+    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://fund_continuous_recheck", "queue://unindexer", "queue://pgunindexer", "--invert"]
     depends_on:
       - ethnode
     restart: on-failure
@@ -242,4 +272,14 @@ services:
     command: ["python", "/project/indexer.py", "${REDIS_HOST:-redis:6379}", "unindexer", "--unindex"]
     depends_on:
       - dynamo
+      - redis
+  pgunindexer:
+    build:
+      context: ./
+      dockerfile: Dockerfile.pgindexer
+    environment:
+      POSTGRES_PASSWORD: secret
+    command: ["/indexer", "${REDIS_HOST:-redis:6379}", "queue://pgunindexer", "postgres", "postgres", "--unfunded"]
+    depends_on:
+      - postgres
       - redis

@@ -21,7 +21,7 @@ func TestIndexOrder(t *testing.T) {
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	indexer := dbModule.NewIndexer(tx)
+	indexer := dbModule.NewIndexer(tx, dbModule.StatusOpen)
 	order := sampleOrder()
 	if err := indexer.Index(order); err != nil {
 		t.Errorf(err.Error())
