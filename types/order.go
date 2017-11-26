@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"errors"
 	"database/sql/driver"
+	"fmt"
+	"math/big"
 	// "log"
 )
 
@@ -248,6 +250,29 @@ func (order *Order) UnmarshalJSON(b []byte) error {
 	)
 
 	return nil
+}
+
+func (order *Order) MarshalJSON() ([]byte, error) {
+	jsonOrder := &jsonOrder{}
+	jsonOrder.Maker = fmt.Sprintf("%#x", order.Maker[:])
+	jsonOrder.Taker = fmt.Sprintf("%#x", order.Taker[:])
+	jsonOrder.MakerToken = fmt.Sprintf("%#x", order.MakerToken[:])
+	jsonOrder.TakerToken = fmt.Sprintf("%#x", order.TakerToken[:])
+	jsonOrder.FeeRecipient = fmt.Sprintf("%#x", order.FeeRecipient[:])
+	jsonOrder.ExchangeAddress = fmt.Sprintf("%#x", order.ExchangeAddress[:])
+	jsonOrder.MakerTokenAmount = new(big.Int).SetBytes(order.MakerTokenAmount[:]).String()
+	jsonOrder.TakerTokenAmount = new(big.Int).SetBytes(order.TakerTokenAmount[:]).String()
+	jsonOrder.MakerFee = new(big.Int).SetBytes(order.MakerFee[:]).String()
+	jsonOrder.TakerFee = new(big.Int).SetBytes(order.TakerFee[:]).String()
+	jsonOrder.ExpirationTimestampInSec = new(big.Int).SetBytes(order.ExpirationTimestampInSec[:]).String()
+	jsonOrder.Salt = new(big.Int).SetBytes(order.Salt[:]).String()
+	jsonOrder.Signature = jsonSignature{}
+	jsonOrder.Signature.R = fmt.Sprintf("%#x", order.Signature.R[:])
+	jsonOrder.Signature.V = fmt.Sprintf("%v", order.Signature.V)
+	jsonOrder.Signature.S = fmt.Sprintf("%#x", order.Signature.S[:])
+	jsonOrder.TakerTokenAmountFilled = new(big.Int).SetBytes(order.TakerTokenAmountFilled[:]).String()
+	jsonOrder.TakerTokenAmountCancelled = new(big.Int).SetBytes(order.TakerTokenAmountCancelled[:]).String()
+	return json.Marshal(jsonOrder)
 }
 
 func (order *Order) Bytes() [441]byte {
