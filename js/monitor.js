@@ -70,7 +70,9 @@ module.exports = function(redisClient, notificationChannel, filterCreator, web3,
                 channel.QueueMessage(JSON.stringify(transform(data)));
             } else {
                 web3.eth.getBlockNumber((currentBlock) => {
-                    channel.Publish(JSON.stringify(transform(data)));
+                    var payload = JSON.stringify(transform(data));
+                    console.log(`Block ${currentBlock} - published '${payload}'`);
+                    channel.Publish(payload);
                     if(lastBlockNumber != currentBlock) {
                         redisClient.set(blockKey, currentBlock);
                         lastBlockNumber = currentBlock;
