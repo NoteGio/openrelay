@@ -29,6 +29,8 @@ func FormatResponse(orders []dbModule.Order, format string) ([]byte, string, err
 }
 
 func Handler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
+	// TODO: Require blocknumber
+	// TODO: Filters
 	return func(w http.ResponseWriter, r *http.Request) {
 		orders := []dbModule.Order{}
 		query := db.Model(&dbModule.Order{})
