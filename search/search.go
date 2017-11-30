@@ -5,6 +5,7 @@ import (
 	"github.com/jinzhu/gorm"
 	dbModule "github.com/notegio/openrelay/db"
 	"github.com/notegio/openrelay/types"
+	"github.com/notegio/openrelay/blockhash"
 	"net/http"
 	"fmt"
 	"strings"
@@ -28,10 +29,21 @@ func FormatResponse(orders []dbModule.Order, format string) ([]byte, string, err
 	}
 }
 
-func Handler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
-	// TODO: Require blocknumber
+func Handler(db *gorm.DB, blockHash blockhash.BlockHash) func(http.ResponseWriter, *http.Request) {
+	blockHash.Get() // Start the go routines, if necessary
 	// TODO: Filters
 	return func(w http.ResponseWriter, r *http.Request) {
+		queryObject := r.URL.Query()
+		hash := queryObject.Get("blockhash")
+		if hash == "" {
+			queryObject.Set("blockhash", blockHash.Get())
+			url := *r.URL
+			url.RawQuery = queryObject.Encode()
+			http.Redirect(w, r, (&url).RequestURI(), 307)
+			return
+		}
+
+
 		orders := []dbModule.Order{}
 		query := db.Model(&dbModule.Order{})
 		// Filter Stuff

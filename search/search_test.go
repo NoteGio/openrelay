@@ -4,9 +4,14 @@ import (
 	"testing"
 	"encoding/hex"
 	"github.com/notegio/openrelay/search"
+	"github.com/notegio/openrelay/channels"
+	"github.com/notegio/openrelay/blockhash"
 	"github.com/notegio/openrelay/types"
 	dbModule "github.com/notegio/openrelay/db"
+	"net/http"
+	"net/http/httptest"
 	"reflect"
+	"time"
 )
 
 func getTestOrderBytes() [441]byte {
@@ -54,5 +59,22 @@ func TestFormatResponseBin(t *testing.T) {
 	orderValue = append(orderValue, orderBytes[:]...)
 	if !reflect.DeepEqual(response, orderValue) {
 		t.Errorf("Got '%#x'", response)
+	}
+}
+
+func TestBlockhashRedirect(t *testing.T) {
+	publisher, consumerChannel := channels.MockChannel()
+	blockHash := blockhash.NewChanneledBlockHash(consumerChannel)
+	publisher.Publish("hashValue")
+	time.Sleep(300 * time.Millisecond)
+	handler := search.Handler(nil, blockHash)
+	request, _ := http.NewRequest("GET", "/v0/orders?makertoken=0x324454186bb728a3ea55750e0618ff1b18ce6cf8", nil)
+	recorder := httptest.NewRecorder()
+	handler(recorder, request)
+	if recorder.Code != 307 {
+		t.Errorf("Did not redirect")
+	}
+	if location := recorder.Header().Get("Location"); location != "/v0/orders?blockhash=hashValue&makertoken=0x324454186bb728a3ea55750e0618ff1b18ce6cf8" {
+		t.Errorf("Expected orderHash to be added, got '%v'", location)
 	}
 }
