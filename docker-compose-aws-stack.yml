@@ -4,7 +4,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.ingest
-    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-ingest
+    image: openrelay/ingest
     logging:
       driver: awslogs
       options:
@@ -24,7 +24,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.fillupdate
-    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-fillupdate
+    image: openrelay/fillupdate
     logging:
       driver: awslogs
       options:
@@ -42,7 +42,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.fundcheckrelay
-    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-fundcheckrelay
+    image: openrelay/fundcheckrelay
     logging:
       driver: awslogs
       options:
@@ -58,7 +58,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.delayrelay
-    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-delayrelay
+    image: openrelay/delayrelay
     logging:
       driver: awslogs
       options:
@@ -74,7 +74,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.delayrelay
-    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-delayrelay
+    image: openrelay/delayrelay
     logging:
       driver: awslogs
       options:
@@ -90,7 +90,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.blockmonitor
-    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-blockmonitor
+    image: openrelay/blockmonitor
     logging:
       driver: awslogs
       options:
@@ -109,7 +109,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.fillmonitor
-    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-fillmonitor
+    image: openrelay/fillmonitor
     logging:
       driver: awslogs
       options:
@@ -128,7 +128,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.fillindexer
-    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-fillindexer
+    image: openrelay/fillindexer
     logging:
       driver: awslogs
       options:
@@ -146,7 +146,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.simplerelay
-    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-simplerelay
+    image: openrelay/simplerelay
     logging:
       driver: awslogs
       options:
@@ -162,7 +162,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.fillupdate
-    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-fillupdate
+    image: openrelay/fillupdate
     logging:
       driver: awslogs
       options:
@@ -178,7 +178,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.fundcheckrelay
-    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-fundcheckrelay
+    image: openrelay/fundcheckrelay
     logging:
       driver: awslogs
       options:
@@ -194,7 +194,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.initialize
-    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-initialize
+    image: openrelay/initialize
     logging:
       driver: awslogs
       options:
@@ -208,7 +208,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.indexer
-    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-indexer
+    image: openrelay/indexer
     logging:
       driver: awslogs
       options:
@@ -226,7 +226,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.searchapi
-    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-searchapi
+    image: openrelay/searchapi
     logging:
       driver: awslogs
       options:
@@ -249,7 +249,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.queueorders
-    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-queueorders
+    image: openrelay/queueorders
     logging:
       driver: awslogs
       options:
@@ -270,7 +270,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.fillupdate
-    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-fillupdate
+    image: openrelay/fillupdate
     logging:
       driver: awslogs
       options:
@@ -288,7 +288,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.fundcheckrelay
-    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-fundcheckrelay
+    image: openrelay/fundcheckrelay
     logging:
       driver: awslogs
       options:
@@ -304,7 +304,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.indexer
-    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-indexer
+    image: openrelay/indexer
     logging:
       driver: awslogs
       options:
