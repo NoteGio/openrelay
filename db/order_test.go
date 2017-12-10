@@ -79,8 +79,9 @@ func TestQueryOrder(t *testing.T) {
 	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	dbOrder = &dbModule.Order{}
-	tx.Model(&dbModule.Order{}).Where("order_hash = ?", order.Hash()).First(dbOrder)
+	dbOrders := []dbModule.Order{}
+	tx.Model(&dbModule.Order{}).Where("order_hash = ?", order.Hash()).Find(&dbOrders)
+	dbOrder = &dbOrders[0]
 	if !reflect.DeepEqual(dbOrder.Bytes(), order.Bytes()) {
 		dbBytes := dbOrder.Bytes()
 		orderBytes := order.Bytes()
