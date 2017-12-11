@@ -51,7 +51,7 @@ func applyOrFilter(query *gorm.DB, queryField, dbField1, dbField2 string, queryO
 			return query, err
 		}
 		whereClause := fmt.Sprintf("%v = ? or %v = ?", dbField1, dbField2)
-		filteredQuery := query.Where(whereClause, addressBytes, addressBytes)
+		filteredQuery := query.Where(whereClause, common.BytesToOrAddress(addressBytes), common.BytesToOrAddress(addressBytes))
 		return filteredQuery, filteredQuery.Error
 	}
 	return query, nil

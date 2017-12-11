@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
-	"time"
 	"os"
 	"fmt"
 )
@@ -86,10 +85,8 @@ func TestFormatResponseBin(t *testing.T) {
 }
 
 func TestBlockhashRedirect(t *testing.T) {
-	publisher, consumerChannel := channels.MockChannel()
+	_, consumerChannel := channels.MockChannel()
 	blockHash := blockhash.NewChanneledBlockHash(consumerChannel)
-	publisher.Publish("hashValue")
-	time.Sleep(300 * time.Millisecond)
 	handler := search.Handler(nil, blockHash)
 	request, _ := http.NewRequest("GET", "/v0/orders?makertoken=0x324454186bb728a3ea55750e0618ff1b18ce6cf8", nil)
 	recorder := httptest.NewRecorder()
@@ -97,7 +94,7 @@ func TestBlockhashRedirect(t *testing.T) {
 	if recorder.Code != 307 {
 		t.Errorf("Did not redirect")
 	}
-	if location := recorder.Header().Get("Location"); location != "/v0/orders?blockhash=hashValue&makertoken=0x324454186bb728a3ea55750e0618ff1b18ce6cf8" {
+	if location := recorder.Header().Get("Location"); location != "/v0/orders?blockhash=initializing&makertoken=0x324454186bb728a3ea55750e0618ff1b18ce6cf8" {
 		t.Errorf("Expected orderHash to be added, got '%v'", location)
 	}
 }
@@ -142,4 +139,36 @@ func filterContractRequest(queryString, emptyQueryString string, t *testing.T) {
 
 func TestFilterExchangeContract(t *testing.T) {
 	filterContractRequest("exchangeContractAddress=0x90fe2af704b34e0224bf2299c838e04d4dcf1364", "exchangeContractAddress=0x90fe2af704b34e0224bf2299c838e04d4dcf1300", t)
+}
+
+func TestFilterTakerTokenContract(t *testing.T) {
+	filterContractRequest("takerTokenAddress=0x05d090b51c40b020eab3bfcb6a2dff130df22e9c", "takerTokenAddress=0x90fe2af704b34e0224bf2299c838e04d4dcf1300", t)
+}
+
+func TestFilterMakerTokenContract(t *testing.T) {
+	filterContractRequest("makerTokenAddress=0x1dad4783cf3fe3085c1426157ab175a6119a04ba", "makerTokenAddress=0x90fe2af704b34e0224bf2299c838e04d4dcf1300", t)
+}
+
+func TestFilterTokenContract(t *testing.T) {
+	filterContractRequest("tokenAddress=0x1dad4783cf3fe3085c1426157ab175a6119a04ba", "tokenAddress=0x90fe2af704b34e0224bf2299c838e04d4dcf1300", t)
+}
+
+func TestFilterMakerTokenAndTakerTokenContract(t *testing.T) {
+	filterContractRequest("makerTokenAddress=0x1dad4783cf3fe3085c1426157ab175a6119a04ba&takerTokenAddress=0x05d090b51c40b020eab3bfcb6a2dff130df22e9c", "makerTokenAddress=0x90fe2af704b34e0224bf2299c838e04d4dcf1300&takerTokenAddress=0x05d090b51c40b020eab3bfcb6a2dff130df22e9c", t)
+}
+
+func TestFilterMaker(t *testing.T) {
+	filterContractRequest("maker=0x324454186bb728a3ea55750e0618ff1b18ce6cf8", "maker=0x90fe2af704b34e0224bf2299c838e04d4dcf1300", t)
+}
+
+func TestFilterTrader(t *testing.T) {
+	filterContractRequest("trader=0x324454186bb728a3ea55750e0618ff1b18ce6cf8", "trader=0x90fe2af704b34e0224bf2299c838e04d4dcf1300", t)
+}
+
+func TestFilterTaker(t *testing.T) {
+	filterContractRequest("taker=0x0000000000000000000000000000000000000000", "taker=0x90fe2af704b34e0224bf2299c838e04d4dcf1300", t)
+}
+
+func TestFilterFeeRecipientTaker(t *testing.T) {
+	filterContractRequest("feeRecipient=0x0000000000000000000000000000000000000000", "feeRecipient=0x90fe2af704b34e0224bf2299c838e04d4dcf1300", t)
 }
