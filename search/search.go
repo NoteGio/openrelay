@@ -11,6 +11,7 @@ import (
 	urlModule "net/url"
 	"fmt"
 	"strings"
+	"strconv"
 )
 
 func FormatResponse(orders []dbModule.Order, format string) ([]byte, string, error) {
@@ -118,6 +119,31 @@ func Handler(db *gorm.DB, blockHash blockhash.BlockHash) func(http.ResponseWrite
 			returnError(w, err, 400)
 			return
 		}
+
+		pageStr := queryObject.Get("page")
+		if pageStr == "" {
+			pageStr = "1"
+		}
+		perPageStr := queryObject.Get("per_page")
+		if perPageStr == "" {
+			perPageStr = "20"
+		}
+		pageInt, err := strconv.Atoi(pageStr)
+		if err != nil {
+			returnError(w, err, 400)
+			return
+		}
+		perPageInt, err := strconv.Atoi(perPageStr)
+		if err != nil {
+			returnError(w, err, 400)
+			return
+		}
+		query = query.Offset((pageInt - 1) * perPageInt).Limit(perPageInt)
+		if query.Error != nil {
+			returnError(w, query.Error, 400)
+			return
+		}
+
 		orders := []dbModule.Order{}
 		if err := query.Find(&orders).Error; err != nil {
 			returnError(w, err, 500)

@@ -15,6 +15,7 @@ import (
 	"reflect"
 	"os"
 	"fmt"
+	"crypto/rand"
 )
 
 func getTestOrderBytes() [441]byte {
@@ -27,6 +28,15 @@ func getTestOrderBytes() [441]byte {
 func sampleOrder() *dbModule.Order {
 	order := &types.Order{}
 	order.FromBytes(getTestOrderBytes())
+	dbOrder := &dbModule.Order{}
+	dbOrder.Order = *order
+	return dbOrder
+}
+
+func saltedSampleOrder() *dbModule.Order {
+	order := &types.Order{}
+	order.FromBytes(getTestOrderBytes())
+	rand.Read(order.Salt[:])
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *order
 	return dbOrder
@@ -171,4 +181,44 @@ func TestFilterTaker(t *testing.T) {
 
 func TestFilterFeeRecipientTaker(t *testing.T) {
 	filterContractRequest("feeRecipient=0x0000000000000000000000000000000000000000", "feeRecipient=0x90fe2af704b34e0224bf2299c838e04d4dcf1300", t)
+}
+
+func TestPagination(t *testing.T) {
+	db, err := getDb()
+	if err != nil {
+		t.Errorf(err.Error())
+		return
+	}
+	tx := db.Begin()
+	defer func(){
+		tx.Rollback()
+		db.Close()
+	}()
+	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	for i:= 0; i < 21; i++ {
+		saltedSampleOrder().Save(tx, 0)
+	}
+	handler := getTestHandler(tx)
+	request, _ := http.NewRequest("GET", "/v0/orders?&blockhash=x", nil)
+	request.Header.Set("Accept", "application/octet-stream")
+	recorder := httptest.NewRecorder()
+	handler(recorder, request)
+	if recorder.Code != 200 {
+		t.Errorf("Unexpected response code '%v'", recorder.Code)
+	}
+	if length := recorder.Body.Len(); length != (20 * 441) {
+		t.Errorf("Expected 20 items, got '%v'", (length / 441))
+	}
+	request, _ = http.NewRequest("GET", "/v0/orders?page=2&blockhash=x", nil)
+	request.Header.Set("Accept", "application/octet-stream")
+	recorder = httptest.NewRecorder()
+	handler(recorder, request)
+	if recorder.Code != 200 {
+		t.Errorf("Unexpected response code '%v'", recorder.Code)
+	}
+	if length := recorder.Body.Len(); length != (1 * 441) {
+		t.Errorf("Expected 1 items, got '%v'", (length / 441))
+	}
 }
