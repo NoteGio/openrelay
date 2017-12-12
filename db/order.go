@@ -20,6 +20,8 @@ type Order struct {
 	UpdatedAt time.Time
 	OrderHash []byte `gorm:"primary_key"`
 	Status    int64 `gorm:"index"`
+	Price     float64 `gorm:"index:price"`
+	FeeRate   float64 `gorm:"index:price"`
 }
 
 // Save records the order in the database, defaulting to the specified status.
@@ -28,6 +30,7 @@ type Order struct {
 // the status will be recorded as db.StatusFilled regardless of the specified status.
 func (order *Order) Save(db *gorm.DB, status int64) (*gorm.DB) {
 	order.OrderHash = order.Hash()
+
 	remainingAmount := new(big.Int)
 	remainingAmount.SetBytes(order.TakerTokenAmount[:])
 	// We want to consider it filled once it's 99% filled
@@ -50,6 +53,13 @@ func (order *Order) Save(db *gorm.DB, status int64) (*gorm.DB) {
 	if updateScope.RowsAffected > 0 {
 		return updateScope
 	}
+
+	takerTokenAmount := new(big.Float).SetInt(new(big.Int).SetBytes(order.TakerTokenAmount[:]))
+	makerTokenAmount := new(big.Float).SetInt(new(big.Int).SetBytes(order.MakerTokenAmount[:]))
+	takerFeeAmount := new(big.Float).SetInt(new(big.Int).SetBytes(order.TakerFee[:]))
+
+	order.Price, _ =  new(big.Float).Quo(takerTokenAmount, makerTokenAmount).Float64()
+	order.FeeRate, _ =  new(big.Float).Quo(takerFeeAmount, takerTokenAmount).Float64()
 	order.Status = status
 	return db.Create(order)
 }

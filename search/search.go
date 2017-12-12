@@ -143,6 +143,13 @@ func Handler(db *gorm.DB, blockHash blockhash.BlockHash) func(http.ResponseWrite
 			returnError(w, query.Error, 400)
 			return
 		}
+		if queryObject.Get("makerTokenAddress") != "" && queryObject.Get("takerTokenAddress") != "" {
+			query := query.Order("price asc, fee_rate asc")
+			if query.Error != nil {
+				returnError(w, query.Error, 400)
+				return
+			}
+		}
 
 		orders := []dbModule.Order{}
 		if err := query.Find(&orders).Error; err != nil {

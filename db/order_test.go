@@ -94,4 +94,10 @@ func TestQueryOrder(t *testing.T) {
 	if dbOrder.Status != dbModule.StatusOpen {
 		t.Errorf("Order unexpectedly not open - %v", dbOrder.Status)
 	}
+	if dbOrder.Price != 0.02 {
+		t.Errorf("Expected price '0.02' got '%v'", dbOrder.Price)
+	}
+	if dbOrder.FeeRate != 0 {
+		t.Errorf("Expected FeeRate '0' got '%v'", dbOrder.FeeRate)
+	}
 }
