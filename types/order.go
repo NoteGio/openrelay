@@ -268,7 +268,7 @@ func (order *Order) MarshalJSON() ([]byte, error) {
 	jsonOrder.Salt = new(big.Int).SetBytes(order.Salt[:]).String()
 	jsonOrder.Signature = jsonSignature{}
 	jsonOrder.Signature.R = fmt.Sprintf("%#x", order.Signature.R[:])
-	jsonOrder.Signature.V = fmt.Sprintf("%v", order.Signature.V)
+	jsonOrder.Signature.V = json.Number(fmt.Sprintf("%v", order.Signature.V))
 	jsonOrder.Signature.S = fmt.Sprintf("%#x", order.Signature.S[:])
 	jsonOrder.TakerTokenAmountFilled = new(big.Int).SetBytes(order.TakerTokenAmountFilled[:]).String()
 	jsonOrder.TakerTokenAmountCancelled = new(big.Int).SetBytes(order.TakerTokenAmountCancelled[:]).String()

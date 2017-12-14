@@ -62,7 +62,10 @@ bin/fillindexer: $(BASE) cmd/fillindexer/main.go
 bin/automigrate: $(BASE) cmd/automigrate/main.go
 	cd $(BASE) && $(GOSTATIC) -o bin/automigrate cmd/automigrate/main.go
 
-bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate bin/indexer bin/fillindexer bin/automigrate
+bin/searchapi: $(BASE) cmd/searchapi/main.go
+	cd $(BASE) && $(GOSTATIC) -o bin/searchapi cmd/searchapi/main.go
+
+bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate bin/indexer bin/fillindexer bin/automigrate bin/searchapi
 
 truffleCompile:
 	cd js ; node_modules/.bin/truffle compile
@@ -92,6 +95,7 @@ gotest: $(BASE)/tmp/redis.containerid $(BASE)/tmp/postgres.containerid
 	cd $(BASE)/affiliates &&  REDIS_URL=localhost:6379 go test
 	cd $(BASE)/types && go test
 	cd $(BASE)/ingest && go test
+	cd $(BASE)/search && go test
 	cd $(BASE)/db &&  POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
 
 pytest: $(BASE)/tmp/dynamo.containerid

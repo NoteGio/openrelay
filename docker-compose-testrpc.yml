@@ -236,6 +236,22 @@ services:
       AWS_ACCESS_KEY_ID: x
       AWS_SECRET_ACCESS_KEY: x
     command: ["python", "/project/api.py", "${REDIS_HOST:-redis:6379}", "newblocks", "-l", "debug"]
+  pgapi:
+    build:
+      context: ./
+      dockerfile: Dockerfile.pgsearchapi
+    ports:
+      - "8080"
+    command: ["/searchapi", "${REDIS_HOST:-redis:6379}", "topic://newblocks", "postgres", "postgres"]
+    environment:
+      POSTGRES_PASSWORD: secret
+    depends_on:
+      - redis
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    restart: on-failure
   ordercheckenqueue:
     # This node uses dynamodb to continuously requeue orders to be checked
     # again on an ongoing basis
