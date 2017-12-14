@@ -12,6 +12,7 @@ $(BASE):
 
 clean: dockerstop
 	rm -rf bin/ .gopath/
+	rm -rf js/build
 
 
 dockerstop:
@@ -26,7 +27,7 @@ dockerstop:
 	rm $(BASE)/tmp/postgres.containerid || true
 
 nodesetup:
-	cd $(BASE)/js ; npm install
+	cd js ; npm install
 
 bin/delayrelay: $(BASE) cmd/delayrelay/main.go
 	cd $(BASE) &&  CGO_ENABLED=0 $(GOSTATIC) -o bin/delayrelay cmd/delayrelay/main.go
@@ -64,7 +65,7 @@ bin/automigrate: $(BASE) cmd/automigrate/main.go
 bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate bin/indexer bin/fillindexer bin/automigrate
 
 truffleCompile:
-	cd $(BASE)/js ; node_modules/.bin/truffle compile
+	cd js ; node_modules/.bin/truffle compile
 
 $(BASE)/tmp/redis.containerid:
 	mkdir -p $(BASE)/tmp
