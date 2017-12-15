@@ -48,6 +48,12 @@ func getTestSearchHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) 
 	return search.BlockHashDecorator(blockHash, search.SearchHandler(db))
 }
 
+func getTestOrderHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
+	_, consumerChannel := channels.MockChannel()
+	blockHash := blockhash.NewChanneledBlockHash(consumerChannel)
+	return search.BlockHashDecorator(blockHash, search.OrderHandler(db))
+}
+
 func getDb() (*gorm.DB, error) {
 	connectionString := fmt.Sprintf(
 		"host=%v sslmode=disable user=%v password=%v",
@@ -83,11 +89,41 @@ func TestFormatResponseBin(t *testing.T) {
 		t.Errorf("Error getting formatted response: %v", err.Error())
 	}
 	if contentType != "application/octet-stream" {
-		t.Errorf("Expected content type application/json, got '%v'", contentType)
+		t.Errorf("Expected content type application/octet-stream, got '%v'", contentType)
 	}
 	orderBytes := order.Bytes()
 	orderValue := []byte{}
 	orderValue = append(orderValue, orderBytes[:]...)
+	orderValue = append(orderValue, orderBytes[:]...)
+	if !reflect.DeepEqual(response, orderValue) {
+		t.Errorf("Got '%#x'", response)
+	}
+}
+func TestFormatSingleResponseJson(t *testing.T) {
+	order := sampleOrder()
+	response, contentType, err := search.FormatSingleResponse(order, "application/json")
+	if err != nil {
+		t.Errorf("Error getting formatted response: %v", err.Error())
+	}
+	if contentType != "application/json" {
+		t.Errorf("Expected content type application/json, got '%v'", contentType)
+	}
+	if string(response) != "{\"maker\":\"0x324454186bb728a3ea55750e0618ff1b18ce6cf8\",\"taker\":\"0x0000000000000000000000000000000000000000\",\"makerTokenAddress\":\"0x1dad4783cf3fe3085c1426157ab175a6119a04ba\",\"takerTokenAddress\":\"0x05d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"feeRecipient\":\"0x0000000000000000000000000000000000000000\",\"exchangeContractAddress\":\"0x90fe2af704b34e0224bf2299c838e04d4dcf1364\",\"makerTokenAmount\":\"50000000000000000000\",\"takerTokenAmount\":\"1000000000000000000\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationUnixTimestampSec\":\"1502841540\",\"salt\":\"11065671350908846865864045738088581419204014210814002044381812654087807531\",\"ecSignature\":{\"v\":27,\"r\":\"0x021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e\",\"s\":\"0x12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f1\"},\"takerTokenAmountFilled\":\"0\",\"takerTokenAmountCancelled\":\"0\"}" {
+		t.Errorf("Got '%v'", string(response))
+	}
+}
+
+func TestFormatSingleResponseBin(t *testing.T) {
+	order := sampleOrder()
+	response, contentType, err := search.FormatSingleResponse(order, "application/octet-stream")
+	if err != nil {
+		t.Errorf("Error getting formatted response: %v", err.Error())
+	}
+	if contentType != "application/octet-stream" {
+		t.Errorf("Expected content type application/json, got '%v'", contentType)
+	}
+	orderBytes := order.Bytes()
+	orderValue := []byte{}
 	orderValue = append(orderValue, orderBytes[:]...)
 	if !reflect.DeepEqual(response, orderValue) {
 		t.Errorf("Got '%#x'", response)
@@ -220,5 +256,36 @@ func TestPagination(t *testing.T) {
 	}
 	if length := recorder.Body.Len(); length != (1 * 441) {
 		t.Errorf("Expected 1 items, got '%v'", (length / 441))
+	}
+}
+
+func TestOrderLookup(t *testing.T) {
+	db, err := getDb()
+	if err != nil {
+		t.Errorf(err.Error())
+		return
+	}
+	tx := db.Begin()
+	defer func(){
+		tx.Rollback()
+		db.Close()
+	}()
+	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	order := sampleOrder()
+	order.Save(tx, 0)
+	orderHash := order.Hash()
+	orderHashHex := hex.EncodeToString(orderHash)
+	handler := getTestOrderHandler(tx)
+	request, _ := http.NewRequest("GET", "/v0/order/0x" + orderHashHex + "?blockhash=x", nil)
+	recorder := httptest.NewRecorder()
+	handler(recorder, request)
+	if recorder.Code != 200 {
+		t.Errorf("Unexpected response code '%v'", recorder.Code)
+	}
+	response := recorder.Body.String()
+	if string(response) != "{\"maker\":\"0x324454186bb728a3ea55750e0618ff1b18ce6cf8\",\"taker\":\"0x0000000000000000000000000000000000000000\",\"makerTokenAddress\":\"0x1dad4783cf3fe3085c1426157ab175a6119a04ba\",\"takerTokenAddress\":\"0x05d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"feeRecipient\":\"0x0000000000000000000000000000000000000000\",\"exchangeContractAddress\":\"0x90fe2af704b34e0224bf2299c838e04d4dcf1364\",\"makerTokenAmount\":\"50000000000000000000\",\"takerTokenAmount\":\"1000000000000000000\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationUnixTimestampSec\":\"1502841540\",\"salt\":\"11065671350908846865864045738088581419204014210814002044381812654087807531\",\"ecSignature\":{\"v\":27,\"r\":\"0x021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e\",\"s\":\"0x12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f1\"},\"takerTokenAmountFilled\":\"0\",\"takerTokenAmountCancelled\":\"0\"}" {
+		t.Errorf("Got '%v'", string(response))
 	}
 }

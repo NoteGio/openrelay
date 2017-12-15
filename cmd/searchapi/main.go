@@ -57,10 +57,12 @@ func main() {
 		log.Fatalf("Error establishing block channel: %v", err.Error())
 	}
 	blockHash := blockhash.NewChanneledBlockHash(blockChannelConsumer)
-	handler := search.BlockHashDecorator(blockHash, search.SearchHandler(db))
+	searchHandler := search.BlockHashDecorator(blockHash, search.SearchHandler(db))
+	orderHandler := search.BlockHashDecorator(blockHash, search.OrderHandler(db))
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v0/orders", handler)
+	mux.HandleFunc("/v0/orders", searchHandler)
+	mux.HandleFunc("/v0/order/", orderHandler)
 	corsHandler := cors.Default().Handler(mux)
 	log.Printf("Order Search Serving on :%v", port)
 	http.ListenAndServe(":"+port, corsHandler)

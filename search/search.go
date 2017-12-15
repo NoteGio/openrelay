@@ -2,6 +2,7 @@ package search
 
 import (
 	"encoding/json"
+	"encoding/hex"
 	"github.com/jinzhu/gorm"
 	dbModule "github.com/notegio/openrelay/db"
 	"github.com/notegio/openrelay/types"
@@ -12,6 +13,7 @@ import (
 	"fmt"
 	"strings"
 	"strconv"
+	"regexp"
 )
 
 func FormatResponse(orders []dbModule.Order, format string) ([]byte, string, error) {
@@ -30,6 +32,15 @@ func FormatResponse(orders []dbModule.Order, format string) ([]byte, string, err
 		result, err := json.Marshal(orderList)
 		return result, "application/json", err
 	}
+}
+
+func FormatSingleResponse(order *dbModule.Order, format string) ([]byte, string, error) {
+	if format == "application/octet-stream" {
+		result := order.Bytes()
+		return result[:], "application/octet-stream", nil
+	}
+	result, err := json.Marshal(order)
+	return result, "application/json", err
 }
 
 func applyFilter(query *gorm.DB, queryField, dbField string, queryObject urlModule.Values) (*gorm.DB, error) {
@@ -169,6 +180,38 @@ func SearchHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 			acceptHeader = "unknown"
 		}
 		response, contentType, err := FormatResponse(orders, acceptHeader)
+		if err == nil {
+			w.WriteHeader(200)
+			w.Header().Set("Content-Type", contentType)
+			w.Write(response)
+		} else {
+			returnError(w, err, 500)
+		}
+	}
+}
+
+func OrderHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		orderRegex := regexp.MustCompile(".*/order/0x([0-9a-fA-F]+)")
+		hashHex := orderRegex.FindStringSubmatch(r.URL.Path)[1]
+		hashBytes, err := hex.DecodeString(hashHex)
+		if err != nil {
+			returnError(w, err, 400)
+			return
+		}
+		order := &dbModule.Order{}
+		query := db.Model(&dbModule.Order{}).Where("order_hash = ?", hashBytes).First(order)
+		if query.Error != nil {
+			returnError(w, query.Error, 500)
+			return
+		}
+		var acceptHeader string
+		if acceptVal, ok := r.Header["Accept"]; ok {
+			acceptHeader = strings.Split(acceptVal[0], ";")[0]
+		} else {
+			acceptHeader = "unknown"
+		}
+		response, contentType, err := FormatSingleResponse(order, acceptHeader)
 		if err == nil {
 			w.WriteHeader(200)
 			w.Header().Set("Content-Type", contentType)
