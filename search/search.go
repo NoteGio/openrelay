@@ -64,9 +64,8 @@ func returnError(w http.ResponseWriter, err error, code int) {
 	w.Write([]byte(fmt.Sprintf("{\"error\": \"%v\"}", err.Error())))
 }
 
-func Handler(db *gorm.DB, blockHash blockhash.BlockHash) func(http.ResponseWriter, *http.Request) {
+func BlockHashDecorator(blockHash blockhash.BlockHash, fn func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
 	blockHash.Get() // Start the go routines, if necessary
-	// TODO: Filters
 	return func(w http.ResponseWriter, r *http.Request) {
 		queryObject := r.URL.Query()
 		hash := queryObject.Get("blockhash")
@@ -77,6 +76,13 @@ func Handler(db *gorm.DB, blockHash blockhash.BlockHash) func(http.ResponseWrite
 			http.Redirect(w, r, (&url).RequestURI(), 307)
 			return
 		}
+		fn(w, r)
+	}
+}
+
+func Handler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		queryObject := r.URL.Query()
 		query := db.Model(&dbModule.Order{})
 
 		query, err := applyFilter(query, "exchangeContractAddress", "exchange_address", queryObject)
