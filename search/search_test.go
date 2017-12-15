@@ -42,10 +42,10 @@ func saltedSampleOrder() *dbModule.Order {
 	return dbOrder
 }
 
-func getTestHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
+func getTestSearchHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 	_, consumerChannel := channels.MockChannel()
 	blockHash := blockhash.NewChanneledBlockHash(consumerChannel)
-	return search.BlockHashDecorator(blockHash, search.Handler(db))
+	return search.BlockHashDecorator(blockHash, search.SearchHandler(db))
 }
 
 func getDb() (*gorm.DB, error) {
@@ -97,7 +97,7 @@ func TestFormatResponseBin(t *testing.T) {
 func TestBlockhashRedirect(t *testing.T) {
 	_, consumerChannel := channels.MockChannel()
 	blockHash := blockhash.NewChanneledBlockHash(consumerChannel)
-	handler := search.BlockHashDecorator(blockHash, search.Handler(nil))
+	handler := search.BlockHashDecorator(blockHash, search.SearchHandler(nil))
 	request, _ := http.NewRequest("GET", "/v0/orders?makertoken=0x324454186bb728a3ea55750e0618ff1b18ce6cf8", nil)
 	recorder := httptest.NewRecorder()
 	handler(recorder, request)
@@ -124,7 +124,7 @@ func filterContractRequest(queryString, emptyQueryString string, t *testing.T) {
 		t.Errorf(err.Error())
 	}
 	sampleOrder().Save(tx, 0)
-	handler := getTestHandler(tx)
+	handler := getTestSearchHandler(tx)
 	request, _ := http.NewRequest("GET", "/v0/orders?" + queryString + "&blockhash=x", nil)
 	recorder := httptest.NewRecorder()
 	handler(recorder, request)
@@ -200,7 +200,7 @@ func TestPagination(t *testing.T) {
 	for i:= 0; i < 21; i++ {
 		saltedSampleOrder().Save(tx, 0)
 	}
-	handler := getTestHandler(tx)
+	handler := getTestSearchHandler(tx)
 	request, _ := http.NewRequest("GET", "/v0/orders?&blockhash=x", nil)
 	request.Header.Set("Accept", "application/octet-stream")
 	recorder := httptest.NewRecorder()

@@ -80,7 +80,7 @@ func BlockHashDecorator(blockHash blockhash.BlockHash, fn func(http.ResponseWrit
 	}
 }
 
-func Handler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
+func SearchHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		queryObject := r.URL.Query()
 		query := db.Model(&dbModule.Order{})

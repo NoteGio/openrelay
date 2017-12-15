@@ -57,7 +57,7 @@ func main() {
 		log.Fatalf("Error establishing block channel: %v", err.Error())
 	}
 	blockHash := blockhash.NewChanneledBlockHash(blockChannelConsumer)
-	handler := search.BlockHashDecorator(blockHash, search.Handler(db))
+	handler := search.BlockHashDecorator(blockHash, search.SearchHandler(db))
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v0/orders", handler)
