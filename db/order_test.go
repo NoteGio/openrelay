@@ -101,3 +101,127 @@ func TestQueryOrder(t *testing.T) {
 		t.Errorf("Expected FeeRate '0' got '%v'", dbOrder.FeeRate)
 	}
 }
+
+func checkPairs(t *testing.T, tokenPairs []dbModule.Pairs, sOrder *types.Order) {
+	if len(tokenPairs) != 1 {
+		t.Errorf("Expected 1 value, got %v", len(tokenPairs))
+		return
+	}
+	if ! reflect.DeepEqual(tokenPairs[0].TokenA, sOrder.TakerToken) {
+		t.Errorf("Expected %#x, got %#x", sOrder.TakerToken[:], tokenPairs[0].TokenA[:])
+	}
+	if ! reflect.DeepEqual(tokenPairs[0].TokenB, sOrder.MakerToken) {
+		t.Errorf("Expected %#x, got %#x", sOrder.MakerToken[:], tokenPairs[0].TokenB[:])
+	}
+}
+
+func TestQueryPairs(t *testing.T) {
+	db, err := getDb()
+	if err != nil {
+		t.Errorf(err.Error())
+		return
+	}
+	tx := db.Begin()
+	defer func(){
+		tx.Rollback()
+		db.Close()
+	}()
+	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	sOrder := sampleOrder()
+	dbOrder := &dbModule.Order{}
+	dbOrder.Order = *sOrder
+	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	tokenPairs, err := dbModule.GetAllTokenPairs(tx, 0, 10)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	checkPairs(t, tokenPairs, sOrder)
+}
+
+func TestQueryPairsTokenAFilter(t *testing.T) {
+	db, err := getDb()
+	if err != nil {
+		t.Errorf(err.Error())
+		return
+	}
+	tx := db.Begin()
+	defer func(){
+		tx.Rollback()
+		db.Close()
+	}()
+	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	sOrder := sampleOrder()
+	dbOrder := &dbModule.Order{}
+	dbOrder.Order = *sOrder
+	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	tokenPairs, err := dbModule.GetTokenAPairs(tx, sOrder.TakerToken, 0, 10)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	checkPairs(t, tokenPairs, sOrder)
+}
+
+func TestQueryPairsTokenABFilter(t *testing.T) {
+	db, err := getDb()
+	if err != nil {
+		t.Errorf(err.Error())
+		return
+	}
+	tx := db.Begin()
+	defer func(){
+		tx.Rollback()
+		db.Close()
+	}()
+	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	sOrder := sampleOrder()
+	dbOrder := &dbModule.Order{}
+	dbOrder.Order = *sOrder
+	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	tokenPairs, err := dbModule.GetTokenABPairs(tx, sOrder.TakerToken, sOrder.MakerToken)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	checkPairs(t, tokenPairs, sOrder)
+}
+
+func TestQueryPairsTokenEmptyFilter(t *testing.T) {
+	db, err := getDb()
+	if err != nil {
+		t.Errorf(err.Error())
+		return
+	}
+	tx := db.Begin()
+	defer func(){
+		tx.Rollback()
+		db.Close()
+	}()
+	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	sOrder := sampleOrder()
+	dbOrder := &dbModule.Order{}
+	dbOrder.Order = *sOrder
+	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	tokenPairs, err := dbModule.GetTokenAPairs(tx, sOrder.Taker, 0, 10)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	if len(tokenPairs) != 0 {
+		t.Errorf("Expected 0 values, got %v", len(tokenPairs))
+		return
+	}
+}

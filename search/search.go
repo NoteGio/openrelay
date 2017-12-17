@@ -75,6 +75,26 @@ func returnError(w http.ResponseWriter, err error, code int) {
 	w.Write([]byte(fmt.Sprintf("{\"error\": \"%v\"}", err.Error())))
 }
 
+func getPages(queryObject urlModule.Values) (int, int, error){
+	pageStr := queryObject.Get("page")
+	if pageStr == "" {
+		pageStr = "1"
+	}
+	perPageStr := queryObject.Get("per_page")
+	if perPageStr == "" {
+		perPageStr = "20"
+	}
+	pageInt, err := strconv.Atoi(pageStr)
+	if err != nil {
+		return 0, 0, err
+	}
+	perPageInt, err := strconv.Atoi(perPageStr)
+	if err != nil {
+		return 0, 0, err
+	}
+	return pageInt, perPageInt, nil
+}
+
 func BlockHashDecorator(blockHash blockhash.BlockHash, fn func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
 	blockHash.Get() // Start the go routines, if necessary
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -137,20 +157,7 @@ func SearchHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
-		pageStr := queryObject.Get("page")
-		if pageStr == "" {
-			pageStr = "1"
-		}
-		perPageStr := queryObject.Get("per_page")
-		if perPageStr == "" {
-			perPageStr = "20"
-		}
-		pageInt, err := strconv.Atoi(pageStr)
-		if err != nil {
-			returnError(w, err, 400)
-			return
-		}
-		perPageInt, err := strconv.Atoi(perPageStr)
+		pageInt, perPageInt, err := getPages(queryObject)
 		if err != nil {
 			returnError(w, err, 400)
 			return
