@@ -1,6 +1,7 @@
 package db_test
 
 import (
+	"encoding/json"
 	"encoding/hex"
 	"github.com/jinzhu/gorm"
 	dbModule "github.com/notegio/openrelay/db"
@@ -102,7 +103,7 @@ func TestQueryOrder(t *testing.T) {
 	}
 }
 
-func checkPairs(t *testing.T, tokenPairs []dbModule.Pairs, sOrder *types.Order) {
+func checkPairs(t *testing.T, tokenPairs []dbModule.Pair, sOrder *types.Order) {
 	if len(tokenPairs) != 1 {
 		t.Errorf("Expected 1 value, got %v", len(tokenPairs))
 		return
@@ -223,5 +224,14 @@ func TestQueryPairsTokenEmptyFilter(t *testing.T) {
 	if len(tokenPairs) != 0 {
 		t.Errorf("Expected 0 values, got %v", len(tokenPairs))
 		return
+	}
+}
+
+func TestMarshalPairs(t *testing.T) {
+	sOrder := sampleOrder()
+	pair := &dbModule.Pair{sOrder.MakerToken, sOrder.TakerToken}
+	pairJSON, _ := json.Marshal(pair)
+	if string(pairJSON) != "{\"tokenA\":{\"address\":\"0x1dad4783cf3fe3085c1426157ab175a6119a04ba\",\"minAmount\":\"1\",\"maxAmount\":\"115792089237316195423570985008687907853269984665640564039457584007913129639935\",\"precision\":5},\"tokenB\":{\"address\":\"0x05d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"minAmount\":\"1\",\"maxAmount\":\"115792089237316195423570985008687907853269984665640564039457584007913129639935\",\"precision\":5}}" {
+		t.Errorf("Unexpected response, got '%v'", string(pairJSON))
 	}
 }
