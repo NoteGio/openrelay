@@ -59,10 +59,12 @@ func main() {
 	blockHash := blockhash.NewChanneledBlockHash(blockChannelConsumer)
 	searchHandler := search.BlockHashDecorator(blockHash, search.SearchHandler(db))
 	orderHandler := search.BlockHashDecorator(blockHash, search.OrderHandler(db))
+	pairHandler := search.PairHandler(db)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v0/orders", searchHandler)
 	mux.HandleFunc("/v0/order/", orderHandler)
+	mux.HandleFunc("/v0/token_pairs", pairHandler)
 	corsHandler := cors.Default().Handler(mux)
 	log.Printf("Order Search Serving on :%v", port)
 	http.ListenAndServe(":"+port, corsHandler)
