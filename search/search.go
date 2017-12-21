@@ -2,7 +2,6 @@ package search
 
 import (
 	"encoding/json"
-	"encoding/hex"
 	"github.com/jinzhu/gorm"
 	dbModule "github.com/notegio/openrelay/db"
 	"github.com/notegio/openrelay/types"
@@ -11,10 +10,8 @@ import (
 	"net/http"
 	urlModule "net/url"
 	"fmt"
-	"strings"
 	"strconv"
-	"regexp"
-	"errors"
+	"strings"
 )
 
 func FormatResponse(orders []dbModule.Order, format string) ([]byte, string, error) {
@@ -171,6 +168,12 @@ func SearchHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 		if queryObject.Get("makerTokenAddress") != "" && queryObject.Get("takerTokenAddress") != "" {
 			query := query.Order("price asc, fee_rate asc")
 			if query.Error != nil {
+				returnError(w, query.Error, 500)
+				return
+			}
+		} else {
+			query := query.Order("updated_at")
+			if query.Error != nil {
 				returnError(w, query.Error, 400)
 				return
 			}
@@ -195,101 +198,5 @@ func SearchHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 		} else {
 			returnError(w, err, 500)
 		}
-	}
-}
-
-func OrderHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		orderRegex := regexp.MustCompile(".*/order/0x([0-9a-fA-F]+)")
-		pathMatch := orderRegex.FindStringSubmatch(r.URL.Path)
-		if len(pathMatch) == 0 {
-			returnError(w, errors.New("Malformed order hash"), 404)
-			return
-		}
-		hashHex := pathMatch[1]
-		hashBytes, err := hex.DecodeString(hashHex)
-		if err != nil {
-			returnError(w, err, 400)
-			return
-		}
-		order := &dbModule.Order{}
-		query := db.Model(&dbModule.Order{}).Where("order_hash = ?", hashBytes).First(order)
-		if query.Error != nil {
-			if query.Error.Error() == "record not found" {
-				returnError(w, query.Error, 404)
-			} else {
-				returnError(w, query.Error, 500)
-			}
-			return
-		}
-		var acceptHeader string
-		if acceptVal, ok := r.Header["Accept"]; ok {
-			acceptHeader = strings.Split(acceptVal[0], ";")[0]
-		} else {
-			acceptHeader = "unknown"
-		}
-		response, contentType, err := FormatSingleResponse(order, acceptHeader)
-		if err == nil {
-			w.WriteHeader(200)
-			w.Header().Set("Content-Type", contentType)
-			w.Write(response)
-		} else {
-			returnError(w, err, 500)
-		}
-	}
-}
-
-func PairHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		queryObject := r.URL.Query()
-		tokenAString := queryObject.Get("tokenA")
-		tokenBString := queryObject.Get("tokenB")
-		if tokenAString == "" && tokenBString != "" {
-			tokenAString, tokenBString = tokenBString, ""
-		}
-		pageInt, perPageInt, err := getPages(queryObject)
-		offset := (pageInt - 1) * perPageInt
-		if err != nil {
-			returnError(w, err, 400)
-			return
-		}
-		var pairs []dbModule.Pair
-		if tokenAString == "" {
-			pairs, err = dbModule.GetAllTokenPairs(db, offset, perPageInt)
-			if err != nil {
-				returnError(w, err, 400)
-				return
-			}
-		} else {
-			tokenABytes, err := common.HexToBytes(tokenAString)
-			if err != nil {
-				returnError(w, err, 400)
-				return
-			}
-			tokenAAddress := common.BytesToOrAddress(tokenABytes)
-			if tokenBString == "" {
-				pairs, err = dbModule.GetTokenAPairs(db, tokenAAddress, offset, perPageInt)
-			} else {
-				tokenBBytes, err := common.HexToBytes(tokenBString)
-				if err != nil {
-					returnError(w, err, 400)
-					return
-				}
-				tokenBAddress := common.BytesToOrAddress(tokenBBytes)
-				pairs, err = dbModule.GetTokenABPairs(db, tokenAAddress, tokenBAddress)
-			}
-			if err != nil {
-				returnError(w, err, 400)
-				return
-			}
-		}
-		response, err := json.Marshal(pairs)
-		if err != nil {
-			returnError(w, err, 500)
-			return
-		}
-		w.WriteHeader(200)
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(response)
 	}
 }
