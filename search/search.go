@@ -14,6 +14,7 @@ import (
 	"strings"
 	"strconv"
 	"regexp"
+	"errors"
 )
 
 func FormatResponse(orders []dbModule.Order, format string) ([]byte, string, error) {
@@ -101,7 +102,7 @@ func BlockHashDecorator(blockHash blockhash.BlockHash, fn func(http.ResponseWrit
 		queryObject := r.URL.Query()
 		hash := queryObject.Get("blockhash")
 		if hash == "" {
-			queryObject.Set("blockhash", blockHash.Get())
+			queryObject.Set("blockhash", strings.Trim(blockHash.Get(), "\""))
 			url := *r.URL
 			url.RawQuery = queryObject.Encode()
 			http.Redirect(w, r, (&url).RequestURI(), 307)
@@ -200,7 +201,12 @@ func SearchHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 func OrderHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		orderRegex := regexp.MustCompile(".*/order/0x([0-9a-fA-F]+)")
-		hashHex := orderRegex.FindStringSubmatch(r.URL.Path)[1]
+		pathMatch := orderRegex.FindStringSubmatch(r.URL.Path)
+		if len(pathMatch) == 0 {
+			returnError(w, errors.New("Malformed order hash"), 404)
+			return
+		}
+		hashHex := pathMatch[1]
 		hashBytes, err := hex.DecodeString(hashHex)
 		if err != nil {
 			returnError(w, err, 400)
@@ -209,7 +215,11 @@ func OrderHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 		order := &dbModule.Order{}
 		query := db.Model(&dbModule.Order{}).Where("order_hash = ?", hashBytes).First(order)
 		if query.Error != nil {
-			returnError(w, query.Error, 500)
+			if query.Error.Error() == "record not found" {
+				returnError(w, query.Error, 404)
+			} else {
+				returnError(w, query.Error, 500)
+			}
 			return
 		}
 		var acceptHeader string
