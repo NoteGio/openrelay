@@ -4,7 +4,10 @@ import (
 	"encoding/hex"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/notegio/openrelay/types"
+	"github.com/notegio/openrelay/aws"
+	"os"
 	"strings"
+	"io/ioutil"
 )
 
 func BytesToAddress(data [20]byte) common.Address {
@@ -29,4 +32,25 @@ func HexToBytes(hexString string) ([20]byte, error) {
 	}
 	copy(result[:], slice[:])
 	return result, nil
+}
+
+// GetSecret retrieves a secret from various supported secret stores
+func GetSecret(uri string) (string) {
+	if strings.HasPrefix(uri, "file://") {
+		secretBytes, err := ioutil.ReadFile(strings.TrimPrefix(uri, "file://"))
+		if err == nil {
+			return string(secretBytes)
+		}
+	}
+	if strings.HasPrefix(uri, "env://") {
+		if secret := os.Getenv(strings.TrimPrefix(uri, "env://")); secret != "" {
+			return secret
+		}
+	}
+	if strings.HasPrefix(uri, "ssm-param://") {
+		if secret := aws.GetParameter(strings.TrimPrefix(uri, "ssm-param://")); secret != "" {
+			return secret
+		}
+	}
+	return uri
 }

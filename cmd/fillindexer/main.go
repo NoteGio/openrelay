@@ -32,7 +32,7 @@ func main() {
 		pgPassword = os.Getenv("POSTGRES_PASSWORD")
 	}
 	connectionString := fmt.Sprintf(
-		"host=%v sslmode=disable user=%v password=%v",
+		"host=%v dbname=postgres sslmode=disable user=%v password=%v",
 		pgHost,
 		pgUser,
 		pgPassword,

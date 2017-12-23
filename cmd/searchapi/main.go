@@ -40,7 +40,7 @@ func main() {
 		pgPassword = os.Getenv("POSTGRES_PASSWORD")
 	}
 	connectionString := fmt.Sprintf(
-		"host=%v sslmode=disable user=%v password=%v",
+		"host=%v dbname=postgres sslmode=disable user=%v password=%v",
 		pgHost,
 		pgUser,
 		pgPassword,
@@ -59,12 +59,14 @@ func main() {
 	blockHash := blockhash.NewChanneledBlockHash(blockChannelConsumer)
 	searchHandler := search.BlockHashDecorator(blockHash, search.SearchHandler(db))
 	orderHandler := search.BlockHashDecorator(blockHash, search.OrderHandler(db))
+	orderBookHandler := search.BlockHashDecorator(blockHash, search.OrderBookHandler(db))
 	pairHandler := search.PairHandler(db)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v0/orders", searchHandler)
 	mux.HandleFunc("/v0/order/", orderHandler)
 	mux.HandleFunc("/v0/token_pairs", pairHandler)
+	mux.HandleFunc("/v0/orderbook", orderBookHandler)
 	corsHandler := cors.Default().Handler(mux)
 	log.Printf("Order Search Serving on :%v", port)
 	http.ListenAndServe(":"+port, corsHandler)

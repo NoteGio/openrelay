@@ -199,8 +199,8 @@ services:
       context: ./
       dockerfile: Dockerfile.pgindexer
     environment:
-      POSTGRES_PASSWORD: secret
-    command: ["/indexer", "${REDIS_HOST:-redis:6379}", "queue://pgindexer", "postgres", "postgres"]
+      POSTGRES_PASSWORD: password
+    command: ["/indexer", "${REDIS_HOST:-redis:6379}", "queue://pgindexer", "postgres", "indexer"]
     depends_on:
       - postgres
       - redis
@@ -211,7 +211,9 @@ services:
       dockerfile: Dockerfile.automigrate
     environment:
       POSTGRES_PASSWORD: secret
-    command: ["/automigrate", "postgres", "postgres"]
+      INDEX_PASSWORD: password
+      SEARCH_PASSWORD: password
+    command: ["/automigrate", "postgres", "postgres", "env://POSTGRES_PASSWORD", "indexer;env://INDEX_PASSWORD;orders.SELECT,orders.INSERT,orders.UPDATE", "search;env://SEARCH_PASSWORD;orders.SELECT"]
     depends_on:
       - postgres
     restart: on-failure
@@ -242,9 +244,9 @@ services:
       dockerfile: Dockerfile.pgsearchapi
     ports:
       - "8080"
-    command: ["/searchapi", "${REDIS_HOST:-redis:6379}", "topic://newblocks", "postgres", "postgres"]
+    command: ["/searchapi", "${REDIS_HOST:-redis:6379}", "topic://newblocks", "postgres", "search"]
     environment:
-      POSTGRES_PASSWORD: secret
+      POSTGRES_PASSWORD: password
     depends_on:
       - redis
     deploy:
