@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	accountsModule "github.com/notegio/openrelay/accounts"
 	affiliatesModule "github.com/notegio/openrelay/affiliates"
+	"github.com/notegio/openrelay/types"
 	"github.com/notegio/openrelay/ingest"
 	"math/big"
 	"net/http"
@@ -50,7 +51,7 @@ type TestAffiliateService struct {
 	err error
 }
 
-func (service *TestAffiliateService) Get(address [20]byte) (affiliatesModule.Affiliate, error) {
+func (service *TestAffiliateService) Get(address *types.Address) (affiliatesModule.Affiliate, error) {
 	if service.err == nil {
 		return &TestAffiliate{service.fee}, nil
 	}
@@ -58,7 +59,7 @@ func (service *TestAffiliateService) Get(address [20]byte) (affiliatesModule.Aff
 }
 
 // Set must be provided to satisfy the interface, but we don't need it for these tests.
-func (service *TestAffiliateService) Set(address [20]byte, affiliate affiliatesModule.Affiliate) error {
+func (service *TestAffiliateService) Set(address *types.Address, affiliate affiliatesModule.Affiliate) error {
 	return nil
 }
 
@@ -78,7 +79,7 @@ func (reader TestReader) Read(p []byte) (n int, err error) {
 }
 
 // Get makes up an account deterministically based on the provided address
-func (service *TestAccountService) Get(address [20]byte) accountsModule.Account {
+func (service *TestAccountService) Get(address *types.Address) accountsModule.Account {
 	account := &TestAccount{
 		service.blacklist,
 		service.discount,
@@ -87,7 +88,7 @@ func (service *TestAccountService) Get(address [20]byte) accountsModule.Account 
 }
 
 // Set must be provided to satisfy the interface, but we don't need it for these tests.
-func (service *TestAccountService) Set(address [20]byte, account accountsModule.Account) error {
+func (service *TestAccountService) Set(address *types.Address, account accountsModule.Account) error {
 	return nil
 }
 

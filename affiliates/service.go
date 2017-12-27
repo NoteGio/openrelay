@@ -3,6 +3,7 @@ package affiliates
 import (
 	"encoding/json"
 	"github.com/notegio/openrelay/config"
+	"github.com/notegio/openrelay/types"
 	"gopkg.in/redis.v3"
 	"math/big"
 )
@@ -12,7 +13,7 @@ type redisAffiliateService struct {
 	baseFee     config.BaseFee
 }
 
-func (affiliateService *redisAffiliateService) Get(address [20]byte) (Affiliate, error) {
+func (affiliateService *redisAffiliateService) Get(address *types.Address) (Affiliate, error) {
 	acct := &affiliate{new(big.Int), 100}
 	acctJSON, err := affiliateService.redisClient.Get("affiliate::" + string(address[:])).Result()
 	if err != nil {
@@ -30,7 +31,7 @@ func (affiliateService *redisAffiliateService) Get(address [20]byte) (Affiliate,
 	return acct, nil
 }
 
-func (affiliateService *redisAffiliateService) Set(address [20]byte, acct Affiliate) error {
+func (affiliateService *redisAffiliateService) Set(address *types.Address, acct Affiliate) error {
 	data, err := json.Marshal(acct)
 	if err != nil {
 		return err

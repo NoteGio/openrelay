@@ -14,35 +14,45 @@ import (
 	"errors"
 )
 
-func createMockBalanceChecker(tokenAddress, userAddress string, tokenAmount string, feeTokenAmount string, t *testing.T) funds.BalanceChecker {
-	tokenBytes, err := common.HexToBytes(tokenAddress)
+func hexToAddress(addressHex string) (*types.Address, error) {
+	addressBytes, err := common.HexToBytes(addressHex)
+	if err != nil {
+		return nil, err
+	}
+	address := &types.Address{}
+	copy(address[:], addressBytes[:])
+	return address, nil
+}
+
+func createMockBalanceChecker(tokenAddressHex, userAddressHex string, tokenAmount string, feeTokenAmount string, t *testing.T) funds.BalanceChecker {
+	tokenAddress, err := hexToAddress(tokenAddressHex)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
-	userBytes, err := common.HexToBytes(userAddress)
+	userAddress, err := hexToAddress(userAddressHex)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
-	feeTokenBytes, _ := common.HexToBytes("e41d2489571d322189246dafa5ebde1f4699f498")
+	feeTokenAddress, _ := hexToAddress("e41d2489571d322189246dafa5ebde1f4699f498")
 	tokenInt := new(big.Int)
 	tokenInt.SetString(tokenAmount, 10)
 	feeTokenInt := new(big.Int)
 	feeTokenInt.SetString(feeTokenAmount, 10)
-	balanceMap := make(map[[20]byte]map[[20]byte]*big.Int)
-	balanceMap[tokenBytes] = make(map[[20]byte]*big.Int)
-	balanceMap[feeTokenBytes] = make(map[[20]byte]*big.Int)
-	balanceMap[tokenBytes][userBytes] = tokenInt
-	if reflect.DeepEqual(feeTokenBytes, tokenBytes) {
-		balanceMap[feeTokenBytes] = balanceMap[tokenBytes]
+	balanceMap := make(map[types.Address]map[types.Address]*big.Int)
+	balanceMap[*tokenAddress] = make(map[types.Address]*big.Int)
+	balanceMap[*feeTokenAddress] = make(map[types.Address]*big.Int)
+	balanceMap[*tokenAddress][*userAddress] = tokenInt
+	if reflect.DeepEqual(feeTokenAddress, tokenAddress) {
+		balanceMap[*feeTokenAddress] = balanceMap[*tokenAddress]
 	}
-	balanceMap[feeTokenBytes][userBytes] = feeTokenInt
+	balanceMap[*feeTokenAddress][*userAddress] = feeTokenInt
 	return funds.NewMockBalanceChecker(balanceMap)
 }
 
 func TestOrderValidate(t *testing.T) {
 	balanceChecker := createMockBalanceChecker("1dad4783cf3fe3085c1426157ab175a6119a04ba", "324454186bb728a3ea55750e0618ff1b18ce6cf8", "0", "0", t)
-	feeTokenAddress, _ := common.HexToBytes("e41d2489571d322189246dafa5ebde1f4699f498")
-	tokenProxyAddress, _ := common.HexToBytes("d4fd252d7d2c9479a8d616f510eac6243b5dddf9")
+	feeTokenAddress, _ := hexToAddress("e41d2489571d322189246dafa5ebde1f4699f498")
+	tokenProxyAddress, _ := hexToAddress("d4fd252d7d2c9479a8d616f510eac6243b5dddf9")
 	validator := funds.NewOrderValidator(balanceChecker, config.StaticFeeToken(feeTokenAddress), config.StaticTokenProxy(tokenProxyAddress))
 	testOrderBytes, _ := hex.DecodeString("90fe2af704b34e0224bf2299c838e04d4dcf1364324454186bb728a3ea55750e0618ff1b18ce6cf800000000000000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000059938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b1b021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f1")
 	var testOrderByteArray [441]byte
@@ -55,8 +65,8 @@ func TestOrderValidate(t *testing.T) {
 
 func TestOrderValidateSufficient(t *testing.T) {
 	balanceChecker := createMockBalanceChecker("1dad4783cf3fe3085c1426157ab175a6119a04ba", "324454186bb728a3ea55750e0618ff1b18ce6cf8", "50000000000000000000", "0", t)
-	feeTokenAddress, _ := common.HexToBytes("e41d2489571d322189246dafa5ebde1f4699f498")
-	tokenProxyAddress, _ := common.HexToBytes("d4fd252d7d2c9479a8d616f510eac6243b5dddf9")
+	feeTokenAddress, _ := hexToAddress("e41d2489571d322189246dafa5ebde1f4699f498")
+	tokenProxyAddress, _ := hexToAddress("d4fd252d7d2c9479a8d616f510eac6243b5dddf9")
 	validator := funds.NewOrderValidator(balanceChecker, config.StaticFeeToken(feeTokenAddress), config.StaticTokenProxy(tokenProxyAddress))
 	testOrderBytes, _ := hex.DecodeString("90fe2af704b34e0224bf2299c838e04d4dcf1364324454186bb728a3ea55750e0618ff1b18ce6cf800000000000000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000059938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b1b021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f1")
 	var testOrderByteArray [441]byte
@@ -71,8 +81,8 @@ func TestOrderValidateSufficient(t *testing.T) {
 func TestOrderValidateSpent(t *testing.T) {
 	// 25000000000000000000 is half of the makerTokenAmount for the sample order
 	balanceChecker := createMockBalanceChecker("1dad4783cf3fe3085c1426157ab175a6119a04ba", "324454186bb728a3ea55750e0618ff1b18ce6cf8", "25000000000000000000", "0", t)
-	feeTokenAddress, _ := common.HexToBytes("e41d2489571d322189246dafa5ebde1f4699f498")
-	tokenProxyAddress, _ := common.HexToBytes("d4fd252d7d2c9479a8d616f510eac6243b5dddf9")
+	feeTokenAddress, _ := hexToAddress("e41d2489571d322189246dafa5ebde1f4699f498")
+	tokenProxyAddress, _ := hexToAddress("d4fd252d7d2c9479a8d616f510eac6243b5dddf9")
 	validator := funds.NewOrderValidator(balanceChecker, config.StaticFeeToken(feeTokenAddress), config.StaticTokenProxy(tokenProxyAddress))
 	testOrderBytes, _ := hex.DecodeString("90fe2af704b34e0224bf2299c838e04d4dcf1364324454186bb728a3ea55750e0618ff1b18ce6cf800000000000000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000059938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b1b021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f1")
 	var testOrderByteArray [441]byte
@@ -97,8 +107,8 @@ func TestErrorPanic(t *testing.T) {
 			t.Errorf("Expected panic from JSON error");
 		}
 	}()
-	feeTokenAddress, _ := common.HexToBytes("e41d2489571d322189246dafa5ebde1f4699f498")
-	tokenProxyAddress, _ := common.HexToBytes("d4fd252d7d2c9479a8d616f510eac6243b5dddf9")
+	feeTokenAddress, _ := hexToAddress("e41d2489571d322189246dafa5ebde1f4699f498")
+	tokenProxyAddress, _ := hexToAddress("d4fd252d7d2c9479a8d616f510eac6243b5dddf9")
 	validator := funds.NewOrderValidator(balanceChecker, config.StaticFeeToken(feeTokenAddress), config.StaticTokenProxy(tokenProxyAddress))
 
 	testOrderBytes, _ := hex.DecodeString("90fe2af704b34e0224bf2299c838e04d4dcf1364324454186bb728a3ea55750e0618ff1b18ce6cf800000000000000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000059938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b1b021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f1")
@@ -116,8 +126,8 @@ func TestErrorPanic(t *testing.T) {
 func TestErrorNoContract(t *testing.T) {
 	err := errors.New("no contract code at given address")
 	balanceChecker := funds.NewErrorMockBalanceChecker(err)
-	feeTokenAddress, _ := common.HexToBytes("e41d2489571d322189246dafa5ebde1f4699f498")
-	tokenProxyAddress, _ := common.HexToBytes("d4fd252d7d2c9479a8d616f510eac6243b5dddf9")
+	feeTokenAddress, _ := hexToAddress("e41d2489571d322189246dafa5ebde1f4699f498")
+	tokenProxyAddress, _ := hexToAddress("d4fd252d7d2c9479a8d616f510eac6243b5dddf9")
 	validator := funds.NewOrderValidator(balanceChecker, config.StaticFeeToken(feeTokenAddress), config.StaticTokenProxy(tokenProxyAddress))
 
 	testOrderBytes, _ := hex.DecodeString("90fe2af704b34e0224bf2299c838e04d4dcf1364324454186bb728a3ea55750e0618ff1b18ce6cf800000000000000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000059938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b1b021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f1")

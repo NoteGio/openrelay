@@ -1,6 +1,9 @@
 package accounts
 
-import "math/big"
+import (
+	"math/big"
+	"github.com/notegio/openrelay/types"
+)
 
 type Account interface {
 	Blacklisted() bool
@@ -8,6 +11,6 @@ type Account interface {
 }
 
 type AccountService interface {
-	Get([20]byte) Account
-	Set([20]byte, Account) error
+	Get(*types.Address) Account
+	Set(*types.Address, Account) error
 }

@@ -24,7 +24,7 @@ type boolOrErr struct {
 	err error
 }
 
-func (funds *orderValidator) checkBalance(tokenAddress, userAddress [20]byte, required []byte, respond chan boolOrErr) {
+func (funds *orderValidator) checkBalance(tokenAddress, userAddress *types.Address, required []byte, respond chan boolOrErr) {
 	requiredInt := new(big.Int)
 	requiredInt.SetBytes(required[:])
 	balance, err := funds.balanceChecker.GetBalance(tokenAddress, userAddress)
@@ -36,7 +36,7 @@ func (funds *orderValidator) checkBalance(tokenAddress, userAddress [20]byte, re
 	respond <- boolOrErr{(requiredInt.Cmp(balance) <= 0), nil}
 }
 
-func (funds *orderValidator) checkAllowance(tokenAddress, userAddress [20]byte, required []byte, respond chan boolOrErr) {
+func (funds *orderValidator) checkAllowance(tokenAddress, userAddress *types.Address, required []byte, respond chan boolOrErr) {
 	requiredInt := new(big.Int)
 	requiredInt.SetBytes(required[:])
 	proxyAddress, err := funds.tokenProxy.Get()

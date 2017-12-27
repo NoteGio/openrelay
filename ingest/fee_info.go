@@ -28,7 +28,7 @@ type FeeResponse struct {
 }
 
 func FeeHandler(publisher channels.Publisher, accounts accountsModule.AccountService, affiliates affiliatesModule.AffiliateService, defaultFeeRecipient [20]byte) func(http.ResponseWriter, *http.Request) {
-	emptyBytes := [20]byte{}
+	emptyBytes := &types.Address{}
 	return func(w http.ResponseWriter, r *http.Request) {
 		var data [1024]byte
 		feeInput := &FeeInputPayload{}
@@ -82,9 +82,9 @@ func FeeHandler(publisher channels.Publisher, accounts accountsModule.AccountSer
 			}, 400)
 			return
 		}
-		makerAddress := [20]byte{}
+		makerAddress := &types.Address{}
 		copy(makerAddress[:], makerSlice[:])
-		feeRecipientAddress := [20]byte{}
+		feeRecipientAddress := &types.Address{}
 		if feeInput.FeeRecipient == "" {
 			copy(feeRecipientAddress[:], defaultFeeRecipient[:])
 		} else {

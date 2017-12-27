@@ -2,27 +2,83 @@ package types
 
 import (
 	"encoding/json"
+	// "encoding/hex"
 	"github.com/ethereum/go-ethereum/crypto/sha3"
 	"strconv"
+	"errors"
+	"database/sql/driver"
+	"fmt"
+	"math/big"
+	// "log"
 )
+
+type Address [20]byte
+
+func (addr *Address) Value() (driver.Value, error) {
+	return addr[:], nil
+}
+
+func (addr *Address) Scan(src interface{}) error {
+	switch v := src.(type) {
+	case []byte:
+		copy(addr[:], v)
+		return nil
+	default:
+		return errors.New("Address scanner src should be []byte")
+	}
+}
+
+type Uint256 [32]byte
+
+func (data *Uint256) Value() (driver.Value, error) {
+	return data[:], nil
+}
+
+func (addr *Uint256) Scan(src interface{}) error {
+	switch v := src.(type) {
+	case []byte:
+		copy(addr[:], v)
+		return nil
+	default:
+		return errors.New("Uint256 scanner src should be []byte")
+	}
+}
 
 // Order represents an 0x order object
 type Order struct {
-	Maker                     [20]byte
-	Taker                     [20]byte
-	MakerToken                [20]byte
-	TakerToken                [20]byte
-	FeeRecipient              [20]byte
-	ExchangeAddress           [20]byte
-	MakerTokenAmount          [32]byte
-	TakerTokenAmount          [32]byte
-	MakerFee                  [32]byte
-	TakerFee                  [32]byte
-	ExpirationTimestampInSec  [32]byte
-	Salt                      [32]byte
-	Signature                 *Signature
-	TakerTokenAmountFilled    [32]byte
-	TakerTokenAmountCancelled [32]byte
+	Maker                     *Address `gorm:"index"`
+	Taker                     *Address `gorm:"index"`
+	MakerToken                *Address `gorm:"index"`
+	TakerToken                *Address `gorm:"index"`
+	FeeRecipient              *Address `gorm:"index"`
+	ExchangeAddress           *Address `gorm:"index"`
+	MakerTokenAmount          *Uint256
+	TakerTokenAmount          *Uint256
+	MakerFee                  *Uint256
+	TakerFee                  *Uint256
+	ExpirationTimestampInSec  *Uint256 `gorm:"index"`
+	Salt                      *Uint256
+	Signature                 *Signature `gorm:"type:bytea"`
+	TakerTokenAmountFilled    *Uint256
+	TakerTokenAmountCancelled *Uint256
+}
+
+func (order *Order) Initialize() {
+	order.ExchangeAddress = &Address{}
+	order.Maker = &Address{}
+	order.Taker = &Address{}
+	order.MakerToken = &Address{}
+	order.TakerToken = &Address{}
+	order.FeeRecipient = &Address{}
+	order.MakerTokenAmount = &Uint256{}
+	order.TakerTokenAmount = &Uint256{}
+	order.MakerFee = &Uint256{}
+	order.TakerFee = &Uint256{}
+	order.ExpirationTimestampInSec = &Uint256{}
+	order.Salt = &Uint256{}
+	order.TakerTokenAmountFilled = &Uint256{}
+	order.TakerTokenAmountCancelled = &Uint256{}
+	order.Signature = &Signature{}
 }
 
 // NewOrder takes string representations of values and converts them into an Order object
@@ -35,6 +91,7 @@ func NewOrder(maker, taker, makerToken, takerToken, feeRecipient, exchangeAddres
 }
 
 func (order *Order) fromStrings(maker, taker, makerToken, takerToken, feeRecipient, exchangeAddress, makerTokenAmount, takerTokenAmount, makerFee, takerFee, expirationTimestampInSec, salt, sigV, sigR, sigS, takerTokenAmountFilled, takerTokenAmountCancelled string) error {
+	order.Initialize()
 	makerBytes, err := HexStringToBytes(maker)
 	if err != nil {
 		return err
@@ -195,6 +252,29 @@ func (order *Order) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+func (order *Order) MarshalJSON() ([]byte, error) {
+	jsonOrder := &jsonOrder{}
+	jsonOrder.Maker = fmt.Sprintf("%#x", order.Maker[:])
+	jsonOrder.Taker = fmt.Sprintf("%#x", order.Taker[:])
+	jsonOrder.MakerToken = fmt.Sprintf("%#x", order.MakerToken[:])
+	jsonOrder.TakerToken = fmt.Sprintf("%#x", order.TakerToken[:])
+	jsonOrder.FeeRecipient = fmt.Sprintf("%#x", order.FeeRecipient[:])
+	jsonOrder.ExchangeAddress = fmt.Sprintf("%#x", order.ExchangeAddress[:])
+	jsonOrder.MakerTokenAmount = new(big.Int).SetBytes(order.MakerTokenAmount[:]).String()
+	jsonOrder.TakerTokenAmount = new(big.Int).SetBytes(order.TakerTokenAmount[:]).String()
+	jsonOrder.MakerFee = new(big.Int).SetBytes(order.MakerFee[:]).String()
+	jsonOrder.TakerFee = new(big.Int).SetBytes(order.TakerFee[:]).String()
+	jsonOrder.ExpirationTimestampInSec = new(big.Int).SetBytes(order.ExpirationTimestampInSec[:]).String()
+	jsonOrder.Salt = new(big.Int).SetBytes(order.Salt[:]).String()
+	jsonOrder.Signature = jsonSignature{}
+	jsonOrder.Signature.R = fmt.Sprintf("%#x", order.Signature.R[:])
+	jsonOrder.Signature.V = json.Number(fmt.Sprintf("%v", order.Signature.V))
+	jsonOrder.Signature.S = fmt.Sprintf("%#x", order.Signature.S[:])
+	jsonOrder.TakerTokenAmountFilled = new(big.Int).SetBytes(order.TakerTokenAmountFilled[:]).String()
+	jsonOrder.TakerTokenAmountCancelled = new(big.Int).SetBytes(order.TakerTokenAmountCancelled[:]).String()
+	return json.Marshal(jsonOrder)
+}
+
 func (order *Order) Bytes() [441]byte {
 	var output [441]byte
 	copy(output[0:20], order.ExchangeAddress[:])             // 20
@@ -218,6 +298,7 @@ func (order *Order) Bytes() [441]byte {
 }
 
 func (order *Order) FromBytes(data [441]byte) {
+	order.Initialize()
 	copy(order.ExchangeAddress[:], data[0:20])
 	copy(order.Maker[:], data[20:40])
 	copy(order.Taker[:], data[40:60])

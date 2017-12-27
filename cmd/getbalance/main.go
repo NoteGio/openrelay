@@ -3,17 +3,18 @@ package main
 import (
 	"os"
 	"github.com/notegio/openrelay/funds"
+	"github.com/notegio/openrelay/types"
 	"log"
 	"encoding/hex"
 	"fmt"
 )
 
-func hexToBytes(address string) [20]byte {
+func hexToBytes(address string) *types.Address {
 	slice, err := hex.DecodeString(address)
 	if err != nil {
-		return [20]byte{}
+		return &types.Address{}
 	}
-	output := [20]byte{}
+	output := &types.Address{}
 	copy(output[:], slice[:])
 	return output
 }
