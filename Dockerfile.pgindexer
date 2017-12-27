@@ -2,4 +2,6 @@ FROM scratch
 
 COPY bin/indexer /indexer
 
+COPY docker-cfg/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+
 CMD ["/indexer", "redis:6379", "queue://indexer", "postgres", "postgres", "/run/secrets/postgress_password"]

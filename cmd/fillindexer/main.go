@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/notegio/openrelay/channels"
 	dbModule "github.com/notegio/openrelay/db"
+	"github.com/notegio/openrelay/common"
 	// "github.com/notegio/openrelay/funds"
 	"gopkg.in/redis.v3"
 	"github.com/jinzhu/gorm"
@@ -10,7 +11,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"io/ioutil"
 	"fmt"
 )
 
@@ -19,18 +19,7 @@ func main() {
 	srcChannel := os.Args[2]
 	pgHost := os.Args[3]
 	pgUser := os.Args[4]
-	pgPassword := ""
-	for _, arg := range os.Args[5:] {
-		pgPasswordFile := arg
-		pgPasswordBytes, err := ioutil.ReadFile(pgPasswordFile)
-		if err != nil {
-			log.Fatalf("Could not read password file: %v", err.Error());
-		}
-		pgPassword = string(pgPasswordBytes)
-	}
-	if pgPassword == "" {
-		pgPassword = os.Getenv("POSTGRES_PASSWORD")
-	}
+	pgPassword := common.GetSecret(os.Args[5])
 	connectionString := fmt.Sprintf(
 		"host=%v dbname=postgres sslmode=disable user=%v password=%v",
 		pgHost,

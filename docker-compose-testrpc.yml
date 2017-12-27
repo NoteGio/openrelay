@@ -33,6 +33,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.ingest
+    image: openrelay/ingest
     ports:
       - "8080"
     command: ["/ingest", "${REDIS_HOST:-redis:6379}", "C22d5b2951DB72B44CFb8089bb8CD374A3c354eA"]
@@ -46,6 +47,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.fillupdate
+    image: openrelay/fillupdate
     command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://ingest", "queue://fundcheck"]
     depends_on:
       - redis
@@ -58,6 +60,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.fundcheckrelay
+    image: openrelay/fundcheckrelay
     command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://fundcheck", "queue://delay1", "topic://instant-broadcast"]
     depends_on:
       - redis
@@ -71,6 +74,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.delayrelay
+    image: openrelay/delayrelay
     command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "queue://delay1", "queue://delay2", "topic://delay1trigger"]
     depends_on:
       - redis
@@ -82,6 +86,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.delayrelay
+    image: openrelay/delayrelay
     command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "queue://delay2", "queue://released", "topic://newblocks", "topic://delay1trigger"]
     depends_on:
       - redis
@@ -93,6 +98,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.blockmonitor
+    image: openrelay/blockmonitor
     command: ["./node_modules/.bin/truffle", "exec", "blockMonitor.js", "redis://${REDIS_HOST:-redis:6379}", "topic://newblocks", "--network", "main"]
     environment:
       ETHEREUM_URL: "http://ethnode:8545"
@@ -109,6 +115,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.fillmonitor
+    image: openrelay/fillmonitor
     command: ["./node_modules/.bin/truffle", "exec", "exchangeMonitor.js", "redis://${REDIS_HOST:-redis:6379}", "queue://ordersfilled", "0xC22d5b2951DB72B44CFb8089bb8CD374A3c354eA", "--network", "main"]
     environment:
       ETHEREUM_URL: "http://ethnode:8545"
@@ -119,6 +126,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.fillindexer
+    image: openrelay/fillindexer
     command: ["python", "/project/fill_indexer.py", "${REDIS_HOST:-redis:6379}", "dynamodbordersfilled", "-l", "DEBUG"]
     environment:
       DYNAMODB_HOST: http://dynamo:8000
@@ -131,7 +139,8 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.pgfillindexer
-    command: ["/fillindexer", "redis:6379", "queue://pgordersfilled", "postgres", "postgres"]
+    image: openrelay/pgfillindexer
+    command: ["/fillindexer", "redis:6379", "queue://pgordersfilled", "postgres", "postgres", "env://POSTGRES_PASSWORD"]
     environment:
       POSTGRES_PASSWORD: secret
     depends_on:
@@ -142,6 +151,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.simplerelay
+    image: openrelay/simplerelay
     command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://released", "queue://recheck", "topic://released-broadcast"]
     depends_on:
       - redis
@@ -153,6 +163,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.fillupdate
+    image: openrelay/fillupdate
     command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://recheck", "queue://recheck2"]
     depends_on:
       - redis
@@ -165,6 +176,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.fundcheckrelay
+    image: openrelay/fundcheckrelay
     command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://recheck2", "queue://preindex"]
     depends_on:
       - ethnode
@@ -173,6 +185,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.initialize
+    image: openrelay/initialize
     command: ["/initialize", "${REDIS_HOST:-redis:6379}", "${ZRX_FEE:-500000000000000000}", "${RELAY_ADDRESS:-C22d5b2951DB72B44CFb8089bb8CD374A3c354eA}"]
     depends_on:
       - redis
@@ -198,9 +211,10 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.pgindexer
+    image: openrelay/pgindexer
     environment:
       POSTGRES_PASSWORD: password
-    command: ["/indexer", "${REDIS_HOST:-redis:6379}", "queue://pgindexer", "postgres", "indexer"]
+    command: ["/indexer", "${REDIS_HOST:-redis:6379}", "queue://pgindexer", "postgres", "indexer", "env://POSTGRES_PASSWORD"]
     depends_on:
       - postgres
       - redis
@@ -209,6 +223,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.automigrate
+    image: openrelay/automigrate
     environment:
       POSTGRES_PASSWORD: secret
       INDEX_PASSWORD: password
@@ -221,6 +236,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.indexer
+    image: openrelay/indexer
     environment:
       DYNAMODB_HOST: http://dynamo:8000
       AWS_ACCESS_KEY_ID: x
@@ -233,6 +249,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.searchapi
+    image: openrelay/searchapi
     environment:
       DYNAMODB_HOST: http://dynamo:8000
       AWS_ACCESS_KEY_ID: x
@@ -242,9 +259,10 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.pgsearchapi
+    image: openrelay/pgsearchapi
     ports:
       - "8080"
-    command: ["/searchapi", "${REDIS_HOST:-redis:6379}", "topic://newblocks", "postgres", "search"]
+    command: ["/searchapi", "${REDIS_HOST:-redis:6379}", "topic://newblocks", "postgres", "search", "env://POSTGRES_PASSWORD"]
     environment:
       POSTGRES_PASSWORD: password
     depends_on:
@@ -260,6 +278,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.queueorders
+    image: openrelay/queueorders
     environment:
       DYNAMODB_HOST: http://dynamo:8000
       AWS_ACCESS_KEY_ID: x
@@ -274,6 +293,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.fillupdate
+    image: openrelay/fillupdate
     command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://continuous_recheck", "queue://fund_continuous_recheck", "queue://preindex"]
     depends_on:
       - redis
@@ -286,6 +306,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.simplerelay
+    image: openrelay/simplerelay
     command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://preindex", "queue://indexer", "queue://pgindexer"]
     depends_on:
       - redis
@@ -297,6 +318,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.simplerelay
+    image: openrelay/simplerelay
     command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://ordersfilled", "queue://dynamodbordersfilled", "queue://pgordersfilled"]
     depends_on:
       - redis
@@ -311,6 +333,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.fundcheckrelay
+    image: openrelay/fundcheckrelay
     command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://fund_continuous_recheck", "queue://unindexer", "queue://pgunindexer", "--invert"]
     depends_on:
       - ethnode
@@ -319,6 +342,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.indexer
+    image: openrelay/indexer
     environment:
       DYNAMODB_HOST: http://dynamo:8000
       AWS_ACCESS_KEY_ID: x
@@ -331,9 +355,10 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.pgindexer
+    image: openrelay/pgindexer
     environment:
       POSTGRES_PASSWORD: secret
-    command: ["/indexer", "${REDIS_HOST:-redis:6379}", "queue://pgunindexer", "postgres", "postgres", "--unfunded"]
+    command: ["/indexer", "${REDIS_HOST:-redis:6379}", "queue://pgunindexer", "postgres", "postgres", "env://POSTGRES_PASSWORD", "--unfunded"]
     depends_on:
       - postgres
       - redis

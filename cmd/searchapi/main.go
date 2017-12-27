@@ -4,8 +4,8 @@ import (
 	"github.com/notegio/openrelay/search"
 	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/blockhash"
+	"github.com/notegio/openrelay/common"
 	"net/http"
-	"io/ioutil"
 	"gopkg.in/redis.v3"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -21,23 +21,13 @@ func main() {
 	blockChannel := os.Args[2]
 	pgHost := os.Args[3]
 	pgUser := os.Args[4]
-	pgPassword := ""
+	pgPassword := common.GetSecret(os.Args[5])
 	port := "8080"
-	for _, arg := range os.Args[5:] {
+	for _, arg := range os.Args[6:] {
 		if _, err := strconv.Atoi(arg); err == nil {
 			// If the argument is castable as an integer,
 			port = arg
-		} else {
-			pgPasswordFile := arg
-			pgPasswordBytes, err := ioutil.ReadFile(pgPasswordFile)
-			if err != nil {
-				log.Fatalf("Could not read password file: %v", err.Error());
-			}
-			pgPassword = string(pgPasswordBytes)
 		}
-	}
-	if pgPassword == "" {
-		pgPassword = os.Getenv("POSTGRES_PASSWORD")
 	}
 	connectionString := fmt.Sprintf(
 		"host=%v dbname=postgres sslmode=disable user=%v password=%v",

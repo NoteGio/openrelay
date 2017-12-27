@@ -61,5 +61,3 @@ func main() {
 		log.Printf("Created '%v'", credString)
 	}
 }
-
-
