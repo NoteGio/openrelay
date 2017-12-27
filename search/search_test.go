@@ -149,6 +149,9 @@ func TestBlockhashRedirect(t *testing.T) {
 	if location := recorder.Header().Get("Location"); location != "/v0/orders?blockhash=initializing&makertoken=0x324454186bb728a3ea55750e0618ff1b18ce6cf8" {
 		t.Errorf("Expected orderHash to be added, got '%v'", location)
 	}
+	if cacheControl := recorder.Header().Get("Cache-Control"); cacheControl != "max-age=5, public" {
+		t.Errorf("Cache-Control header not as expect. '%v'", cacheControl)
+	}
 }
 
 func filterContractRequest(queryString, emptyQueryString string, t *testing.T) {

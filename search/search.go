@@ -102,6 +102,7 @@ func BlockHashDecorator(blockHash blockhash.BlockHash, fn func(http.ResponseWrit
 			queryObject.Set("blockhash", strings.Trim(blockHash.Get(), "\""))
 			url := *r.URL
 			url.RawQuery = queryObject.Encode()
+			w.Header().Set("Cache-Control", "max-age=5, public")
 			http.Redirect(w, r, (&url).RequestURI(), 307)
 			return
 		}
