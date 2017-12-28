@@ -3,8 +3,8 @@ package accounts_test
 import (
 	"encoding/hex"
 	"github.com/notegio/openrelay/accounts"
-	"github.com/notegio/openrelay/types"
 	"github.com/notegio/openrelay/config"
+	"github.com/notegio/openrelay/types"
 	"gopkg.in/redis.v3"
 	"math/big"
 	"os"

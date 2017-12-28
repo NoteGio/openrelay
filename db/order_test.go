@@ -1,16 +1,16 @@
 package db_test
 
 import (
-	"encoding/json"
 	"encoding/hex"
-	"github.com/jinzhu/gorm"
-	dbModule "github.com/notegio/openrelay/db"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"github.com/notegio/openrelay/types"
-	"testing"
+	"encoding/json"
 	"fmt"
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
+	dbModule "github.com/notegio/openrelay/db"
+	"github.com/notegio/openrelay/types"
 	"os"
 	"reflect"
+	"testing"
 )
 
 func getTestOrderBytes() [441]byte {
@@ -45,7 +45,7 @@ func TestSaveOrder(t *testing.T) {
 		return
 	}
 	tx := db.Begin()
-	defer func(){
+	defer func() {
 		tx.Rollback()
 		db.Close()
 	}()
@@ -67,7 +67,7 @@ func TestQueryOrder(t *testing.T) {
 		return
 	}
 	tx := db.Begin()
-	defer func(){
+	defer func() {
 		tx.Rollback()
 		db.Close()
 	}()
@@ -108,10 +108,10 @@ func checkPairs(t *testing.T, tokenPairs []dbModule.Pair, sOrder *types.Order) {
 		t.Errorf("Expected 1 value, got %v", len(tokenPairs))
 		return
 	}
-	if ! reflect.DeepEqual(tokenPairs[0].TokenA, sOrder.TakerToken) {
+	if !reflect.DeepEqual(tokenPairs[0].TokenA, sOrder.TakerToken) {
 		t.Errorf("Expected %#x, got %#x", sOrder.TakerToken[:], tokenPairs[0].TokenA[:])
 	}
-	if ! reflect.DeepEqual(tokenPairs[0].TokenB, sOrder.MakerToken) {
+	if !reflect.DeepEqual(tokenPairs[0].TokenB, sOrder.MakerToken) {
 		t.Errorf("Expected %#x, got %#x", sOrder.MakerToken[:], tokenPairs[0].TokenB[:])
 	}
 }
@@ -123,7 +123,7 @@ func TestQueryPairs(t *testing.T) {
 		return
 	}
 	tx := db.Begin()
-	defer func(){
+	defer func() {
 		tx.Rollback()
 		db.Close()
 	}()
@@ -150,7 +150,7 @@ func TestQueryPairsTokenAFilter(t *testing.T) {
 		return
 	}
 	tx := db.Begin()
-	defer func(){
+	defer func() {
 		tx.Rollback()
 		db.Close()
 	}()
@@ -177,7 +177,7 @@ func TestQueryPairsTokenABFilter(t *testing.T) {
 		return
 	}
 	tx := db.Begin()
-	defer func(){
+	defer func() {
 		tx.Rollback()
 		db.Close()
 	}()
@@ -204,7 +204,7 @@ func TestQueryPairsTokenEmptyFilter(t *testing.T) {
 		return
 	}
 	tx := db.Begin()
-	defer func(){
+	defer func() {
 		tx.Rollback()
 		db.Close()
 	}()

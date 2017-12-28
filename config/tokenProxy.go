@@ -2,10 +2,9 @@ package config
 
 import (
 	"encoding/hex"
+	"github.com/notegio/openrelay/types"
 	"gopkg.in/redis.v3"
 	"time"
-	"github.com/notegio/openrelay/types"
-
 )
 
 type TokenProxy interface {

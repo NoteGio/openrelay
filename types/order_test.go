@@ -1,14 +1,14 @@
 package types_test
 
 import (
+	"database/sql"
+	"database/sql/driver"
 	"encoding/hex"
 	"encoding/json"
 	"github.com/notegio/openrelay/types"
 	"io/ioutil"
 	"reflect"
 	"testing"
-	"database/sql"
-	"database/sql/driver"
 )
 
 func checkOrder(order *types.Order, t *testing.T) {
@@ -150,7 +150,7 @@ func TestValuerInterfaceSignature(t *testing.T) {
 	if !reflect.DeepEqual(sigBytes[32:64], testOrderBytes[345:377]) {
 		t.Errorf("Unexpected Sig S")
 	}
-	if sigBytes[64] != byte(int(testOrderBytes[312]) - 27) {
+	if sigBytes[64] != byte(int(testOrderBytes[312])-27) {
 		t.Errorf("Unexpected Sig V")
 	}
 

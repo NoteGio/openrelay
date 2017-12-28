@@ -22,7 +22,7 @@ type rpcBalanceChecker struct {
 func (funds *rpcBalanceChecker) GetBalance(tokenAddrBytes, userAddrBytes *types.Address) (*big.Int, error) {
 	token, err := tokenModule.NewToken(orCommon.ToGethAddress(tokenAddrBytes), funds.conn)
 	if err != nil {
-			return nil, err
+		return nil, err
 	}
 	return token.BalanceOf(nil, orCommon.ToGethAddress(userAddrBytes))
 }

@@ -50,8 +50,8 @@ func (consumer *RelayConsumer) Consume(delivery Delivery) {
 	defer func() {
 		if r := recover(); r != nil {
 			// Something panicked. Return in-flight messages before continuing.
-			consumer.relay.consumerChannel.ReturnAllUnacked();
-			panic(r);
+			consumer.relay.consumerChannel.ReturnAllUnacked()
+			panic(r)
 		}
 	}()
 	if consumer.relay.filter.Filter(delivery) {

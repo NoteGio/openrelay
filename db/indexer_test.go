@@ -1,15 +1,14 @@
 package db_test
 
 import (
-	dbModule "github.com/notegio/openrelay/db"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"testing"
-	"fmt"
-	"math/big"
 	"encoding/json"
+	"fmt"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
+	dbModule "github.com/notegio/openrelay/db"
+	"math/big"
 	"reflect"
+	"testing"
 )
-
 
 func TestIndexOrder(t *testing.T) {
 	db, err := getDb()
@@ -18,7 +17,7 @@ func TestIndexOrder(t *testing.T) {
 		return
 	}
 	tx := db.Begin()
-	defer func(){
+	defer func() {
 		tx.Rollback()
 		db.Close()
 	}()
@@ -39,7 +38,7 @@ func TestFillIndex(t *testing.T) {
 		return
 	}
 	tx := db.Begin()
-	defer func(){
+	defer func() {
 		tx.Rollback()
 		db.Close()
 	}()

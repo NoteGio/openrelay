@@ -2,8 +2,8 @@ package db
 
 import (
 	"encoding/json"
-	"github.com/notegio/openrelay/channels"
 	"github.com/jinzhu/gorm"
+	"github.com/notegio/openrelay/channels"
 	"log"
 )
 
@@ -22,6 +22,6 @@ func (consumer *RecordFillConsumer) Consume(msg channels.Delivery) {
 	}
 }
 
-func NewRecordFillConsumer(db *gorm.DB) (*RecordFillConsumer) {
+func NewRecordFillConsumer(db *gorm.DB) *RecordFillConsumer {
 	return &RecordFillConsumer{NewIndexer(db, StatusOpen)}
 }

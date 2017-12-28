@@ -1,19 +1,18 @@
 package search
 
 import (
-	"github.com/jinzhu/gorm"
-	"net/http"
-	dbModule "github.com/notegio/openrelay/db"
-	"github.com/notegio/openrelay/common"
-	"errors"
 	"encoding/json"
+	"errors"
+	"github.com/jinzhu/gorm"
+	"github.com/notegio/openrelay/common"
+	dbModule "github.com/notegio/openrelay/db"
+	"net/http"
 )
 
 type OrderBook struct {
 	Asks []dbModule.Order `json:"asks"`
 	Bids []dbModule.Order `json:"bids"`
 }
-
 
 func OrderBookHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {

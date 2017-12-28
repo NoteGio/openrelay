@@ -1,13 +1,13 @@
 package types
 
 import (
+	"database/sql/driver"
 	"encoding/json"
+	"errors"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"database/sql/driver"
 	"log"
 	"reflect"
-	"errors"
 )
 
 type Signature struct {

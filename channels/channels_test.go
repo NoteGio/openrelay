@@ -229,7 +229,7 @@ func TestRedisTopicChannelSend(t *testing.T) {
 	publisher := channels.NewRedisTopicPublisher("test_topic", redisClient)
 	consumerChannel := channels.NewTopicConsumerChannel("test_topic", redisClient)
 	defer consumerChannel.StopConsuming()
-	ChannelSendTest(publisher, consumerChannel, 1 * time.Second, t)
+	ChannelSendTest(publisher, consumerChannel, 1*time.Second, t)
 }
 func TestRedisTopicAck(t *testing.T) {
 	redisURL := os.Getenv("REDIS_URL")
@@ -243,5 +243,5 @@ func TestRedisTopicAck(t *testing.T) {
 	publisher := channels.NewRedisTopicPublisher("test_topic", redisClient)
 	consumerChannel := channels.NewTopicConsumerChannel("test_topic", redisClient)
 	defer consumerChannel.StopConsuming()
-	AckTest(publisher, consumerChannel, 1 * time.Second, t)
+	AckTest(publisher, consumerChannel, 1*time.Second, t)
 }

@@ -1,20 +1,20 @@
 package db
 
 import (
-	"github.com/notegio/openrelay/types"
-	"github.com/jinzhu/gorm"
 	"fmt"
+	"github.com/jinzhu/gorm"
+	"github.com/notegio/openrelay/types"
 	// "log"
 )
 
 // Pair tracks pairs of tokens TokenA and TokenB
 type Pair struct {
-	TokenA  *types.Address
-	TokenB  *types.Address
+	TokenA *types.Address
+	TokenB *types.Address
 }
 
 func (pair *Pair) MarshalJSON() ([]byte, error) {
-		return []byte(fmt.Sprintf("{\"tokenA\":{\"address\":\"%#x\",\"minAmount\":\"1\",\"maxAmount\":\"115792089237316195423570985008687907853269984665640564039457584007913129639935\",\"precision\":5},\"tokenB\":{\"address\":\"%#x\",\"minAmount\":\"1\",\"maxAmount\":\"115792089237316195423570985008687907853269984665640564039457584007913129639935\",\"precision\":5}}", *pair.TokenA, *pair.TokenB)), nil
+	return []byte(fmt.Sprintf("{\"tokenA\":{\"address\":\"%#x\",\"minAmount\":\"1\",\"maxAmount\":\"115792089237316195423570985008687907853269984665640564039457584007913129639935\",\"precision\":5},\"tokenB\":{\"address\":\"%#x\",\"minAmount\":\"1\",\"maxAmount\":\"115792089237316195423570985008687907853269984665640564039457584007913129639935\",\"precision\":5}}", *pair.TokenA, *pair.TokenB)), nil
 }
 
 // GetAllTokenPairs returns an unfilitered list of Pairs based on the trading

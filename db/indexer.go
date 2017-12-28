@@ -2,32 +2,32 @@ package db
 
 import (
 	"encoding/hex"
-	"math/big"
-	"github.com/notegio/openrelay/types"
+	"fmt"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/jinzhu/gorm"
-	"fmt"
+	"github.com/notegio/openrelay/types"
+	"math/big"
 	"strings"
 )
 
 type FillRecord struct {
-	OrderHash string `json:"orderHash"`
-	FilledTakerTokenAmount  string `json:"filledTakerTokenAmount"`
+	OrderHash                 string `json:"orderHash"`
+	FilledTakerTokenAmount    string `json:"filledTakerTokenAmount"`
 	CancelledTakerTokenAmount string `json:"cancelledTakerTokenAmount"`
 }
 
 type Indexer struct {
-	db *gorm.DB
+	db     *gorm.DB
 	status int64
 }
 
-func (indexer *Indexer) Index(order *types.Order) (error) {
+func (indexer *Indexer) Index(order *types.Order) error {
 	dbOrder := Order{}
 	dbOrder.Order = *order
 	return dbOrder.Save(indexer.db, indexer.status).Error
 }
 
-func (indexer *Indexer) RecordFill(fillRecord *FillRecord) (error) {
+func (indexer *Indexer) RecordFill(fillRecord *FillRecord) error {
 	hashBytes, err := hex.DecodeString(strings.TrimPrefix(fillRecord.OrderHash, "0x"))
 	if err != nil {
 		return err
@@ -56,6 +56,6 @@ func (indexer *Indexer) RecordFill(fillRecord *FillRecord) (error) {
 	return dbOrder.Save(indexer.db, dbOrder.Status).Error
 }
 
-func NewIndexer(db *gorm.DB, status int64) (*Indexer) {
+func NewIndexer(db *gorm.DB, status int64) *Indexer {
 	return &Indexer{db, status}
 }

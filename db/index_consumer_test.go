@@ -2,12 +2,12 @@ package db_test
 
 import (
 	"encoding/hex"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/notegio/openrelay/channels"
 	dbModule "github.com/notegio/openrelay/db"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"time"
-	"testing"
 	"reflect"
+	"testing"
+	"time"
 )
 
 func IndexConsumerDefaultStatus(status int64, t *testing.T) {
@@ -17,7 +17,7 @@ func IndexConsumerDefaultStatus(status int64, t *testing.T) {
 		return
 	}
 	tx := db.Begin()
-	defer func(){
+	defer func() {
 		tx.Rollback()
 		db.Close()
 	}()

@@ -3,12 +3,12 @@ package types
 import (
 	"encoding/json"
 	// "encoding/hex"
-	"github.com/ethereum/go-ethereum/crypto/sha3"
-	"strconv"
-	"errors"
 	"database/sql/driver"
+	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/crypto/sha3"
 	"math/big"
+	"strconv"
 	// "log"
 )
 

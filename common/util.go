@@ -3,11 +3,11 @@ package common
 import (
 	"encoding/hex"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/notegio/openrelay/types"
 	"github.com/notegio/openrelay/aws"
+	"github.com/notegio/openrelay/types"
+	"io/ioutil"
 	"os"
 	"strings"
-	"io/ioutil"
 )
 
 func BytesToAddress(data [20]byte) common.Address {
@@ -18,7 +18,7 @@ func ToGethAddress(data *types.Address) common.Address {
 	return common.HexToAddress(hex.EncodeToString(data[:]))
 }
 
-func BytesToOrAddress(data [20]byte) (*types.Address){
+func BytesToOrAddress(data [20]byte) *types.Address {
 	addr := &types.Address{}
 	copy(addr[:], data[:])
 	return addr
@@ -35,7 +35,7 @@ func HexToBytes(hexString string) ([20]byte, error) {
 }
 
 // GetSecret retrieves a secret from various supported secret stores
-func GetSecret(uri string) (string) {
+func GetSecret(uri string) string {
 	if strings.HasPrefix(uri, "file://") {
 		secretBytes, err := ioutil.ReadFile(strings.TrimPrefix(uri, "file://"))
 		if err == nil {

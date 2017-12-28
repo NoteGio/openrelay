@@ -8,8 +8,8 @@ import (
 	orCommon "github.com/notegio/openrelay/common"
 	"github.com/notegio/openrelay/exchangecontract"
 	"github.com/notegio/openrelay/types"
-	"math/big"
 	"log"
+	"math/big"
 )
 
 type FilledLookup interface {

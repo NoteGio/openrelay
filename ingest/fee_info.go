@@ -23,7 +23,7 @@ type FeeInputPayload struct {
 type FeeResponse struct {
 	MakerFee       string `json:"makerFee"`
 	TakerFee       string `json:"takerFee"`
-	FeeRecipient    string `json:"feeRecipient"`
+	FeeRecipient   string `json:"feeRecipient"`
 	TakerToSpecify string `json:"takerToSpecify"`
 }
 

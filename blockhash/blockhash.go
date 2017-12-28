@@ -7,7 +7,7 @@ import (
 
 // BlockHash will get the latest block hash from the ethereum blockchain
 type BlockHash interface {
-	Get() (string)
+	Get() string
 }
 
 // ChanneledBlockHashConsumer listens to a consumerChannel for block hashes,
@@ -26,10 +26,10 @@ func (rbhc *ChanneledBlockHashConsumer) Consume(delivery channels.Delivery) {
 // ChanneledBlockHash is a BlockHash implementation that gets the latest
 // block hash by watching a ConsumerChannel
 type ChanneledBlockHash struct {
-	channel channels.ConsumerChannel
+	channel    channels.ConsumerChannel
 	sourceChan chan string
-	sinkChan chan chan string
-	started bool
+	sinkChan   chan chan string
+	started    bool
 }
 
 // Start kicks off a go routine to listen for changes to the blockhash
@@ -62,7 +62,7 @@ func (rbh *ChanneledBlockHash) Get() string {
 }
 
 // NewChanneledBlockHash returns a BlockHash given a ConsumerChannel
-func NewChanneledBlockHash(channel channels.ConsumerChannel) (BlockHash) {
+func NewChanneledBlockHash(channel channels.ConsumerChannel) BlockHash {
 	return &ChanneledBlockHash{
 		channel,
 		make(chan string),

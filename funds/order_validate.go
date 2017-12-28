@@ -2,11 +2,11 @@ package funds
 
 import (
 	"encoding/hex"
+	"fmt"
 	"github.com/notegio/openrelay/config"
 	"github.com/notegio/openrelay/types"
 	"log"
 	"math/big"
-	"fmt"
 )
 
 type OrderValidator interface {
@@ -21,7 +21,7 @@ type orderValidator struct {
 
 type boolOrErr struct {
 	success bool
-	err error
+	err     error
 }
 
 func (funds *orderValidator) checkBalance(tokenAddress, userAddress *types.Address, required []byte, respond chan boolOrErr) {

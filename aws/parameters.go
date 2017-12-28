@@ -7,7 +7,7 @@ import (
 	"log"
 )
 
-func GetParameter(parameter string) (string) {
+func GetParameter(parameter string) string {
 	sess := session.Must(session.NewSession())
 	client := ssm.New(sess)
 	paramValue, err := client.GetParameter(&ssm.GetParameterInput{Name: &parameter, WithDecryption: aws.Bool(true)})

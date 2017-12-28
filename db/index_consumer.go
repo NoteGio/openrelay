@@ -1,9 +1,9 @@
 package db
 
 import (
+	"github.com/jinzhu/gorm"
 	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/types"
-	"github.com/jinzhu/gorm"
 	"log"
 )
 
@@ -23,6 +23,6 @@ func (consumer *IndexConsumer) Consume(msg channels.Delivery) {
 	}
 }
 
-func NewIndexConsumer(db *gorm.DB, status int64) (*IndexConsumer) {
+func NewIndexConsumer(db *gorm.DB, status int64) *IndexConsumer {
 	return &IndexConsumer{NewIndexer(db, status)}
 }

@@ -3,8 +3,8 @@ package funds
 import (
 	"encoding/hex"
 	"errors"
-	"math/big"
 	"github.com/notegio/openrelay/types"
+	"math/big"
 )
 
 type mockBalanceChecker struct {

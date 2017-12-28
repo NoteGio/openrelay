@@ -1,15 +1,14 @@
 package search
 
 import (
-	"github.com/jinzhu/gorm"
-	"net/http"
-	dbModule "github.com/notegio/openrelay/db"
-	"regexp"
-	"errors"
 	"encoding/hex"
+	"errors"
+	"github.com/jinzhu/gorm"
+	dbModule "github.com/notegio/openrelay/db"
+	"net/http"
+	"regexp"
 	"strings"
 )
-
 
 func OrderHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {

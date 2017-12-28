@@ -3,6 +3,7 @@ package funds_test
 import (
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	gethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/notegio/openrelay/common"
 	"github.com/notegio/openrelay/config"
@@ -11,7 +12,6 @@ import (
 	"math/big"
 	"reflect"
 	"testing"
-	"errors"
 )
 
 func hexToAddress(addressHex string) (*types.Address, error) {
@@ -93,7 +93,7 @@ func TestOrderValidateSpent(t *testing.T) {
 	filledInt.SetString("500000000000000000", 10)
 	copy(newOrder.TakerTokenAmountFilled[:], gethCommon.LeftPadBytes(filledInt.Bytes(), 32))
 
-	if result, _ :=validator.ValidateOrder(newOrder); !result {
+	if result, _ := validator.ValidateOrder(newOrder); !result {
 		t.Errorf("Expected sufficient funds")
 	}
 }
@@ -102,9 +102,9 @@ func TestErrorPanic(t *testing.T) {
 	var x interface{}
 	err := json.Unmarshal([]byte("<oops>"), x)
 	balanceChecker := funds.NewErrorMockBalanceChecker(err)
-	defer func(){
+	defer func() {
 		if r := recover(); r == nil {
-			t.Errorf("Expected panic from JSON error");
+			t.Errorf("Expected panic from JSON error")
 		}
 	}()
 	feeTokenAddress, _ := hexToAddress("e41d2489571d322189246dafa5ebde1f4699f498")

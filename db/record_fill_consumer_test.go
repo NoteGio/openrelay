@@ -1,14 +1,14 @@
 package db_test
 
 import (
+	"fmt"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/notegio/openrelay/channels"
 	dbModule "github.com/notegio/openrelay/db"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"time"
-	"testing"
-	"reflect"
 	"math/big"
-	"fmt"
+	"reflect"
+	"testing"
+	"time"
 )
 
 func TestFillConsumer(t *testing.T) {
@@ -18,7 +18,7 @@ func TestFillConsumer(t *testing.T) {
 		return
 	}
 	tx := db.Begin()
-	defer func(){
+	defer func() {
 		tx.Rollback()
 		db.Close()
 	}()

@@ -1,8 +1,8 @@
 package accounts
 
 import (
-	"math/big"
 	"github.com/notegio/openrelay/types"
+	"math/big"
 )
 
 type Account interface {

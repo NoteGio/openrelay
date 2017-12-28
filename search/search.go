@@ -2,14 +2,14 @@ package search
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/jinzhu/gorm"
-	dbModule "github.com/notegio/openrelay/db"
-	"github.com/notegio/openrelay/types"
 	"github.com/notegio/openrelay/blockhash"
 	"github.com/notegio/openrelay/common"
+	dbModule "github.com/notegio/openrelay/db"
+	"github.com/notegio/openrelay/types"
 	"net/http"
 	urlModule "net/url"
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -73,7 +73,7 @@ func returnError(w http.ResponseWriter, err error, code int) {
 	w.Write([]byte(fmt.Sprintf("{\"error\": \"%v\"}", err.Error())))
 }
 
-func getPages(queryObject urlModule.Values) (int, int, error){
+func getPages(queryObject urlModule.Values) (int, int, error) {
 	pageStr := queryObject.Get("page")
 	if pageStr == "" {
 		pageStr = "1"
