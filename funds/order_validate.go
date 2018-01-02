@@ -36,14 +36,9 @@ func (funds *orderValidator) checkBalance(tokenAddress, userAddress *types.Addre
 	respond <- boolOrErr{(requiredInt.Cmp(balance) <= 0), nil}
 }
 
-func (funds *orderValidator) checkAllowance(tokenAddress, userAddress *types.Address, required []byte, respond chan boolOrErr) {
+func (funds *orderValidator) checkAllowance(tokenAddress, userAddress, proxyAddress *types.Address, required []byte, respond chan boolOrErr) {
 	requiredInt := new(big.Int)
 	requiredInt.SetBytes(required[:])
-	proxyAddress, err := funds.tokenProxy.Get()
-	if err != nil {
-		respond <- boolOrErr{false, err}
-		return
-	}
 	balance, err := funds.balanceChecker.GetAllowance(tokenAddress, userAddress, proxyAddress)
 	if err != nil {
 		log.Printf("'%v': '%v', '%v'", err.Error(), hex.EncodeToString(tokenAddress[:]), hex.EncodeToString(userAddress[:]))
@@ -68,9 +63,14 @@ func getRemainingAmount(numerator, denominator, target []byte) []byte {
 // fill the order and pay makerFees. This assumes that TakerAmountFilled and
 // TakerAmountCancelled reflect
 func (funds *orderValidator) ValidateOrder(order *types.Order) (bool, error) {
-	feeToken, err := funds.feeToken.Get() //common.HexToAddress("0xe41d2489571d322189246dafa5ebde1f4699f498")
+	feeToken, err := funds.feeToken.Get(order)
 	if err != nil {
 		log.Printf("Error getting fee token '%v'", err.Error())
+		return false, err
+	}
+	proxyAddress, err := funds.tokenProxy.Get(order)
+	if err != nil {
+		log.Printf("Error getting token proxy address '%v'", err.Error())
 		return false, err
 	}
 	makerChan := make(chan boolOrErr)
@@ -97,12 +97,14 @@ func (funds *orderValidator) ValidateOrder(order *types.Order) (bool, error) {
 	go funds.checkAllowance(
 		order.MakerToken,
 		order.Maker,
+		proxyAddress,
 		getRemainingAmount(unavailableAmount.Bytes(), order.TakerTokenAmount[:], order.MakerTokenAmount[:]),
 		makerAllowanceChan,
 	)
 	go funds.checkAllowance(
 		feeToken,
 		order.Maker,
+		proxyAddress,
 		getRemainingAmount(unavailableAmount.Bytes(), order.TakerTokenAmount[:], order.MakerFee[:]),
 		feeAllowanceChan,
 	)

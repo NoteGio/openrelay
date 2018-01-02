@@ -2,6 +2,7 @@ package channels
 
 import (
 	"gopkg.in/redis.v3"
+	"log"
 )
 
 type Publisher interface {
@@ -18,6 +19,10 @@ func NewRedisQueuePublisher(key string, client *redis.Client) Publisher {
 }
 
 func (publisher *redisQueuePublisher) Publish(payload string) bool {
+	if len(payload) == 0 {
+		log.Printf("Trying to publish empty message. Skipping")
+		return false
+	}
 	return !redisErrIsNil(publisher.redisClient.LPush(publisher.key, payload))
 }
 

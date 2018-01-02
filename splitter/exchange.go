@@ -14,6 +14,11 @@ type ExchangeSplitterConsumer struct {
 
 func (consumer *ExchangeSplitterConsumer) Consume(delivery channels.Delivery) {
 	payload := delivery.Payload()
+	if len(payload) == 0 {
+		// Sometimes we get the odd empty message
+		delivery.Ack()
+		return
+	}
 	orderBytes := [441]byte{}
 	copy(orderBytes[:], []byte(payload))
 	order := types.OrderFromBytes(orderBytes)
