@@ -214,8 +214,8 @@ type jsonOrder struct {
 	ExpirationTimestampInSec  string        `json:"expirationUnixTimestampSec"`
 	Salt                      string        `json:"salt"`
 	Signature                 jsonSignature `json:"ecSignature"`
-	TakerTokenAmountFilled    string        `json:"takerTokenAmountFilled"`
-	TakerTokenAmountCancelled string        `json:"takerTokenAmountCancelled"`
+	TakerTokenAmountFilled    string        `json:"-"`
+	TakerTokenAmountCancelled string        `json:"-"`
 }
 
 func (order *Order) UnmarshalJSON(b []byte) error {
