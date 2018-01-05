@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/big"
 	"time"
+	"errors"
 )
 
 const (
@@ -29,6 +30,12 @@ type Order struct {
 // is filled based on order.TakerTokenAmountFilled + order.TakerTokenAmountCancelled
 // the status will be recorded as db.StatusFilled regardless of the specified status.
 func (order *Order) Save(db *gorm.DB, status int64) *gorm.DB {
+	copy(order.Signature.Hash[:], order.Hash())
+	if !order.Signature.Verify(order.Maker) {
+		scope := db.New()
+		scope.AddError(errors.New("Failed to verify signature"))
+		return scope
+	}
 	order.OrderHash = order.Hash()
 
 	remainingAmount := new(big.Int)

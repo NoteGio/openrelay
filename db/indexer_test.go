@@ -26,6 +26,9 @@ func TestIndexOrder(t *testing.T) {
 	}
 	indexer := dbModule.NewIndexer(tx, dbModule.StatusOpen)
 	order := sampleOrder()
+	if !order.Signature.Verify(order.Maker) {
+		t.Errorf("Failed to verify signature")
+	}
 	if err := indexer.Index(order); err != nil {
 		t.Errorf(err.Error())
 	}

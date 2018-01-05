@@ -27,6 +27,9 @@ func TestFillConsumer(t *testing.T) {
 	}
 	indexer := dbModule.NewIndexer(tx, dbModule.StatusOpen)
 	order := sampleOrder()
+	if !order.Signature.Verify(order.Maker) {
+		t.Errorf("Failed to verify signature")
+	}
 	if err := indexer.Index(order); err != nil {
 		t.Errorf(err.Error())
 	}
@@ -46,7 +49,9 @@ func TestFillConsumer(t *testing.T) {
 
 	dbOrder := &dbModule.Order{}
 	dbOrder.Initialize()
-	tx.Model(&dbModule.Order{}).Where("order_hash = ?", order.Hash()).First(dbOrder)
+	if err := tx.Model(&dbModule.Order{}).Where("order_hash = ?", order.Hash()).First(dbOrder).Error; err != nil {
+		t.Errorf(err.Error())
+	}
 	if !reflect.DeepEqual(dbOrder.TakerTokenAmount, dbOrder.TakerTokenAmountFilled) {
 		t.Errorf("TakerTokenAmount should match TakerTokenAmountFilled, got %#x != %#x", dbOrder.TakerTokenAmount[:], dbOrder.TakerTokenAmountFilled[:])
 	}
