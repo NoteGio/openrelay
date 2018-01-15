@@ -39,12 +39,12 @@ type redisFeeToken struct {
 
 type rpcFeeToken struct {
 	conn bind.ContractBackend
-	exchangeTokenMap map[*types.Address]*types.Address
+	exchangeTokenMap map[types.Address]*types.Address
 }
 
 func (feeToken *rpcFeeToken) Get(order *types.Order) (*types.Address, error) {
 	feeTokenAddress := &types.Address{}
-	if feeTokenAddress, ok := feeToken.exchangeTokenMap[order.ExchangeAddress]; ok {
+	if feeTokenAddress, ok := feeToken.exchangeTokenMap[*order.ExchangeAddress]; ok {
 		return feeTokenAddress, nil
 	}
 	exchange, err := exchangecontract.NewExchange(orCommon.ToGethAddress(order.ExchangeAddress), feeToken.conn)
@@ -54,10 +54,11 @@ func (feeToken *rpcFeeToken) Get(order *types.Order) (*types.Address, error) {
 	}
 	feeTokenGethAddress, err := exchange.ZRX_TOKEN_CONTRACT(nil)
 	if err != nil {
-		log.Printf("Error getting ")
+		log.Printf("Error getting fee token address for exhange %#x", order.ExchangeAddress)
+		return nil, err
 	}
 	copy(feeTokenAddress[:], feeTokenGethAddress[:])
-	feeToken.exchangeTokenMap[order.ExchangeAddress] = feeTokenAddress
+	feeToken.exchangeTokenMap[*order.ExchangeAddress] = feeTokenAddress
 	return feeTokenAddress, nil
 }
 
@@ -101,7 +102,7 @@ func NewRpcFeeToken(rpcURL string) (FeeToken, error) {
 		// function we call isn't important, but SyncProgress is pretty cheap.
 		return nil, err
 	}
-	return &rpcFeeToken{conn, make(map[*types.Address]*types.Address)}, nil
+	return &rpcFeeToken{conn, make(map[types.Address]*types.Address)}, nil
 }
 
 func NewFeeToken(client *redis.Client) FeeToken {

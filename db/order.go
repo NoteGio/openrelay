@@ -37,6 +37,7 @@ func (order *Order) Save(db *gorm.DB, status int64) *gorm.DB {
 		return scope
 	}
 	order.OrderHash = order.Hash()
+	log.Printf("Attempting to save order %#x", order.Hash())
 
 	remainingAmount := new(big.Int)
 	remainingAmount.SetBytes(order.TakerTokenAmount[:])

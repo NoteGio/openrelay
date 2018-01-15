@@ -32,13 +32,10 @@ libraries provide a nice interface for monitoring events. As the JavaScript
 microservices find events via Web3, the events are placed on message queues for
 subsequent processing by other services.
 
-Python is used for interacting with DynamoDB, which is the current persistent
-store for order information. The OpenRelay team was already familiar and
-comfortable with Python's DynamoDB libraries, so it seemed an easy choice to
-get started. As we have gotten further into the project, we have deemed that
-DynamoDB will need to be replaced to achieve some of our additional goals, and
-replacing DynamoDB will likely involve eliminating Python from the OpenRelay
-stack.
+Python is used for interacting with DynamoDB, which is the legacy persistent
+store for order information. It has been replaced with a PostgreSQL order book,
+which is managed by Go services, using GORM to interact with the database
+layer.
 
 Service Classifications
 .......................
@@ -78,8 +75,21 @@ listens for HTTP requests, parses out provided Orders, performs basic
 validation on those orders, and places them on a message queue to be further
 validated and eventually indexed.
 
+The ingest service provides the POST `/v0/order` and `/v0/fees` APIs from the
+[Standard Relayer API](https://github.com/0xProject/standard-relayer-api/blob/master/http/v0.md).
+
 * **Language**: Go
 * **Classification**: External
+
+Fill Updater
+^^^^^^^^^^^^
+
+The fill updater receives orders from a message queue and communicates with an
+Ethereum node to determine whether the order has been fully or partially
+filled. It updates the order, and publishes the order on an outbound channel.
+
+* **Language**: Go
+* **Classification**: Internal
 
 Fund Validation
 ^^^^^^^^^^^^^^^
@@ -92,9 +102,8 @@ an Ethereum node to validate that:
 * The maker of the order has set allowances for the token transfer proxy to
   complete the order.
 
-It also checks to see if the order has been all or partially filled or
-cancelled, and includes an accurate TakerTokenAmountFilled as it relays the
-message.
+It also takes into consideration whether the order has been partially filled or
+cancelled, based on the values set in the Fill Updater service.
 
 * **Language**: Go
 * **Classification**: Internal
@@ -103,8 +112,8 @@ Simple Relay
 ^^^^^^^^^^^^
 
 The simple relay takes messages from one topic or queue, and places them onto
-another topic or queue. This is a very basic function, and is used in a few
-places throughout the OpenRelay pipeline.
+one or more other topics or queues. This is a very basic function, and is used
+in a few places throughout the OpenRelay pipeline.
 
 * **Language**: Go
 * **Classification**: Internal
@@ -124,8 +133,8 @@ This is controlled by delay relays. Delay relays have three parameters:
   * **Language**: Go
   * **Classification**: Internal
 
-Indexer
-^^^^^^^
+DynamoDB Indexer
+^^^^^^^^^^^^^^^^
 
 After messages make it through the delay relays, they are picked up by the
 indexer. The indexer parses the messages, and stores them in the order index
@@ -133,18 +142,30 @@ for subsequent retrieval.
 
 * **Language**: Python
 * **Classification**: Internal
+* **Deprecated**: The DynamoDB index is still supported, but is not receiving
+  many updates.
 
-Order Index
-^^^^^^^^^^^
+DynamoDB Order Index
+^^^^^^^^^^^^^^^^^^^^
 
 The order index is responsible for persistent storage of orders that have been
 validated. The order index is currently implemented with DynamoDB. DynamoDB is
 rather limiting, as it offers a limited number of indexable fields, and lacks
-query planning or index intersection. The Order Index will likely be replaced
-in an upcoming release.
+query planning or index intersection, which is why it is being replaced with a
+PostgreSQL order index.
 
-Search API
-^^^^^^^^^^
+* **Deprecated**: The DynamoDB index is still supported, but is not receiving
+  many pudates.
+
+PostgreSQL Order Index
+^^^^^^^^^^^^^^^^^^^^^^
+
+The PostgreSQL order index currently lives alongside the DynamoDB index. It
+provides more robust search capabilities, and is managed by Go microservices
+instead of Python microservices.
+
+DyanmoDB Search API
+^^^^^^^^^^^^^^^^^^^
 
 The search API allows internet-based users to query the Order Index for orders.
 At present, it allows searching for orders by:
@@ -154,6 +175,18 @@ At present, it allows searching for orders by:
 * Token Pair
 
 * **Language**: Python
+* **Classification**: External
+
+PostgreSQL Search API
+^^^^^^^^^^^^^^^^^^^^^
+
+The PostgreSQL search API allows internet based users to query the Order Index
+for orders.
+
+The PostgreSQL search API provides the GET `/v0/token_pairs`, `/v0/orders`,
+`/v0/order/${order_hash}`, and `/v0/orderbook` endpoints from the [Standard Relayer API](https://github.com/0xProject/standard-relayer-api/blob/master/http/v0.md).
+
+* **Language**: Go
 * **Classification**: External
 
 Block Monitor
@@ -178,54 +211,46 @@ containing the order hash, and either the `filledTakerTokenAmount` or the
 * **Language**: JavaScript
 * **Classification**: Internal
 
-Fill Indexer
-^^^^^^^^^^^^
+DynamoDB Fill Indexer
+^^^^^^^^^^^^^^^^^^^^^
 
 The fill indexer consumes the messages emitted by the Exchange Monitor and uses
-them to update the Order Index with the cancelled and filled amounts of each
-received message. After updating the record, if the cancelled + filled amounts
-equal the total taker amount, the record is deleted.
+them to update the DyanmoDB Order Index with the cancelled and filled amounts
+of each received message. After updating the record, if the cancelled + filled
+amounts equal the total taker amount, the record is deleted.
 
 * **Language**: Python
+* **Classification**: Internal
+
+PostgreSQL Fill Indexer
+^^^^^^^^^^^^^^^^^^^^^^^
+
+The fill indexer consumes the messages emitted by the Exchange Monitor and uses
+them to update the PostgreSQL Order Index with the cancelled and filled amounts
+of each received message. After updating the record, if the cancelled + filled
+amounts equal the total taker amount, the record is marked as filled, which
+removes it from most of the search endpoints.
+
+* **Language**: Go
+* **Classification**: Internal
+
+Exchange Splitter
+^^^^^^^^^^^^^^^^^
+
+In order to support multiple networks (Mainnet and the Ropsten testnet), we
+have deployed multiple instances of most of these services, some to manage
+mainnet and some to manage testnet. The ingest service is shared by both
+deployments. The Exchange splitter picks up orders from the ingest service, and
+routes them to the appropriate pipeline for verification. After verification,
+both pipelines feed their results back to the same indexer service.
+
+* **Language**: Go
 * **Classification**: Internal
 
 Ethereum Nodes
 ..............
 
-OpenRelay uses Ethereum clients for two different purposes, and uses separate
-containers for each purpose to help manage the load.
-
-Monitoring Node
-^^^^^^^^^^^^^^^
-
-OpenRelay has exactly one monitoring node at any given time. At present, the
-monitoring node is a light geth client. Filters can be installed for each event
-that needs to be processed, and the monitoring node will provide a feed of
-events.
-
-Because filters need to be installed on the monitoring node, monitoring nodes
-cannot be load balanced. Load is not a huge concern for monitoring nodes, as
-the load on the monitoring node is relatively constant, and doesn't scale much
-with increased relay activity.
-
-For failover, the monitoring node is fronted with HAProxy, which will fail-over
-to the Standby Node if the monitoring node becomes unavailable. This will cause
-filters to be dropped, so monitoring services need to be prepared to re-install
-their filters.
-
-State Nodes
-^^^^^^^^^^^
-
-State nodes are used for looking up token balances, allowances, order fill
-amounts, and order cancellations. There can be an arbitrary number of state
-nodes and they can be load balanced, as each state request is independent. The
-state node is also fronted by HAProxy, and will fall back to the standby node
-if needed.
-
-Standby Node
-^^^^^^^^^^^^
-
-A single standby node is the fallback for both the monitoring node and the
-standby node. Under normal circumstances it should see little internal traffic.
-It exists to handle traffic if the monitoring node or all of the state nodes
-die, until the monitoring node can be restored.
+At present OpenRelay uses Infura for Ethereum state lookups. We are working
+hard on a solution to bring Ethereum node hosting in-house, but the operational
+complexities have proven challenging, and we did not want to hold up use of
+OpenRelay while work through these challenges.

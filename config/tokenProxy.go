@@ -33,12 +33,12 @@ func (tokenProxy *staticTokenProxy) Set(address *types.Address) error {
 
 type rpcTokenProxy struct {
 	conn bind.ContractBackend
-	exchangeProxyMap map[*types.Address]*types.Address
+	exchangeProxyMap map[types.Address]*types.Address
 }
 
 func (tokenProxy *rpcTokenProxy) Get(order *types.Order) (*types.Address, error) {
 	tokenProxyAddress := &types.Address{}
-	if tokenProxyAddress, ok := tokenProxy.exchangeProxyMap[order.ExchangeAddress]; ok {
+	if tokenProxyAddress, ok := tokenProxy.exchangeProxyMap[*order.ExchangeAddress]; ok {
 		return tokenProxyAddress, nil
 	}
 	exchange, err := exchangecontract.NewExchange(orCommon.ToGethAddress(order.ExchangeAddress), tokenProxy.conn)
@@ -48,10 +48,11 @@ func (tokenProxy *rpcTokenProxy) Get(order *types.Order) (*types.Address, error)
 	}
 	tokenProxyGethAddress, err := exchange.TOKEN_TRANSFER_PROXY_CONTRACT(nil)
 	if err != nil {
-		log.Printf("Error getting ")
+		log.Printf("Error getting token proxy address for exhange %#x", order.ExchangeAddress)
+		return nil, err
 	}
 	copy(tokenProxyAddress[:], tokenProxyGethAddress[:])
-	tokenProxy.exchangeProxyMap[order.ExchangeAddress] = tokenProxyAddress
+	tokenProxy.exchangeProxyMap[*order.ExchangeAddress] = tokenProxyAddress
 	return tokenProxyAddress, nil
 }
 
@@ -102,7 +103,7 @@ func NewRpcTokenProxy(rpcURL string) (FeeToken, error) {
 		// function we call isn't important, but SyncProgress is pretty cheap.
 		return nil, err
 	}
-	return &rpcTokenProxy{conn, make(map[*types.Address]*types.Address)}, nil
+	return &rpcTokenProxy{conn, make(map[types.Address]*types.Address)}, nil
 }
 
 func NewTokenProxy(client *redis.Client) TokenProxy {
