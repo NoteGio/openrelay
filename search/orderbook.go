@@ -36,8 +36,8 @@ func OrderBookHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 		baseTokenAddress := common.BytesToOrAddress(baseTokenAddressBytes)
 		quoteTokenAddress := common.BytesToOrAddress(quoteTokenAddressBytes)
 		orderBook := &OrderBook{[]dbModule.Order{}, []dbModule.Order{}}
-		db.Model(&dbModule.Order{}).Where("taker_token = ? AND maker_token = ?", baseTokenAddress, quoteTokenAddress).Order("price, fee_rate, expiration_timestamp_in_sec").Find(&orderBook.Bids)
-		db.Model(&dbModule.Order{}).Where("maker_token = ? AND taker_token = ?", baseTokenAddress, quoteTokenAddress).Order("price, fee_rate, expiration_timestamp_in_sec").Find(&orderBook.Asks)
+		db.Model(&dbModule.Order{}).Where("status = ?", dbModule.StatusOpen).Where("taker_token = ? AND maker_token = ?", baseTokenAddress, quoteTokenAddress).Order("price, fee_rate, expiration_timestamp_in_sec").Find(&orderBook.Bids)
+		db.Model(&dbModule.Order{}).Where("status = ?", dbModule.StatusOpen).Where("maker_token = ? AND taker_token = ?", baseTokenAddress, quoteTokenAddress).Order("price, fee_rate, expiration_timestamp_in_sec").Find(&orderBook.Asks)
 		response, err := json.Marshal(orderBook)
 		if err != nil {
 			returnError(w, err, 500)

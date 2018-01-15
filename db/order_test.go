@@ -60,6 +60,27 @@ func TestSaveOrder(t *testing.T) {
 	}
 }
 
+func TestFailOnEmptyOrder(t *testing.T) {
+	db, err := getDb()
+	if err != nil {
+		t.Errorf(err.Error())
+		return
+	}
+	tx := db.Begin()
+	defer func() {
+		tx.Rollback()
+		db.Close()
+	}()
+	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	dbOrder := &dbModule.Order{}
+	dbOrder.Initialize()
+	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err == nil {
+		t.Errorf("Expected error saving empty order")
+	}
+}
+
 func TestQueryOrder(t *testing.T) {
 	db, err := getDb()
 	if err != nil {

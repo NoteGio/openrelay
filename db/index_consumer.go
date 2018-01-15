@@ -12,6 +12,12 @@ type IndexConsumer struct {
 }
 
 func (consumer *IndexConsumer) Consume(msg channels.Delivery) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("Failed to index order: %v", r)
+			msg.Reject()
+		}
+	}()
 	orderBytes := [441]byte{}
 	copy(orderBytes[:], []byte(msg.Payload()))
 	order := types.OrderFromBytes(orderBytes)

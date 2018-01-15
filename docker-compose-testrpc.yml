@@ -43,12 +43,24 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
+  exchangesplitter:
+    build:
+      context: ./
+      dockerfile: Dockerfile.exchangesplitter
+    image: openrelay/exchangesplitter
+    command: ["/exchangesplitter", "${REDIS_HOST:-redis:6379}", "queue://ingest", "queue://fillupdate", "0x1dad4783cf3fe3085c1426157ab175a6119a04ba=queue://fillupdate-othernet"]
+    depends_on:
+      - redis
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
   fillupdate:
     build:
       context: ./
       dockerfile: Dockerfile.fillupdate
     image: openrelay/fillupdate
-    command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://ingest", "queue://fundcheck"]
+    command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://fillupdate", "queue://fundcheck"]
     depends_on:
       - redis
       - ethnode

@@ -43,6 +43,8 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v0.0/order", handler)
 	mux.HandleFunc("/v0.0/fees", feeHandler)
+	mux.HandleFunc("/v0/order", handler)
+	mux.HandleFunc("/v0/fees", feeHandler)
 	corsHandler := cors.Default().Handler(mux)
 	log.Printf("Order Ingest Serving on :%v", port)
 	http.ListenAndServe(":"+port, corsHandler)

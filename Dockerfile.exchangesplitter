@@ -1,0 +1,5 @@
+FROM scratch
+
+COPY bin/exchangesplitter /exchangesplitter
+
+CMD ["/exchangesplitter"]

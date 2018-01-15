@@ -60,7 +60,15 @@ func main() {
 			publishers = append(publishers, publisher)
 		}
 	}
-	orderValidator, err := funds.NewRpcOrderValidator(rpcURL, config.NewFeeToken(redisClient), config.NewTokenProxy(redisClient))
+	feeToken, err := config.NewRpcFeeToken(rpcURL)
+	if err != nil {
+		log.Fatalf("Error creating RpcOrderValidator: '%v'", err.Error())
+	}
+	tokenProxy, err := config.NewRpcTokenProxy(rpcURL)
+	if err != nil {
+		log.Fatalf("Error creating RpcOrderValidator: '%v'", err.Error())
+	}
+	orderValidator, err := funds.NewRpcOrderValidator(rpcURL, feeToken, tokenProxy)
 	if err != nil {
 		log.Fatalf("Error creating RpcOrderValidator: '%v'", err.Error())
 	}

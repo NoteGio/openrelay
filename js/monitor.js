@@ -60,7 +60,7 @@ module.exports = function(redisClient, notificationChannel, filterCreator, web3,
             if(resuming){
                 clearTimeout(resumptionTimeout);
                 resumptionTimeout = setTimeout(function(){
-                    web3.eth.getBlockNumber((currentBlock) => {
+                    web3.eth.getBlockNumber((err, currentBlock) => {
                         resuming = false;
                         channel.FlushQueue();
                         redisClient.set(blockKey, currentBlock);
@@ -69,11 +69,11 @@ module.exports = function(redisClient, notificationChannel, filterCreator, web3,
                 }, 5000);
                 channel.QueueMessage(JSON.stringify(transform(data)));
             } else {
-                web3.eth.getBlockNumber((currentBlock) => {
+                web3.eth.getBlockNumber((err, currentBlock) => {
                     var payload = JSON.stringify(transform(data));
                     console.log(`Block ${currentBlock} - published '${payload}'`);
                     channel.Publish(payload);
-                    if(lastBlockNumber != currentBlock) {
+                    if(lastBlockNumber != currentBlock && currentBlock != null) {
                         redisClient.set(blockKey, currentBlock);
                         lastBlockNumber = currentBlock;
                     }
