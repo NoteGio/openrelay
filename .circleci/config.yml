@@ -1,0 +1,24 @@
+version: 2
+jobs:
+  build_and_test:
+    docker:
+      # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
+      - image: circleci/golang:1.8
+      # CircleCI PostgreSQL images available at: https://hub.docker.com/r/circleci/postgres/
+      - image: postgres
+        environment:
+          POSTGRES_PASSWORD: secret
+      - image: redis
+      - image: cnadiminti/dynamodb-local
+    steps:
+      - checkout
+      - run: curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash
+      - run: . ~/.nvm/nvm.sh && nvm install 8.0.0 && nvm alias default node
+      - run: sudo apt-get update && sudo apt-get install python3
+      - run: make all
+      - run: make tests
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - build_and_test
