@@ -19,7 +19,7 @@ jobs:
           command: |
               . ~/.nvm/nvm.sh && nvm install 8.0.0 && nvm alias default node
               make all
-      - run: make tests
+      - run: make test_no_docker
 workflows:
   version: 2
   build_and_test:

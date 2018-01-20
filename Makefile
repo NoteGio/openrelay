@@ -111,6 +111,10 @@ docker-cfg/ca-certificates.crt:
 	cp /etc/ssl/certs/ca-certificates.crt docker-cfg/ca-certificates.crt
 
 test: $(BASE)/tmp/dynamo.containerid $(BASE)/tmp/redis.containerid jstest gotest pytest dockerstop
-
+test_no_docker: mock jstest gotest pytest
+mock:
+	touch $(BASE)/tmp/redis.containerid
+	touch $(BASE)/tmp/postgres.containerid
+	touch $(BASE)/tmp/dynamo.containerid
 newvendor:
 	govendor add +external
