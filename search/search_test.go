@@ -34,6 +34,7 @@ func sampleOrder() *dbModule.Order {
 }
 
 func saltedSampleOrder() *dbModule.Order {
+	// TODO: Sign this order
 	order := &types.Order{}
 	order.FromBytes(getTestOrderBytes())
 	rand.Read(order.Salt[:])
