@@ -107,7 +107,7 @@ pytest: $(BASE)/tmp/dynamo.containerid
 jstest: $(BASE)/tmp/redis.containerid
 	cd $(BASE)/js && REDIS_URL=localhost:6379 node_modules/.bin/mocha
 
-docker-cfg/ca-certificates.crts:
+docker-cfg/ca-certificates.crt:
 	cp /etc/ssl/certs/ca-certificates.crt docker-cfg/ca-certificates.crt
 
 test: $(BASE)/tmp/dynamo.containerid $(BASE)/tmp/redis.containerid jstest gotest pytest dockerstop
