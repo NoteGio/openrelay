@@ -4,7 +4,7 @@ BASE     = $(GOPATH)/src/$(PACKAGE)
 GOSTATIC = go build -a -installsuffix cgo -ldflags '-extldflags "-static"'
 
 
-all: bin nodesetup truffleCompile certs
+all: bin nodesetup truffleCompile docker-cfg/ca-certificates.crt
 
 $(BASE):
 	@mkdir -p $(dir $@)
@@ -107,7 +107,7 @@ pytest: $(BASE)/tmp/dynamo.containerid
 jstest: $(BASE)/tmp/redis.containerid
 	cd $(BASE)/js && REDIS_URL=localhost:6379 node_modules/.bin/mocha
 
-certs: docker-cfg/ca-certificates.crt
+docker-cfg/ca-certificates.crts:
 	cp /etc/ssl/certs/ca-certificates.crt docker-cfg/ca-certificates.crt
 
 test: $(BASE)/tmp/dynamo.containerid $(BASE)/tmp/redis.containerid jstest gotest pytest dockerstop
