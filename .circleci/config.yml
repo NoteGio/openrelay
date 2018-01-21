@@ -1,0 +1,35 @@
+version: 2
+jobs:
+  build_and_test:
+    docker:
+      # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
+      - image: circleci/golang:1.8
+        environment:
+          AWS_ACCESS_KEY_ID: placeholder
+          AWS_SECRET_ACCESS_KEY: placeholder
+          AWS_DEFAULT_REGION: us-east-1
+      - image: postgres
+        environment:
+          POSTGRES_PASSWORD: secret
+      - image: redis
+      - image: cnadiminti/dynamodb-local
+    steps:
+      - checkout
+      - run: curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash
+      - run: sudo apt-get install software-properties-common python-software-properties
+      - run: echo "deb http://ftp.de.debian.org/debian testing main" | sudo tee -a /etc/apt/sources.list
+      - run: sudo apt-get -qq update
+      - run: sudo apt-get install python3.6 python3-virtualenv python3.6-dev libev-dev libdpkg-perl
+      - run: sudo ln -s  /usr/lib/python3/dist-packages/virtualenv.py /usr/local/bin/virtualenv
+      - run: sudo  chmod +x /usr/lib/python3/dist-packages/virtualenv.py
+      - run:
+          name: install npm, alias and execute build
+          command: |
+              . ~/.nvm/nvm.sh && nvm install 8.0.0 && nvm alias default node
+              make all
+              make test_no_docker
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - build_and_test

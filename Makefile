@@ -4,7 +4,7 @@ BASE     = $(GOPATH)/src/$(PACKAGE)
 GOSTATIC = go build -a -installsuffix cgo -ldflags '-extldflags "-static"'
 
 
-all: bin nodesetup truffleCompile certs
+all: bin nodesetup truffleCompile docker-cfg/ca-certificates.crt
 
 $(BASE):
 	@mkdir -p $(dir $@)
@@ -85,11 +85,11 @@ $(BASE)/tmp/dynamo.containerid:
 	mkdir -p $(BASE)/tmp
 	docker run -d -p 8000:8000 cnadiminti/dynamodb-local > $(BASE)/tmp/dynamo.containerid
 
-py/.env:
-	virtualenv -p python3.6 $(BASE)/py/.env
-	$(BASE)/py/.env/bin/pip install -r $(BASE)/py/requirements/api.txt
-	$(BASE)/py/.env/bin/pip install -r $(BASE)/py/requirements/indexer.txt
-	$(BASE)/py/.env/bin/pip install nose
+$(BASE)/py/.env: $(BASE)
+	virtualenv -p python3.6 $(BASE)/py/.env || virtualenv -p python3.4 $(BASE)/py/.env
+	$(BASE)/py/.env/bin/python $(BASE)/py/.env/bin/pip install -r $(BASE)/py/requirements/api.txt
+	$(BASE)/py/.env/bin/python $(BASE)/py/.env/bin/pip install -r $(BASE)/py/requirements/indexer.txt
+	$(BASE)/py/.env/bin/python $(BASE)/py/.env/bin/pip install nose
 
 gotest: $(BASE)/tmp/redis.containerid $(BASE)/tmp/postgres.containerid
 	cd $(BASE)/funds && go test
@@ -101,16 +101,21 @@ gotest: $(BASE)/tmp/redis.containerid $(BASE)/tmp/postgres.containerid
 	cd $(BASE)/search && POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
 	cd $(BASE)/db &&  POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
 
-pytest: $(BASE)/tmp/dynamo.containerid
-	cd $(BASE)/py && DYNAMODB_HOST="http://localhost:8000" $(BASE)/py/.env/bin/nosetests
+pytest: $(BASE)/py/.env $(BASE)/tmp/dynamo.containerid
+	cd $(BASE)/py && DYNAMODB_HOST="http://localhost:8000" $(BASE)/py/.env/bin/python .env/bin/nosetests
 
 jstest: $(BASE)/tmp/redis.containerid
 	cd $(BASE)/js && REDIS_URL=localhost:6379 node_modules/.bin/mocha
 
-certs: docker-cfg/ca-certificates.crt
+docker-cfg/ca-certificates.crt:
 	cp /etc/ssl/certs/ca-certificates.crt docker-cfg/ca-certificates.crt
 
 test: $(BASE)/tmp/dynamo.containerid $(BASE)/tmp/redis.containerid jstest gotest pytest dockerstop
-
+test_no_docker: mock jstest gotest pytest
+mock:
+	mkdir -p $(BASE)/tmp
+	touch $(BASE)/tmp/redis.containerid
+	touch $(BASE)/tmp/postgres.containerid
+	touch $(BASE)/tmp/dynamo.containerid
 newvendor:
 	govendor add +external
