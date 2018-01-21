@@ -19,7 +19,7 @@ jobs:
       - run: sudo apt-get install software-properties-common python-software-properties
       - run: echo "deb http://ftp.de.debian.org/debian testing main" | sudo tee -a /etc/apt/sources.list
       - run: sudo apt-get -qq update
-      - run: sudo apt-get install python3.6 python3-virtualenv python3.6-dev libev-dev
+      - run: sudo apt-get install python3.6 python3-virtualenv python3.6-dev libev-dev libdpkg-perl
       - run: sudo ln -s  /usr/lib/python3/dist-packages/virtualenv.py /usr/local/bin/virtualenv
       - run: sudo  chmod +x /usr/lib/python3/dist-packages/virtualenv.py
       - run:
