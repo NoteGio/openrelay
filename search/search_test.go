@@ -2,6 +2,7 @@ package search_test
 
 import (
 	"crypto/rand"
+	"crypto/ecdsa"
 	"encoding/hex"
 	"fmt"
 	"github.com/jinzhu/gorm"
@@ -11,6 +12,7 @@ import (
 	dbModule "github.com/notegio/openrelay/db"
 	"github.com/notegio/openrelay/search"
 	"github.com/notegio/openrelay/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -35,9 +37,21 @@ func sampleOrder() *dbModule.Order {
 
 func saltedSampleOrder() *dbModule.Order {
 	// TODO: Sign this order
+	key, _ := ecdsa.GenerateKey(crypto.S256(), rand.Reader)
 	order := &types.Order{}
 	order.FromBytes(getTestOrderBytes())
+	address := crypto.PubkeyToAddress(key.PublicKey)
+	copy(order.Maker[:], address[:])
 	rand.Read(order.Salt[:])
+	copy(order.Signature.Hash[:], order.Hash())
+
+	hashedBytes := append([]byte("\x19Ethereum Signed Message:\n32"), order.Signature.Hash[:]...)
+	signedBytes := crypto.Keccak256(hashedBytes)
+
+	sig, _ := crypto.Sign(signedBytes, key)
+	copy(order.Signature.R[:], sig[0:32])
+	copy(order.Signature.S[:], sig[32:64])
+	order.Signature.V = sig[64] + 27
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *order
 	return dbOrder
