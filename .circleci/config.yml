@@ -4,6 +4,16 @@ jobs:
     docker:
       # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
       - image: circleci/golang:1.8
+        environment:
+          AWS_ACCESS_KEY_ID: placeholder
+          AWS_SECRET_ACCESS_KEY: placeholder
+          AWS_SESSION_TOKEN: placeholder
+          AWS_DEFAULT_REGION: placeholder
+          AWS_DEFAULT_OUTPUT: placeholder
+          AWS_PROFILE: placeholder
+          AWS_CA_BUNDLE: placeholder
+          AWS_SHARED_CREDENTIALS_FILE: placeholder
+          AWS_CONFIG_FILE: placeholder
       # CircleCI PostgreSQL images available at: https://hub.docker.com/r/circleci/postgres/
       - image: postgres
         environment:
