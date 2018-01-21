@@ -85,11 +85,11 @@ $(BASE)/tmp/dynamo.containerid:
 	mkdir -p $(BASE)/tmp
 	docker run -d -p 8000:8000 cnadiminti/dynamodb-local > $(BASE)/tmp/dynamo.containerid
 
-py/.env:
+$(BASE)/py/.env: $(BASE)
 	virtualenv -p python3.6 $(BASE)/py/.env
-	$(BASE)/py/.env/bin/pip install -r $(BASE)/py/requirements/api.txt
-	$(BASE)/py/.env/bin/pip install -r $(BASE)/py/requirements/indexer.txt
-	$(BASE)/py/.env/bin/pip install nose
+	$(BASE)/py/.env/bin/python $(BASE)/py/.env/bin/pip install -r $(BASE)/py/requirements/api.txt
+	$(BASE)/py/.env/bin/python $(BASE)/py/.env/bin/pip install -r $(BASE)/py/requirements/indexer.txt
+	$(BASE)/py/.env/bin/python $(BASE)/py/.env/bin/pip install nose
 
 gotest: $(BASE)/tmp/redis.containerid $(BASE)/tmp/postgres.containerid
 	cd $(BASE)/funds && go test
@@ -101,8 +101,8 @@ gotest: $(BASE)/tmp/redis.containerid $(BASE)/tmp/postgres.containerid
 	cd $(BASE)/search && POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
 	cd $(BASE)/db &&  POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
 
-pytest: $(BASE)/tmp/dynamo.containerid
-	cd $(BASE)/py && DYNAMODB_HOST="http://localhost:8000" $(BASE)/py/.env/bin/nosetests
+pytest: $(BASE)/py/.env $(BASE)/tmp/dynamo.containerid
+	cd $(BASE)/py && DYNAMODB_HOST="http://localhost:8000" $(BASE)/py/.env/bin/python .env/bin/nosetests
 
 jstest: $(BASE)/tmp/redis.containerid
 	cd $(BASE)/js && REDIS_URL=localhost:6379 node_modules/.bin/mocha
