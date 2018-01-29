@@ -112,7 +112,7 @@ docker-cfg/ca-certificates.crt:
 
 test: $(BASE)/tmp/dynamo.containerid $(BASE)/tmp/redis.containerid jstest gotest pytest dockerstop
 test_no_docker: mock jstest gotest pytest
-mock:
+mock: $(BASE)
 	mkdir -p $(BASE)/tmp
 	touch $(BASE)/tmp/redis.containerid
 	touch $(BASE)/tmp/postgres.containerid
