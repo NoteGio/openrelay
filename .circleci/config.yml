@@ -20,7 +20,7 @@ jobs:
           AWS_ACCESS_KEY_ID: placeholder
           AWS_SECRET_ACCESS_KEY: placeholder
           AWS_DEFAULT_REGION: us-east-1
-      - image: cnadiminti/dynamodb-local
+      - image: redis
     steps:
       - checkout
       - run: npm install
