@@ -10,7 +10,7 @@ jobs:
       - image: cnadiminti/dynamodb-local
     steps:
       - checkout
-      - run: sudo apt install python3-virtualenv
+      - run: sudo apt install python3-virtualenv python3.6-dev libev-dev
       - run: sudo ln -s  /usr/lib/python3/dist-packages/virtualenv.py /usr/local/bin/virtualenv
       - run: sudo  chmod +x /usr/lib/python3/dist-packages/virtualenv.py
       - run: make mock
@@ -30,6 +30,16 @@ jobs:
       - run: make mock
       - run: make nodesetup
       - run: make jstest
+  golang_build_delayrelay:
+    docker:
+      - image: circleci/golang:1.8
+    steps:
+      - checkout
+      - run: make bin/delayrelay
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - delayrelay
 
   golang_build_and_test:
     docker:
@@ -49,6 +59,24 @@ jobs:
       - run: make mock
       - run: make bin
       - run: make gotest
+  test_delayrelay:
+    docker:
+      # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
+      - image: circleci/golang:1.8
+        environment:
+          AWS_ACCESS_KEY_ID: placeholder
+          AWS_SECRET_ACCESS_KEY: placeholder
+          AWS_DEFAULT_REGION: us-east-1
+      - image: postgres
+        environment:
+          POSTGRES_PASSWORD: secret
+      - image: redis
+      - image: cnadiminti/dynamodb-local
+    steps:
+      - checkout
+      - attach_workspace:
+          at: bin
+      - run: ls -lah bin
 workflows:
   version: 2
   build_and_test:
@@ -56,3 +84,7 @@ workflows:
       - python_build_and_test
       - node_build_and_test
       - golang_build_and_test
+      - golang_build_delayrelay
+      - test_delayrelay:
+          requires:
+            golang_build_delayrelay
