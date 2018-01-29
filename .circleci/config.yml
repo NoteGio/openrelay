@@ -2,7 +2,7 @@ version: 2
 jobs:
   python_build_and_test:
     docker:
-      - image: circleci/python:1.8
+      - image: circleci/python:3.6
         environment:
           AWS_ACCESS_KEY_ID: placeholder
           AWS_SECRET_ACCESS_KEY: placeholder
