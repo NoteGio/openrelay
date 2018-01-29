@@ -177,6 +177,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: bin
+      - run: make mock
       - run: make gotest
 workflows:
   version: 2
