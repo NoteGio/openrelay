@@ -25,6 +25,7 @@ jobs:
       - checkout
       - run: npm install
       - run: make mock
+      - run: make nodesetup
       - run: make jstest
 
   golang_build_and_test:
