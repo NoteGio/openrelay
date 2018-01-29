@@ -87,4 +87,4 @@ workflows:
       - golang_build_delayrelay
       - test_delayrelay:
           requires:
-            golang_build_delayrelay
+            - golang_build_delayrelay
