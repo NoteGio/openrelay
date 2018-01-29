@@ -2,7 +2,6 @@ PACKAGE  = github.com/notegio/openrelay
 GOPATH   = $(CURDIR)/.gopath
 BASE     = $(GOPATH)/src/$(PACKAGE)
 GOSTATIC = go build -a -installsuffix cgo -ldflags '-extldflags "-static"'
-command -v virtualenv >/dev/null 2>&1 || alias virtualenv='python -m virtualenv'
 
 all: bin nodesetup truffleCompile docker-cfg/ca-certificates.crt
 
@@ -102,6 +101,7 @@ gotest: $(BASE)/tmp/redis.containerid $(BASE)/tmp/postgres.containerid
 	cd $(BASE)/db &&  POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
 
 pytest: $(BASE)/py/.env $(BASE)/tmp/dynamo.containerid
+	command -v virtualenv >/dev/null 2>&1 || alias virtualenv='python -m virtualenv'
 	cd $(BASE)/py && DYNAMODB_HOST="http://localhost:8000" $(BASE)/py/.env/bin/python .env/bin/nosetests
 
 jstest: $(BASE)/tmp/redis.containerid
