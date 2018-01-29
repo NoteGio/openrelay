@@ -2,7 +2,7 @@ PACKAGE  = github.com/notegio/openrelay
 GOPATH   = $(CURDIR)/.gopath
 BASE     = $(GOPATH)/src/$(PACKAGE)
 GOSTATIC = go build -a -installsuffix cgo -ldflags '-extldflags "-static"'
-
+command -v virtualenv >/dev/null 2>&1 || alias virtualenv='python -m virtualenv'
 
 all: bin nodesetup truffleCompile docker-cfg/ca-certificates.crt
 
