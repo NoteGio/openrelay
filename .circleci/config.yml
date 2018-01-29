@@ -160,7 +160,7 @@ jobs:
           root: bin
           paths:
             - searchapi
-  test_delayrelay:
+  golang_test:
     docker:
       # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
       - image: circleci/golang:1.8
