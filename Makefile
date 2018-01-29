@@ -85,7 +85,6 @@ $(BASE)/tmp/dynamo.containerid:
 	docker run -d -p 8000:8000 cnadiminti/dynamodb-local > $(BASE)/tmp/dynamo.containerid
 
 $(BASE)/py/.env: $(BASE)
-	command -v virtualenv >/dev/null 2>&1 || alias virtualenv='python -m virtualenv'
 	virtualenv -p python3.6 $(BASE)/py/.env || virtualenv -p python3.4 $(BASE)/py/.env
 	$(BASE)/py/.env/bin/python $(BASE)/py/.env/bin/pip install -r $(BASE)/py/requirements/api.txt
 	$(BASE)/py/.env/bin/python $(BASE)/py/.env/bin/pip install -r $(BASE)/py/requirements/indexer.txt
