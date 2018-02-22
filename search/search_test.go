@@ -185,7 +185,7 @@ func filterContractRequest(queryString, emptyQueryString string, t *testing.T) {
 	}
 	sampleOrder().Save(tx, 0)
 	handler := getTestSearchHandler(tx)
-	request, _ := http.NewRequest("GET", "/v0/orders?"+queryString+"&blockhash=x", nil)
+	request, _ := http.NewRequest("GET", "/v0/orders?"+queryString+"&blockhash=x&_expTime=0", nil)
 	recorder := httptest.NewRecorder()
 	handler(recorder, request)
 	if recorder.Code != 200 {
@@ -261,7 +261,7 @@ func TestPagination(t *testing.T) {
 		saltedSampleOrder().Save(tx, 0)
 	}
 	handler := getTestSearchHandler(tx)
-	request, _ := http.NewRequest("GET", "/v0/orders?&blockhash=x", nil)
+	request, _ := http.NewRequest("GET", "/v0/orders?&blockhash=x&_expTime=0", nil)
 	request.Header.Set("Accept", "application/octet-stream")
 	recorder := httptest.NewRecorder()
 	handler(recorder, request)
@@ -271,7 +271,7 @@ func TestPagination(t *testing.T) {
 	if length := recorder.Body.Len(); length != (20 * 441) {
 		t.Errorf("Expected 20 items, got '%v'", (length / 441))
 	}
-	request, _ = http.NewRequest("GET", "/v0/orders?page=2&blockhash=x", nil)
+	request, _ = http.NewRequest("GET", "/v0/orders?page=2&blockhash=x&_expTime=0", nil)
 	request.Header.Set("Accept", "application/octet-stream")
 	recorder = httptest.NewRecorder()
 	handler(recorder, request)
@@ -366,7 +366,7 @@ func TestOrderBookLookup(t *testing.T) {
 	order := sampleOrder()
 	order.Save(tx, 0)
 	handler := getTestOrderBookHandler(tx)
-	request, _ := http.NewRequest("GET", "/v0/orderbook?blockhash=x&quoteTokenAddress=0x1dad4783cf3fe3085c1426157ab175a6119a04ba&baseTokenAddress=0x05d090b51c40b020eab3bfcb6a2dff130df22e9c", nil)
+	request, _ := http.NewRequest("GET", "/v0/orderbook?blockhash=x&quoteTokenAddress=0x1dad4783cf3fe3085c1426157ab175a6119a04ba&baseTokenAddress=0x05d090b51c40b020eab3bfcb6a2dff130df22e9c&_expTime=0", nil)
 	recorder := httptest.NewRecorder()
 	handler(recorder, request)
 	if recorder.Code != 200 {

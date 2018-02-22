@@ -161,6 +161,7 @@ func SearchHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 			returnError(w, err, 400)
 			return
 		}
+		query = query.Where("expiration_timestamp_in_sec > ?", getExpTime(queryObject))
 		query = query.Offset((pageInt - 1) * perPageInt).Limit(perPageInt)
 		if query.Error != nil {
 			returnError(w, query.Error, 400)
