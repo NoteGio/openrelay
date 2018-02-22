@@ -9,7 +9,7 @@ function issueToken(redisName, tokenFactory, redisClient) {
         tokenAddress = address;
         redisClient.set(redisName + "::address", address.substr(2))
     })
-    return tokenFactory.newToken().then(() => {
+    return tokenFactory.newToken("X", "X").then(() => {
         return IssueToken.at(tokenAddress).issue(10**27);
     }).then(() => {
         return IssueToken.at(tokenAddress).transfer(web3.eth.accounts[1], 10**25);
