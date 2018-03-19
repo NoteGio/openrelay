@@ -28,20 +28,29 @@ func (addr *Address) Scan(src interface{}) error {
 	}
 }
 
+func (addr *Address) String() string {
+	return fmt.Sprintf("%#x", addr[:])
+}
+
 type Uint256 [32]byte
 
 func (data *Uint256) Value() (driver.Value, error) {
 	return data[:], nil
 }
 
-func (addr *Uint256) Scan(src interface{}) error {
+func (data *Uint256) Scan(src interface{}) error {
 	switch v := src.(type) {
 	case []byte:
-		copy(addr[:], v)
+		copy(data[:], v)
 		return nil
 	default:
 		return errors.New("Uint256 scanner src should be []byte")
 	}
+}
+
+func (data *Uint256) String() (string) {
+	bigInt := new(big.Int).SetBytes(data[:])
+	return bigInt.String()
 }
 
 // Order represents an 0x order object

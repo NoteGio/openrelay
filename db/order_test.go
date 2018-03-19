@@ -11,6 +11,7 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"bytes"
 )
 
 func getTestOrderBytes() [441]byte {
@@ -121,6 +122,14 @@ func TestQueryOrder(t *testing.T) {
 	}
 	if dbOrder.FeeRate != 0 {
 		t.Errorf("Expected FeeRate '0' got '%v'", dbOrder.FeeRate)
+	}
+	fmt.Printf("Filled: %#x", dbOrder.TakerTokenAmountFilled)
+	fmt.Printf("Cancelled: %#x", dbOrder.TakerTokenAmountCancelled)
+	if !bytes.Equal(dbOrder.MakerTokenRemaining[:], dbOrder.MakerTokenAmount[:]) {
+		t.Errorf("Unexpected MakerTokenRemaining, expected %#x got : %#x", dbOrder.MakerTokenAmount, dbOrder.MakerTokenRemaining)
+	}
+	if !bytes.Equal(dbOrder.MakerFeeRemaining[:], dbOrder.MakerFee[:]) {
+		t.Errorf("Unexpected MakerTokenRemaining, expected %#x got : %#x", dbOrder.MakerFee, dbOrder.MakerTokenRemaining)
 	}
 }
 
