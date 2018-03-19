@@ -34,6 +34,16 @@ func HexToBytes(hexString string) ([20]byte, error) {
 	return result, nil
 }
 
+func HexToAddress(addressHex string) (*types.Address, error) {
+	addressBytes, err := HexToBytes(addressHex)
+	if err != nil {
+		return nil, err
+	}
+	address := &types.Address{}
+	copy(address[:], addressBytes[:])
+	return address, nil
+}
+
 // GetSecret retrieves a secret from various supported secret stores
 func GetSecret(uri string) string {
 	if strings.HasPrefix(uri, "file://") {
