@@ -11,7 +11,7 @@ jobs:
     steps:
       - checkout
       - run: sudo apt install python3-virtualenv python3-dev libev-dev
-      - run: sudo ln -s /usr/lib/python3/dist-packages/virtualenv.py /usr/local/bin/virtualenv
+      # - run: sudo ln -s /usr/lib/python3/dist-packages/virtualenv.py /usr/local/bin/virtualenv
       - run: sudo  chmod +x /usr/lib/python3/dist-packages/virtualenv.py
       - run: make mock
       - run: make pytest
