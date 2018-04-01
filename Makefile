@@ -58,6 +58,9 @@ bin/indexer: $(BASE) cmd/indexer/main.go
 bin/fillindexer: $(BASE) cmd/fillindexer/main.go
 	cd $(BASE) && $(GOSTATIC) -o bin/fillindexer cmd/fillindexer/main.go
 
+bin/blockmonitor: $(BASE) cmd/blockmonitor/main.go
+	cd $(BASE) && $(GOSTATIC) -o bin/blockmonitor cmd/blockmonitor/main.go
+
 bin/exchangesplitter: $(BASE) cmd/exchangesplitter/main.go
 	cd $(BASE) && $(GOSTATIC) -o bin/exchangesplitter cmd/exchangesplitter/main.go
 
@@ -97,6 +100,7 @@ gotest: $(BASE)/tmp/redis.containerid $(BASE)/tmp/postgres.containerid
 	cd $(BASE)/affiliates &&  REDIS_URL=localhost:6379 go test
 	cd $(BASE)/types && go test
 	cd $(BASE)/ingest && go test
+	cd $(BASE)/monitor/block && go test
 	cd $(BASE)/search && POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
 	cd $(BASE)/db &&  POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
 

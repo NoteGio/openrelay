@@ -160,6 +160,16 @@ jobs:
           root: bin
           paths:
             - searchapi
+  golang_build_blockmonitor:
+    docker:
+      - image: circleci/golang:1.8
+    steps:
+      - checkout
+      - run: make bin/blockmonitor
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - blockmonitor
   golang_test:
     docker:
       # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
@@ -198,6 +208,7 @@ workflows:
       - golang_build_exchangesplitter
       - golang_build_automigrate
       - golang_build_searchapi
+      - golang_build_blockmonitor
       - golang_build_delayrelay
       - golang_test:
           requires:
@@ -214,3 +225,4 @@ workflows:
             - golang_build_exchangesplitter
             - golang_build_automigrate
             - golang_build_searchapi
+            - golang_build_blockmonitor

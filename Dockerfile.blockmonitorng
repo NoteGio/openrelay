@@ -1,0 +1,5 @@
+FROM scratch
+
+COPY bin/blockmonitor /blockmonitor
+
+CMD ["/blockmonitor", "redis:6379", "ethnode:8545", "queue://newblocks"]
