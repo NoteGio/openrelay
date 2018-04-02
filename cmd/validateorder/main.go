@@ -37,11 +37,23 @@ func main() {
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
+	filledLookup, err := funds.NewRpcFilledLookup(rpcURL)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
 	newOrder := types.Order{}
 	if orderData, err := ioutil.ReadFile(orderFile); err == nil {
 		if err := json.Unmarshal(orderData, &newOrder); err != nil {
 			log.Fatalf(err.Error())
 		}
+	}
+	newOrder.TakerTokenAmountFilled, err = filledLookup.GetAmountFilled(&newOrder)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+	newOrder.TakerTokenAmountCancelled, err = filledLookup.GetAmountCancelled(&newOrder)
+	if err != nil {
+		log.Fatalf(err.Error())
 	}
 	fmt.Println(fundChecker.ValidateOrder(&newOrder))
 }
