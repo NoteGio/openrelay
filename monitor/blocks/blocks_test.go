@@ -119,6 +119,37 @@ func TestPublishBlock(t *testing.T) {
 	blockMonitor.Stop()
 }
 
+func TestPublishBlockResumption(t *testing.T) {
+	log.Printf("TestPublishBlockResumption")
+	publisher, consumerChannel := channels.MockChannel()
+	headers := generateHeaderChain(3)
+	headerGetter := blocks.NewMockHeaderGetter(headers)
+	blockRecorder := blocks.NewMockBlockRecorder()
+	blockRecorder.Record(big.NewInt(1))
+	blockMonitor := blocks.NewBlockMonitor(headerGetter, publisher, 1 * time.Second, blockRecorder, 128)
+	testConsumer := newTestConsumer()
+	consumerChannel.AddConsumer(testConsumer)
+	consumerChannel.StartConsuming()
+	go blockMonitor.Process()
+	for _, header := range headers[2:] {
+		payload := <-testConsumer.channel
+		miniBlock := &blocks.MiniBlock{}
+		if err := json.Unmarshal([]byte(payload), miniBlock); err != nil {
+			t.Errorf(err.Error())
+		}
+		if !reflect.DeepEqual(miniBlock.Hash, header.Hash()) {
+			t.Errorf("Hashes do not match")
+		}
+		if miniBlock.Number.Cmp(header.Number) != 0 {
+			t.Errorf("Block numbers do not match")
+		}
+		if !reflect.DeepEqual(miniBlock.Bloom, header.Bloom) {
+			t.Errorf("Bloom filters do not match")
+		}
+	}
+	blockMonitor.Stop()
+}
+
 func TestPublishBlockAdd(t *testing.T) {
 	log.Printf("TestPublishBlockAdd")
 	publisher, consumerChannel := channels.MockChannel()

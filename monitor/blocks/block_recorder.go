@@ -6,6 +6,7 @@ package blocks
 import (
 	"math/big"
 	"gopkg.in/redis.v3"
+	"errors"
 )
 
 type redisBlockRecorder struct {
@@ -44,7 +45,10 @@ func (br *mockBlockRecorder) Record(blockNumber *big.Int) (error) {
 }
 
 func (br *mockBlockRecorder) Get() (*big.Int, error) {
-	return br.blockNumber, nil
+	if br.blockNumber != nil {
+		return br.blockNumber, nil
+	}
+	return nil, errors.New("No block set")
 }
 
 func NewMockBlockRecorder() BlockRecorder {

@@ -78,12 +78,15 @@ func (bm *BlockMonitor) Process() error {
 		header.Number,
 		header.Bloom,
 	})
-	// TODO: Should we publish the first block? In most cases, won't that be a
-	// block we published previously?
-	// if err := bm.publish(bm.brb.Get(0)); err != nil {
-	// 	log.Printf("Error publishing block")
-	// 	return err
-	// }
+	// Only publish the initial block if blocknumber == 0. For later blocks, we
+	// should have published the block in an earlier iteration, so we don't need
+	// to publish it now.
+	if blockNumber.Int64() == 0 {
+		if err := bm.publish(bm.brb.Get(0)); err != nil {
+			log.Printf("Error publishing block")
+			return err
+		}
+	}
 	MAIN_PROCESSING:
 	for {
 		select {

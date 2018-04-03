@@ -18,7 +18,12 @@ type MockHeaderGetter struct {
 
 
 func (hg *MockHeaderGetter) HeaderByNumber(ctx context.Context, bigIdx *big.Int) (*types.Header, error){
-	index := bigIdx.Int64()
+	var index int64
+	if bigIdx == nil {
+		index = int64(len(hg.headers) - 1)
+	} else {
+		index = bigIdx.Int64()
+	}
 	if index >= int64(len(hg.headers)) {
 		return nil, ethereum.NotFound
 	}
