@@ -7,52 +7,12 @@ import (
 	"time"
 	"encoding/json"
 	"github.com/notegio/openrelay/monitor/blocks"
+	"github.com/notegio/openrelay/monitor/blocks/mock"
 	"github.com/notegio/openrelay/channels"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/common"
 	"log"
 	"reflect"
 )
-
-
-func generateBlockHeader(parentHash common.Hash, number int64, topics []common.Hash) (*types.Header){
-	bloom := types.Bloom{}
-	for _, topic := range topics {
-		bloom.Add(new(big.Int).SetBytes(topic[:]))
-	}
-	return &types.Header{
-		ParentHash: parentHash,
-		UncleHash: common.Hash{},
-		Coinbase: common.Address{},
-		Root: common.Hash{},
-		TxHash: common.Hash{},
-		ReceiptHash: common.Hash{},
-		Bloom: bloom,
-		Difficulty: new(big.Int),
-		Number: big.NewInt(number),
-		GasLimit: new(big.Int),
-		GasUsed: new(big.Int),
-		Time: big.NewInt(number),
-		Extra: []byte{},
-		MixDigest: common.Hash{},
-		Nonce: types.BlockNonce{},
-	}
-}
-
-func generateHeaderChain(n int64) []*types.Header {
-	return generateChainSplit(0, n, common.Hash{}, []byte{})
-}
-
-func generateChainSplit(start, n int64, parentHash common.Hash, extra []byte) []*types.Header {
-	header := generateBlockHeader(parentHash, start, []common.Hash{})
-	header.Extra = extra
-	headers := []*types.Header{header}
-	for i := start + 1; i < start + n; i++ {
-		header = generateBlockHeader(header.Hash(), int64(i), []common.Hash{})
-		headers = append(headers, header)
-	}
-	return headers
-}
 
 type testConsumer struct {
 	channel chan string
@@ -67,14 +27,14 @@ func newTestConsumer() *testConsumer {
 }
 
 func TestGenerateBlockHeader(t *testing.T) {
-	header := generateBlockHeader(common.Hash{}, 0, []common.Hash{})
+	header := mock.GenerateBlockHeader(common.Hash{}, 0, []common.Hash{})
 	if size := len(header.Hash()); size != 32 {
 		t.Errorf("Expected header hash of length 32, got %v", size)
 	}
 }
 
 func TestGenerateHeaderChain(t *testing.T) {
-	headers := generateHeaderChain(10)
+	headers := mock.GenerateHeaderChain(10)
 	if size := len(headers); size != 10 {
 		t.Errorf("Expected 10 headers, got %v", size)
 	}
@@ -91,7 +51,7 @@ func TestGenerateHeaderChain(t *testing.T) {
 func TestPublishBlock(t *testing.T) {
 	log.Printf("TestPublishBlock")
 	publisher, consumerChannel := channels.MockChannel()
-	headers := generateHeaderChain(3)
+	headers := mock.GenerateHeaderChain(3)
 	headerGetter := blocks.NewMockHeaderGetter(headers)
 	blockRecorder := blocks.NewMockBlockRecorder()
 	blockRecorder.Record(big.NewInt(0))
@@ -122,7 +82,7 @@ func TestPublishBlock(t *testing.T) {
 func TestPublishBlockResumption(t *testing.T) {
 	log.Printf("TestPublishBlockResumption")
 	publisher, consumerChannel := channels.MockChannel()
-	headers := generateHeaderChain(3)
+	headers := mock.GenerateHeaderChain(3)
 	headerGetter := blocks.NewMockHeaderGetter(headers)
 	blockRecorder := blocks.NewMockBlockRecorder()
 	blockRecorder.Record(big.NewInt(1))
@@ -153,7 +113,7 @@ func TestPublishBlockResumption(t *testing.T) {
 func TestPublishBlockAdd(t *testing.T) {
 	log.Printf("TestPublishBlockAdd")
 	publisher, consumerChannel := channels.MockChannel()
-	headers := generateHeaderChain(4)
+	headers := mock.GenerateHeaderChain(4)
 	headerGetter := blocks.NewMockHeaderGetter(headers[:3])
 	blockRecorder := blocks.NewMockBlockRecorder()
 	blockRecorder.Record(big.NewInt(0))
@@ -204,7 +164,7 @@ func TestPublishBlockAdd(t *testing.T) {
 func TestPublishBlockReorg(t *testing.T) {
 	log.Printf("TestPublishBlockReorg")
 	publisher, consumerChannel := channels.MockChannel()
-	headers := generateHeaderChain(3)
+	headers := mock.GenerateHeaderChain(3)
 	headerGetter := blocks.NewMockHeaderGetter(headers)
 	blockRecorder := blocks.NewMockBlockRecorder()
 	blockRecorder.Record(big.NewInt(0))
@@ -229,7 +189,7 @@ func TestPublishBlockReorg(t *testing.T) {
 			t.Errorf("Bloom filters do not match")
 		}
 	}
-	reorg := generateChainSplit(1, 3, headers[1].ParentHash, []byte("split"))
+	reorg := mock.GenerateChainSplit(1, 3, headers[1].ParentHash, []byte("split"))
 	for _, header := range reorg {
 		headerGetter.AddHeader(header)
 	}

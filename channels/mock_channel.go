@@ -108,6 +108,10 @@ func (mock *mockDelivery) Reject() bool {
 	return false
 }
 
+func (mock *mockDelivery) Return() bool {
+	return true
+}
+
 func MockChannel() (Publisher, ConsumerChannel) {
 	channel := make(chan Delivery, 5)
 	unacked := &deliveries{}
