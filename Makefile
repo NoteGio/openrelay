@@ -101,6 +101,7 @@ gotest: $(BASE)/tmp/redis.containerid $(BASE)/tmp/postgres.containerid
 	cd $(BASE)/types && go test
 	cd $(BASE)/ingest && go test
 	cd $(BASE)/monitor/blocks && go test
+	cd $(BASE)/monitor/allowance && go test
 	cd $(BASE)/search && POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
 	cd $(BASE)/db &&  POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
 
