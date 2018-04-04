@@ -99,5 +99,35 @@ func TestAllowanceFromBlock(t *testing.T) {
 	if sr.Balance != balance.String() {
 		t.Errorf("Unexpected token address, got '%v'", sr.TokenAddress)
 	}
-
+}
+func TestNoAllowanceInBlock(t *testing.T) {
+	mb := &blocks.MiniBlock{
+		common.Hash{},
+		big.NewInt(0),
+		types.Bloom{},
+	}
+	srcPublisher, consumerChannel := channels.MockChannel()
+	destPublisher, destConsumerChannel := channels.MockChannel()
+	data, err := json.Marshal(mb)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	tc := newTestConsumer()
+	destConsumerChannel.AddConsumer(tc)
+	destConsumerChannel.StartConsuming()
+	defer destConsumerChannel.StopConsuming()
+	consumerChannel.AddConsumer(allowance.NewAllowanceBlockConsumer(
+		common.HexToAddress("0x3333333333333333333333333333333333333333").Big(),
+		"0x4444444444444444444444444444444444444444",
+		mock.NewMockLogFilterer([]types.Log{}),
+		destPublisher,
+	))
+	consumerChannel.StartConsuming()
+	defer consumerChannel.StopConsuming()
+	srcPublisher.Publish(string(data))
+	select {
+		case _ = <-tc.channel:
+			t.Errorf("Should not have gotten a message")
+		default:
+	}
 }
