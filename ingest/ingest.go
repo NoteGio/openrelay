@@ -193,7 +193,7 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 				[]ValidationError{ValidationError{
 					"feeRecipient",
 					1002,
-					"Invalid fee recpient",
+					"Invalid fee recipient",
 				}},
 			}, 402)
 			return
