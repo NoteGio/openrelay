@@ -16,6 +16,7 @@
   "author": "",
   "license": "AGPL-3.0",
   "dependencies": {
+    "0x-json-schemas": "^0.6.6",
     "0x.js": "^0.18.0",
     "async-eventemitter": "^0.2.4",
     "bignumber.js": "^4.1.0",

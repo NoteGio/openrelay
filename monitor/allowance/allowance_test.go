@@ -3,6 +3,7 @@ package allowance_test
 
 import (
 	"encoding/json"
+	"encoding/hex"
 	"math/big"
 	"testing"
 	"github.com/notegio/openrelay/monitor/allowance"
@@ -36,23 +37,42 @@ func buildLog(address common.Address, topics []common.Hash, data []byte) *types.
 }
 
 func allowanceLog() *types.Log {
-	ctrAddress := common.HexToAddress("0x1111111111111111111111111111111111111111")
-	senderAddress := common.HexToAddress("0x2222222222222222222222222222222222222222")
-	tokenProxyAddress := common.HexToAddress("0x3333333333333333333333333333333333333333")
+	ctrAddress := common.HexToAddress("0x1d7022f5b17d2f8b695918fb48fa1089c9f85401")
+	senderAddress := common.HexToAddress("0x5409ed021d9299bf6814279a6a1411a7e866a631")
+	tokenProxyAddress := common.HexToAddress("0x1dc4c1cefef38a777b15aa20260a54e584b16c48")
 	approvalTopic := &big.Int{}
 	approvalTopic.SetString("8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925", 16)
 	topics := []common.Hash{
 		common.BigToHash(approvalTopic),
-		common.BytesToHash(senderAddress[:]),
+		common.BigToHash(senderAddress.Big()),
 		common.BigToHash(tokenProxyAddress.Big()),
 	}
 	data := common.HexToHash("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
 	return buildLog(ctrAddress, topics, data[:])
 }
 
+func TestBloom(t *testing.T) {
+	bloomBytes, _ := hex.DecodeString("00000000000000000000080000800000000000000000000000000000000000000000000000000000000000000000000000000000000004000000080000200000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000010008000000000000000002000000000000000000000000008000000000000")
+	// bloomBytes, _ := hex.DecodeString("00000000000000000000080000800000000000000000000000000000000000000000000000000000000000000000000000000000000004000000080000200000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000010008000000000000000002000000000000000000000000008000000000000")
+	approvalTopic := &big.Int{}
+	approvalTopic.SetString("8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925", 16)
+	proxyAddress := common.HexToAddress("0x1dc4c1cefef38a777b15aa20260a54e584b16c48").Big()
+	bloom := types.BytesToBloom(bloomBytes)
+	if !bloom.Test(approvalTopic) {
+		t.Errorf("Bloom filter didn't match approval")
+	}
+	if !bloom.Test(proxyAddress) {
+		t.Errorf("Bloom filter didn't match proxy")
+	}
+	if bloom.Test(&big.Int{}) {
+		t.Errorf("Bloom filter shouldn't have matched empty integer")
+	}
+}
+
 func TestAllowanceFromBlock(t *testing.T) {
 	testLog := allowanceLog()
 	bloom := types.Bloom{}
+	bloom.Add(new(big.Int).SetBytes(testLog.Address[:]))
 	for _, topic := range testLog.Topics {
 		bloom.Add(new(big.Int).SetBytes(topic[:]))
 	}
@@ -72,7 +92,7 @@ func TestAllowanceFromBlock(t *testing.T) {
 	destConsumerChannel.StartConsuming()
 	defer destConsumerChannel.StopConsuming()
 	consumerChannel.AddConsumer(allowance.NewAllowanceBlockConsumer(
-		common.HexToAddress("0x3333333333333333333333333333333333333333").Big(),
+		common.HexToAddress("0x1dc4c1cefef38a777b15aa20260a54e584b16c48").Big(),
 		"0x4444444444444444444444444444444444444444",
 		mock.NewMockLogFilterer([]types.Log{*testLog}),
 		destPublisher,
@@ -86,10 +106,10 @@ func TestAllowanceFromBlock(t *testing.T) {
 	if err != nil {
 		t.Errorf(err.Error())
 	}
-	if sr.TokenAddress != "0x1111111111111111111111111111111111111111" {
+	if sr.TokenAddress != "0x1d7022f5b17d2f8b695918fb48fa1089c9f85401" {
 		t.Errorf("Unexpected token address, got '%v'", sr.TokenAddress)
 	}
-	if sr.SpenderAddress != "0x2222222222222222222222222222222222222222" {
+	if sr.SpenderAddress != "0x5409ed021d9299bf6814279a6a1411a7e866a631" {
 		t.Errorf("Unexpected token address, got '%v'", sr.TokenAddress)
 	}
 	if sr.ZrxToken != "0x4444444444444444444444444444444444444444" {
@@ -117,7 +137,7 @@ func TestNoAllowanceInBlock(t *testing.T) {
 	destConsumerChannel.StartConsuming()
 	defer destConsumerChannel.StopConsuming()
 	consumerChannel.AddConsumer(allowance.NewAllowanceBlockConsumer(
-		common.HexToAddress("0x3333333333333333333333333333333333333333").Big(),
+		common.HexToAddress("0x1dc4c1cefef38a777b15aa20260a54e584b16c48").Big(),
 		"0x4444444444444444444444444444444444444444",
 		mock.NewMockLogFilterer([]types.Log{}),
 		destPublisher,

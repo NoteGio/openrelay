@@ -61,6 +61,12 @@ bin/fillindexer: $(BASE) cmd/fillindexer/main.go
 bin/blockmonitor: $(BASE) cmd/blockmonitor/main.go
 	cd $(BASE) && $(GOSTATIC) -o bin/blockmonitor cmd/blockmonitor/main.go
 
+bin/allowancemonitor: $(BASE) cmd/allowancemonitor/main.go
+	cd $(BASE) && $(GOSTATIC) -o bin/allowancemonitor cmd/allowancemonitor/main.go
+
+bin/spendrecorder: $(BASE) cmd/spendrecorder/main.go
+	cd $(BASE) && $(GOSTATIC) -o bin/spendrecorder cmd/spendrecorder/main.go
+
 bin/exchangesplitter: $(BASE) cmd/exchangesplitter/main.go
 	cd $(BASE) && $(GOSTATIC) -o bin/exchangesplitter cmd/exchangesplitter/main.go
 
@@ -70,7 +76,7 @@ bin/automigrate: $(BASE) cmd/automigrate/main.go
 bin/searchapi: $(BASE) cmd/searchapi/main.go
 	cd $(BASE) && $(GOSTATIC) -o bin/searchapi cmd/searchapi/main.go
 
-bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate bin/indexer bin/fillindexer bin/automigrate bin/searchapi bin/exchangesplitter
+bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate bin/indexer bin/fillindexer bin/automigrate bin/searchapi bin/exchangesplitter bin/blockmonitor bin/allowancemonitor bin/spendrecorder
 
 truffleCompile:
 	cd js ; node_modules/.bin/truffle compile
@@ -123,3 +129,11 @@ mock: $(BASE)
 	touch $(BASE)/tmp/dynamo.containerid
 newvendor:
 	govendor add +external
+
+0x-testrpc-snapshot.tar.gz:
+	wget https://s3.amazonaws.com/testrpc-shapshots/07d00cc515e0f9825b81595386b358593b7a3d6f.zip -O testrpc-db.zip
+	mkdir -p /tmp/testrpc-snapshot
+	unzip testrpc-db.zip -d /tmp/testrpc-snapshot
+	tar -czf 0x-testrpc-snapshot.tar.gz -C /tmp/testrpc-snapshot .
+	rm testrpc-db.zip
+	rm -rf /tmp/testrpc-snapshot

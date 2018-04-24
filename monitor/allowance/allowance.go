@@ -15,6 +15,7 @@ import (
 	"github.com/notegio/openrelay/monitor/blocks"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"log"
+	"strings"
 )
 
 type allowanceBlockConsumer struct {
@@ -26,33 +27,34 @@ type allowanceBlockConsumer struct {
 }
 
 func (consumer *allowanceBlockConsumer) Consume(delivery channels.Delivery) {
-	log.Printf("Start")
 	block := &blocks.MiniBlock{}
 	err := json.Unmarshal([]byte(delivery.Payload()), block)
 	if err != nil {
 		log.Printf("Error parsing payload: %v\n", err.Error())
 	}
-	if block.Bloom.Test(consumer.approvalTopic) && block.Bloom.Test(consumer.approvalTopic) {
+	if block.Bloom.Test(consumer.approvalTopic) && block.Bloom.Test(consumer.tokenProxyAddress) {
+		log.Printf("Block %#x bloom filter indicates approval event for %#x", block.Hash, consumer.tokenProxyAddress)
 		query := ethereum.FilterQuery{
 			FromBlock: block.Number,
 			ToBlock: block.Number,
 			Addresses: nil,
 			Topics: [][]common.Hash{
 				[]common.Hash{common.BigToHash(consumer.approvalTopic)},
-				[]common.Hash{},
+				nil,
 				[]common.Hash{common.BigToHash(consumer.tokenProxyAddress)},
 			},
 		}
 		logs, err := consumer.logFilter.FilterLogs(context.Background(), query)
 		if err != nil {
 			delivery.Return()
-			log.Fatalf("Failed to filter logs on block %v - aborting", block.Number)
+			log.Fatalf("Failed to filter logs on block %v - aborting: %v", block.Number, err.Error())
 		}
+		log.Printf("Found %v approval logs", len(logs))
 		for _, approvalLog := range logs {
 			balance := big.NewInt(0)
 			balance.SetBytes(approvalLog.Data)
 			sr := &db.SpendRecord{
-				TokenAddress: approvalLog.Address.String(),
+				TokenAddress: strings.ToLower(approvalLog.Address.String()),
 				SpenderAddress: hexutil.Encode(approvalLog.Topics[1][12:]),
 				ZrxToken: consumer.feeTokenAddress,
 				Balance: balance.String(),
@@ -64,16 +66,12 @@ func (consumer *allowanceBlockConsumer) Consume(delivery channels.Delivery) {
 			}
 			consumer.publisher.Publish(string(msg))
 		}
-		delivery.Ack()
+	} else {
+		log.Printf("Block %v shows no approval events", block.Hash)
 	}
+	delivery.Ack()
 }
 
-/* TODO:
-* Tests
-* Command
-* Get feeToken from exchange address
-* Get tokenProxy from exchange address
-*/
 func NewAllowanceBlockConsumer(tp *big.Int, feeToken string, lf ethereum.LogFilterer, publisher channels.Publisher) (channels.Consumer) {
 	approvalTopic := &big.Int{}
 	approvalTopic.SetString("8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925", 16)
@@ -85,7 +83,7 @@ func NewRPCAllowanceBlockConsumer(rpcURL string, exchangeAddress string, publish
 	if err != nil {
 		return nil, err
 	}
-	exchange, err := exchangecontract.NewExchange(common.StringToAddress(exchangeAddress), client)
+	exchange, err := exchangecontract.NewExchange(common.HexToAddress(exchangeAddress), client)
 	if err != nil {
 		log.Printf("Error intializing exchange contract '%v': '%v'", exchangeAddress, err.Error())
 		return nil, err

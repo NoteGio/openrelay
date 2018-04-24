@@ -238,7 +238,7 @@ func (order *Order) UnmarshalJSON(b []byte) error {
 	if jOrder.TakerTokenAmountCancelled == "" {
 		jOrder.TakerTokenAmountCancelled = "0"
 	}
-	order.fromStrings(
+	return order.fromStrings(
 		jOrder.Maker,
 		jOrder.Taker,
 		jOrder.MakerToken,
@@ -257,8 +257,6 @@ func (order *Order) UnmarshalJSON(b []byte) error {
 		jOrder.TakerTokenAmountFilled,
 		jOrder.TakerTokenAmountCancelled,
 	)
-
-	return nil
 }
 
 func (order *Order) MarshalJSON() ([]byte, error) {

@@ -64,6 +64,9 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 	addr, _ = hex.DecodeString("b69e673309512a9d726f87304c6984054f87a93b")
 	copy(addrBytes[:], addr)
 	ValidExchangeAddresses = append(ValidExchangeAddresses, *addrBytes)
+	addr, _ = hex.DecodeString("48bacb9266a570d521063ef5dd96e61686dbe788")
+	copy(addrBytes[:], addr)
+	ValidExchangeAddresses = append(ValidExchangeAddresses, *addrBytes)
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
 			// Health checks

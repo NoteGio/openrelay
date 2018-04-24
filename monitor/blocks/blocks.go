@@ -7,6 +7,7 @@ import (
 	"errors"
 	"math/big"
 	"github.com/ethereum/go-ethereum"
+	// "github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -81,12 +82,14 @@ func (bm *BlockMonitor) Process() error {
 	// Only publish the initial block if blocknumber == 0. For later blocks, we
 	// should have published the block in an earlier iteration, so we don't need
 	// to publish it now.
-	if blockNumber.Int64() == 0 {
+	if header.Number.Int64() == 0 {
 		if err := bm.publish(bm.brb.Get(0)); err != nil {
 			log.Printf("Error publishing block")
 			return err
 		}
 	}
+	// data, _ := rlp.EncodeToBytes(header)
+	// log.Printf("Initial rlp: '%x'", data)
 	MAIN_PROCESSING:
 	for {
 		select {
@@ -106,6 +109,8 @@ func (bm *BlockMonitor) Process() error {
 			log.Printf("error getting header for block %v", new(big.Int).Add(bm.brb.Get(0).Number, big.NewInt(1)))
 			return err
 		}
+		// data, _ = rlp.EncodeToBytes(header)
+		// log.Printf("Block rlp: '%x'", data)
 		// In the event of a chain reorg, the current block's parent won't be
 		// present in our block ring buffer. We need to follow the block's parents
 		// backwards until we find a recognized ancestor, or until we've exhausted
@@ -128,6 +133,9 @@ func (bm *BlockMonitor) Process() error {
 				log.Printf("error getting header for hash %#x", parentHash)
 				return err
 			}
+		}
+		if bm.brb.HashIndex(header.Hash()) != -1 {
+			log.Fatalf("No parents found, but current block already exists. It's likely that block.Hash() is not being computed properly somewhere.")
 		}
 		// At this point we either have the next header, we have wound back to the
 		// beginning of a reorg, or we've wound back as far as we can given our
