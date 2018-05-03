@@ -1,8 +1,12 @@
 package blockhash
 
 import (
+	"encoding/json"
 	"github.com/notegio/openrelay/channels"
+	"github.com/notegio/openrelay/monitor/blocks"
 	"gopkg.in/redis.v3"
+	"log"
+	"fmt"
 )
 
 // BlockHash will get the latest block hash from the ethereum blockchain
@@ -19,7 +23,15 @@ type ChanneledBlockHashConsumer struct {
 // Consume processes blockhashes as they arrive from the provided consumer
 // channel
 func (rbhc *ChanneledBlockHashConsumer) Consume(delivery channels.Delivery) {
-	rbhc.channel <- delivery.Payload()
+	block := &blocks.MiniBlock{}
+	payload := []byte(delivery.Payload())
+	err := json.Unmarshal(payload, block)
+	if err != nil {
+		log.Printf("Error Parsing Payload: %v", err.Error())
+		delivery.Reject()
+		return
+	}
+	rbhc.channel <- fmt.Sprintf("%#x", block.Hash[:])
 	delivery.Ack()
 }
 
