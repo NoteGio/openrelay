@@ -291,7 +291,7 @@ services:
       context: ./
       dockerfile: Dockerfile.simplerelay
     image: openrelay/simplerelay
-    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://newblocks", "queue://allowanceblocks"]
+    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://newblocks", "queue://allowanceblocks", "queue://spendblocks"]
     depends_on:
       - redis
     deploy:
@@ -304,6 +304,20 @@ services:
       dockerfile: Dockerfile.allowancemonitor
     image: openrelay/allowancemonitor
     command: ["/allowancemonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://allowanceblocks", "queue://recordspend", "0x48bacb9266a570d521063ef5dd96e61686dbe788"]
+    depends_on:
+      - redis
+      - ethnode
+    restart: on-failure
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  spendmonitor:
+    build:
+      context: ./
+      dockerfile: Dockerfile.spendmonitor
+    image: openrelay/spendmonitor
+    command: ["/spendmonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://spendblocks", "queue://recordspend", "0x48bacb9266a570d521063ef5dd96e61686dbe788"]
     depends_on:
       - redis
       - ethnode

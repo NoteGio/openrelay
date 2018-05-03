@@ -64,6 +64,9 @@ bin/blockmonitor: $(BASE) cmd/blockmonitor/main.go
 bin/allowancemonitor: $(BASE) cmd/allowancemonitor/main.go
 	cd $(BASE) && $(GOSTATIC) -o bin/allowancemonitor cmd/allowancemonitor/main.go
 
+bin/spendmonitor: $(BASE) cmd/spendmonitor/main.go
+	cd $(BASE) && $(GOSTATIC) -o bin/spendmonitor cmd/spendmonitor/main.go
+
 bin/spendrecorder: $(BASE) cmd/spendrecorder/main.go
 	cd $(BASE) && $(GOSTATIC) -o bin/spendrecorder cmd/spendrecorder/main.go
 
