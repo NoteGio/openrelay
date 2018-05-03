@@ -106,23 +106,6 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
-  blockmonitor:
-    build:
-      context: ./
-      dockerfile: Dockerfile.blockmonitor
-    image: openrelay/blockmonitor
-    command: ["./node_modules/.bin/truffle", "exec", "blockMonitor.js", "redis://${REDIS_HOST:-redis:6379}", "topic://newblocks", "--network", "main"]
-    environment:
-      ETHEREUM_URL: "http://ethnode:8545"
-      USE_FILTER_PROVIDER: "1"
-    depends_on:
-      - redis
-      - ethnode
-    restart: on-failure
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: on-failure
   exchangemonitor:
     build:
       context: ./
@@ -291,7 +274,7 @@ services:
       context: ./
       dockerfile: Dockerfile.simplerelay
     image: openrelay/simplerelay
-    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://newblocks", "queue://allowanceblocks", "queue://spendblocks"]
+    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://newblocks", "queue://allowanceblocks", "queue://spendblocks", "topic://newblocks"]
     depends_on:
       - redis
     deploy:
