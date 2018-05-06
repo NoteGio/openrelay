@@ -180,6 +180,36 @@ jobs:
           root: bin
           paths:
             - allowancemonitor
+  golang_build_spendmonitor:
+    docker:
+      - image: circleci/golang:1.8
+    steps:
+      - checkout
+      - run: make bin/spendmonitor
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - spendmonitor
+  golang_build_fillmonitor:
+    docker:
+      - image: circleci/golang:1.8
+    steps:
+      - checkout
+      - run: make bin/fillmonitor
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - fillmonitor
+  golang_build_multisigmonitor:
+    docker:
+      - image: circleci/golang:1.8
+    steps:
+      - checkout
+      - run: make bin/multisigmonitor
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - multisigmonitor
   golang_test:
     docker:
       # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/

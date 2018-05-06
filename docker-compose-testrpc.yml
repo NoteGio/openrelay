@@ -106,17 +106,34 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
-  exchangemonitor:
+  fillmonitor:
     build:
       context: ./
-      dockerfile: Dockerfile.fillmonitor
-    image: openrelay/fillmonitor
-    command: ["./node_modules/.bin/truffle", "exec", "exchangeMonitor.js", "redis://${REDIS_HOST:-redis:6379}", "queue://ordersfilled", "0xC22d5b2951DB72B44CFb8089bb8CD374A3c354eA", "--network", "main"]
-    environment:
-      ETHEREUM_URL: "http://ethnode:8545"
-      USE_FILTER_PROVIDER: "1"
+      dockerfile: Dockerfile.fillmonitorng
+    image: openrelay/fillmonitorng
+    command: ["/fillmonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://fillblocks", "queue://ordersfilled", "0x48bacb9266a570d521063ef5dd96e61686dbe788"]
     depends_on:
+      - redis
       - ethnode
+    restart: on-failure
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  multisigmonitor:
+    build:
+      context: ./
+      dockerfile: Dockerfile.multisigmonitor
+    image: openrelay/multisigmonitor
+    command: ["/multisigmonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://multisigblocks", "0x48bacb9266a570d521063ef5dd96e61686dbe788"]
+    depends_on:
+      - redis
+      - ethnode
+    restart: on-failure
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
 
   pgfillindexer:
     build:
