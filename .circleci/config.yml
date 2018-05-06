@@ -1,21 +1,5 @@
 version: 2
 jobs:
-  python_build_and_test:
-    docker:
-      - image: circleci/python:3.6
-        environment:
-          AWS_ACCESS_KEY_ID: placeholder
-          AWS_SECRET_ACCESS_KEY: placeholder
-          AWS_DEFAULT_REGION: us-east-1
-      - image: cnadiminti/dynamodb-local
-    steps:
-      - checkout
-      - run: sudo apt install python3-virtualenv python3-dev libev-dev
-      # - run: sudo ln -s /usr/lib/python3/dist-packages/virtualenv.py /usr/local/bin/virtualenv
-      - run: sudo  chmod +x /usr/lib/python3/dist-packages/virtualenv.py
-      - run: make mock
-      - run: make pytest
-
   node_build_and_test:
     docker:
       - image: circleci/node:8
@@ -29,7 +13,6 @@ jobs:
       - run: npm install
       - run: make mock
       - run: make nodesetup
-      - run: make jstest
   golang_build_delayrelay:
     docker:
       - image: circleci/golang:1.8
@@ -233,7 +216,6 @@ workflows:
   version: 2
   build_and_test:
     jobs:
-      - python_build_and_test
       - node_build_and_test
       - golang_build_delayrelay
       - golang_build_fundcheckrelay

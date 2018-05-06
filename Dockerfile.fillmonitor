@@ -1,7 +1,0 @@
-FROM node:alpine
-
-ADD js/ /project
-
-WORKDIR /project
-
-CMD ["./node_modules/.bin/truffle", "exec", "exchangeMonitor.js", "redis://redis:6379", "queue://ordersfilled"]
