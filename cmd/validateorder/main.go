@@ -33,7 +33,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error creating RpcOrderValidator: '%v'", err.Error())
 	}
-	fundChecker, err := funds.NewRpcOrderValidator(rpcURL, feeToken, tokenProxy)
+	fundChecker, err := funds.NewRpcOrderValidator(rpcURL, feeToken, tokenProxy, nil)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}

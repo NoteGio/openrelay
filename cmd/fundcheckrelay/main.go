@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"encoding/hex"
 	"log"
+	"strings"
 )
 
 type FundFilter struct {
@@ -51,9 +52,14 @@ func main() {
 	consumerChannel, err := channels.ConsumerFromURI(src, redisClient)
 	if err != nil { log.Fatalf(err.Error()) }
 	invert := false
+	var invalidationChannel channels.ConsumerChannel
 	for _, arg := range os.Args[4:] {
 		if arg == "--invert" {
 			invert = true
+		} else if strings.HasPrefix(arg, "--invalidation=") {
+			arg = strings.TrimPrefix(arg, "--invalidation=")
+			invalidationChannel, err = channels.ConsumerFromURI(arg, redisClient)
+			if err != nil { log.Fatalf(err.Error()) }
 		} else {
 			publisher, err := channels.PublisherFromURI(arg, redisClient)
 			if err != nil { log.Fatalf(err.Error()) }
@@ -68,7 +74,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error creating RpcOrderValidator: '%v'", err.Error())
 	}
-	orderValidator, err := funds.NewRpcOrderValidator(rpcURL, feeToken, tokenProxy)
+	orderValidator, err := funds.NewRpcOrderValidator(rpcURL, feeToken, tokenProxy, invalidationChannel)
 	if err != nil {
 		log.Fatalf("Error creating RpcOrderValidator: '%v'", err.Error())
 	}

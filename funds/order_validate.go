@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/notegio/openrelay/config"
 	"github.com/notegio/openrelay/types"
+	"github.com/notegio/openrelay/channels"
 	"log"
 	"math/big"
 )
@@ -152,8 +153,12 @@ func (funds *orderValidator) ValidateOrder(order *types.Order) (bool, error) {
 	return result, nil
 }
 
-func NewRpcOrderValidator(rpcUrl string, feeToken config.FeeToken, tokenProxy config.TokenProxy) (OrderValidator, error) {
+func NewRpcOrderValidator(rpcUrl string, feeToken config.FeeToken, tokenProxy config.TokenProxy, invalidationChannel channels.ConsumerChannel) (OrderValidator, error) {
 	if checker, err := NewRpcBalanceChecker(rpcUrl); err == nil {
+		if invalidationChannel != nil {
+			invalidationChannel.AddConsumer(checker)
+			invalidationChannel.StartConsuming()
+		}
 		return &orderValidator{checker, feeToken, tokenProxy}, nil
 	} else {
 		return nil, err

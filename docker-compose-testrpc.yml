@@ -73,7 +73,7 @@ services:
       context: ./
       dockerfile: Dockerfile.fundcheckrelay
     image: openrelay/fundcheckrelay
-    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://fundcheck", "queue://delay1", "topic://instant-broadcast"]
+    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://fundcheck", "queue://delay1", "topic://instant-broadcast", "--invalidation=topic://newblocks"]
     depends_on:
       - redis
       - ethnode
@@ -173,9 +173,9 @@ services:
   fundcheckrelay2:
     build:
       context: ./
-      dockerfile: Dockerfile.fundcheckrelay
+      dockerfile: Dockerfile.fundcfheckrelay
     image: openrelay/fundcheckrelay
-    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://recheck2", "queue://preindex"]
+    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://recheck2", "queue://preindex", "--invalidation=topic://newblocks"]
     depends_on:
       - ethnode
     restart: on-failure
