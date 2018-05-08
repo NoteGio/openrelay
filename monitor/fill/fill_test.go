@@ -2,10 +2,14 @@ package fill_test
 
 
 import (
+	"net/url"
 	"encoding/json"
 	"encoding/hex"
 	"math/big"
+	"math/rand"
 	"testing"
+	"time"
+	"github.com/notegio/openrelay/fillbloom"
 	"github.com/notegio/openrelay/monitor/fill"
 	"github.com/notegio/openrelay/monitor/blocks"
 	"github.com/notegio/openrelay/monitor/blocks/mock"
@@ -14,6 +18,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/common"
 	// "log"
+	"fmt"
 )
 
 type testConsumer struct {
@@ -51,6 +56,7 @@ func fillLog() *types.Log {
 }
 
 func TestFillFromBlock(t *testing.T) {
+	itemURL := fmt.Sprintf("file:///tmp/test-%v/test", rand.Int())
 	testLog := fillLog()
 	bloom := types.Bloom{}
 	bloom.Add(new(big.Int).SetBytes(testLog.Address[:]))
@@ -72,10 +78,14 @@ func TestFillFromBlock(t *testing.T) {
 	destConsumerChannel.AddConsumer(tc)
 	destConsumerChannel.StartConsuming()
 	defer destConsumerChannel.StopConsuming()
+	if err != nil { t.Fatalf(err.Error()) }
+	fillBloom, err := fillbloom.NewFillBloom(itemURL)
+	if err != nil { t.Fatalf(err.Error()) }
 	consumerChannel.AddConsumer(fill.NewFillBlockConsumer(
 		common.HexToAddress("0x12459c951127e0c374ff9105dda097662a027093").Big(),
 		mock.NewMockLogFilterer([]types.Log{*testLog}),
 		destPublisher,
+		fillBloom,
 	))
 	consumerChannel.StartConsuming()
 	defer consumerChannel.StopConsuming()
@@ -95,8 +105,21 @@ func TestFillFromBlock(t *testing.T) {
 	if fr.CancelledTakerTokenAmount != "0" {
 		t.Errorf("Unexpected cancelled amount, got '%v'", fr.CancelledTakerTokenAmount)
 	}
+	time.Sleep(1000 * time.Millisecond)
+	fb, err := fillbloom.NewFillBloom(itemURL)
+	if err != nil { t.Errorf(err.Error()) }
+	fb.Initialize(
+		mock.NewMockLogFilterer([]types.Log{*testLog}),
+		0,
+		[]common.Address{common.HexToAddress("0x12459c951127e0c374ff9105dda097662a027093")},
+	)
+	orderHash := common.HexToHash(fr.OrderHash)
+	if !fb.Test(orderHash[:]) {
+		t.Errorf("Expected to find orderHash '%#x' in bloom filter", orderHash[:])
+	}
 }
 func TestNoAllowanceInBlock(t *testing.T) {
+	itemURL := fmt.Sprintf("file:///tmp/test-%v/test", rand.Int())
 	mb := &blocks.MiniBlock{
 		common.Hash{},
 		big.NewInt(0),
@@ -112,10 +135,13 @@ func TestNoAllowanceInBlock(t *testing.T) {
 	destConsumerChannel.AddConsumer(tc)
 	destConsumerChannel.StartConsuming()
 	defer destConsumerChannel.StopConsuming()
+	fillBloom, err := fillbloom.NewFillBloom(item.URL())
+	if err != nil { t.Fatalf(err.Error()) }
 	consumerChannel.AddConsumer(fill.NewFillBlockConsumer(
 		common.HexToAddress("0x12459c951127e0c374ff9105dda097662a027093").Big(),
 		mock.NewMockLogFilterer([]types.Log{}),
 		destPublisher,
+		fillBloom,
 	))
 	consumerChannel.StartConsuming()
 	defer consumerChannel.StopConsuming()

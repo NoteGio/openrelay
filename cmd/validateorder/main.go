@@ -37,7 +37,7 @@ func main() {
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
-	filledLookup, err := funds.NewRpcFilledLookup(rpcURL)
+	filledLookup, err := funds.NewRPCFilledLookup(rpcURL, nil)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}

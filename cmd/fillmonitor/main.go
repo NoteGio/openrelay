@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/notegio/openrelay/monitor/fill"
 	"github.com/notegio/openrelay/channels"
+	"github.com/notegio/openrelay/fillbloom"
 	"gopkg.in/redis.v3"
 	"os/signal"
 	"os"
@@ -14,7 +15,8 @@ func main() {
 	rpcURL := os.Args[2]
 	src := os.Args[3]
 	dst := os.Args[4]
-	exchangeAddress := os.Args[5]
+	storageURI := os.Args[5]
+	exchangeAddress := os.Args[6]
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: redisURL,
 	})
@@ -26,7 +28,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error constructing publisher: %v", err.Error())
 	}
-	consumer, err := fill.NewRPCFillBlockConsumer(rpcURL, exchangeAddress, publisher)
+	fillBloom, err := fillbloom.NewFillBloom(storageURI)
+	if err != nil {
+		log.Fatalf("Error constructing fillbloom: %v", err.Error())
+	}
+	consumer, err := fill.NewRPCFillBlockConsumer(rpcURL, exchangeAddress, publisher, fillBloom)
 	if err != nil {
 		log.Fatalf("Error constructing fill monitor: %v", err.Error())
 	}
