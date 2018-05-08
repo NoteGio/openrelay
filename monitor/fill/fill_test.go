@@ -2,11 +2,11 @@ package fill_test
 
 
 import (
-	"net/url"
 	"encoding/json"
 	"encoding/hex"
 	"math/big"
 	"math/rand"
+	"os"
 	"testing"
 	"time"
 	"github.com/notegio/openrelay/fillbloom"
@@ -56,7 +56,9 @@ func fillLog() *types.Log {
 }
 
 func TestFillFromBlock(t *testing.T) {
-	itemURL := fmt.Sprintf("file:///tmp/test-%v/test", rand.Int())
+	directory := fmt.Sprintf("/tmp/test-%v", rand.Int())
+	os.Mkdir(directory, 0755)
+	itemURL := fmt.Sprintf("file://%v/test", directory)
 	testLog := fillLog()
 	bloom := types.Bloom{}
 	bloom.Add(new(big.Int).SetBytes(testLog.Address[:]))
@@ -119,7 +121,9 @@ func TestFillFromBlock(t *testing.T) {
 	}
 }
 func TestNoAllowanceInBlock(t *testing.T) {
-	itemURL := fmt.Sprintf("file:///tmp/test-%v/test", rand.Int())
+	directory := fmt.Sprintf("/tmp/test-%v", rand.Int())
+	os.Mkdir(directory, 0755)
+	itemURL := fmt.Sprintf("file://%v/test", directory)
 	mb := &blocks.MiniBlock{
 		common.Hash{},
 		big.NewInt(0),
@@ -135,7 +139,7 @@ func TestNoAllowanceInBlock(t *testing.T) {
 	destConsumerChannel.AddConsumer(tc)
 	destConsumerChannel.StartConsuming()
 	defer destConsumerChannel.StopConsuming()
-	fillBloom, err := fillbloom.NewFillBloom(item.URL())
+	fillBloom, err := fillbloom.NewFillBloom(itemURL)
 	if err != nil { t.Fatalf(err.Error()) }
 	consumerChannel.AddConsumer(fill.NewFillBlockConsumer(
 		common.HexToAddress("0x12459c951127e0c374ff9105dda097662a027093").Big(),
