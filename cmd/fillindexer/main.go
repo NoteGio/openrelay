@@ -3,14 +3,11 @@ package main
 import (
 	"github.com/notegio/openrelay/channels"
 	dbModule "github.com/notegio/openrelay/db"
-	"github.com/notegio/openrelay/common"
 	// "github.com/notegio/openrelay/funds"
 	"gopkg.in/redis.v3"
-	"github.com/jinzhu/gorm"
 	"log"
 	"os"
 	"os/signal"
-	"fmt"
 )
 
 func main() {

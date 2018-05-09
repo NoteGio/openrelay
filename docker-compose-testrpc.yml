@@ -216,7 +216,7 @@ services:
     image: openrelay/pgindexer
     environment:
       POSTGRES_PASSWORD: password
-    command: ["/indexer", "${REDIS_HOST:-redis:6379}", "queue://pgindexer", "postgres", "indexer", "env://POSTGRES_PASSWORD"]
+    command: ["/indexer", "${REDIS_HOST:-redis:6379}", "queue://pgindexer", "postgres://indexer@postgres", "env://POSTGRES_PASSWORD"]
     depends_on:
       - postgres
       - redis
@@ -242,7 +242,7 @@ services:
     image: openrelay/pgsearchapi
     ports:
       - "8082:8080"
-    command: ["/searchapi", "${REDIS_HOST:-redis:6379}", "topic://newblocks", "postgres", "search", "env://POSTGRES_PASSWORD"]
+    command: ["/searchapi", "${REDIS_HOST:-redis:6379}", "topic://newblocks", "postgres://search@postgres", "env://POSTGRES_PASSWORD"]
     environment:
       POSTGRES_PASSWORD: password
     depends_on:
@@ -337,7 +337,7 @@ services:
       context: ./
       dockerfile: Dockerfile.spendrecorder
     image: openrelay/spendrecorder
-    command: ["/spendrecorder", "${REDIS_HOST:-redis:6379}", "queue://recordspend", "postgres", "spendrecorder", "env://POSTGRES_PASSWORD"]
+    command: ["/spendrecorder", "${REDIS_HOST:-redis:6379}", "queue://recordspend", "postgres://spendrecorder@postgres", "env://POSTGRES_PASSWORD"]
     environment:
       POSTGRES_PASSWORD: password
     depends_on:

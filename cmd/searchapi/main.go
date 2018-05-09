@@ -4,14 +4,12 @@ import (
 	"github.com/notegio/openrelay/search"
 	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/blockhash"
-	"github.com/notegio/openrelay/common"
+	dbModule "github.com/notegio/openrelay/db"
 	"net/http"
 	"gopkg.in/redis.v3"
-	"github.com/jinzhu/gorm"
 	"os"
 	"log"
 	"github.com/rs/cors"
-	"fmt"
 	"strconv"
 )
 

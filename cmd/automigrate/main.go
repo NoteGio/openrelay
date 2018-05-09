@@ -3,7 +3,6 @@ package main
 import (
 	dbModule "github.com/notegio/openrelay/db"
 	"github.com/notegio/openrelay/common"
-	"github.com/jinzhu/gorm"
 	"log"
 	"os"
 	"fmt"
