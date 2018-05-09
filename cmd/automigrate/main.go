@@ -4,7 +4,6 @@ import (
 	dbModule "github.com/notegio/openrelay/db"
 	"github.com/notegio/openrelay/common"
 	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"log"
 	"os"
 	"fmt"
@@ -12,23 +11,14 @@ import (
 )
 
 func main() {
-	pgHost := os.Args[1]
-	pgUser := os.Args[2]
-	pgPassword := common.GetSecret(os.Args[3])
-	connectionString := fmt.Sprintf(
-		"host=%v dbname=postgres sslmode=disable user=%v password=%v",
-		pgHost,
-		pgUser,
-		pgPassword,
-	)
-	db, err := gorm.Open("postgres", connectionString)
+	db, err := dbModule.GetDB(os.Args[1], os.args[2])
 	if err != nil {
-		log.Fatalf("Could not open postgres connection: %v", err.Error())
+		log.Fatalf("Could not open database connection: %v", err.Error())
 	}
 	if err := db.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		log.Fatalf("Error migrating database: %v", err.Error())
 	}
-	for _, credString := range(os.Args[4:]) {
+	for _, credString := range(os.Args[3:]) {
 		creds := strings.Split(credString, ";")
 		if len(creds) != 3 {
 			log.Printf("Malformed credential string: %v", credString)

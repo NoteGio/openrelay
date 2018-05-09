@@ -1,6 +1,7 @@
 package types
 
 import (
+	"github.com/jinzhu/gorm"
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
@@ -60,4 +61,15 @@ func (sig *Signature) Scan(src interface{}) error {
 	default:
 		return errors.New("Signature scanner src should be []byte of length 65")
 	}
+}
+
+// GormDataType tells gorm what data type to use for the signature column.
+// Without this, it defaults to an integer. Note that Gorm resolves any
+// indirection, so this must be on Signature, while other methods are on a
+// *Signature
+func (sig Signature) GormDataType(dialect gorm.Dialect) string {
+	if dialect.GetName() == "postgres" {
+		return "bytea"
+	}
+	return "blob"
 }

@@ -144,7 +144,7 @@ services:
       context: ./
       dockerfile: Dockerfile.pgfillindexer
     image: openrelay/pgfillindexer
-    command: ["/fillindexer", "redis:6379", "queue://pgordersfilled", "postgres", "postgres", "env://POSTGRES_PASSWORD"]
+    command: ["/fillindexer", "redis:6379", "queue://pgordersfilled", "postgres://postgres@postgres", "env://POSTGRES_PASSWORD"]
     environment:
       POSTGRES_PASSWORD: secret
     restart: on-failure
@@ -231,7 +231,7 @@ services:
       INDEX_PASSWORD: password
       SEARCH_PASSWORD: password
       SPENDRECORDER_PASSWORD: password
-    command: ["/automigrate", "postgres", "postgres", "env://POSTGRES_PASSWORD", "indexer;env://INDEX_PASSWORD;orders.SELECT,orders.INSERT,orders.UPDATE", "spendrecorder;env://SPENDRECORDER_PASSWORD;orders.SELECT,orders.INSERT,orders.UPDATE", "search;env://SEARCH_PASSWORD;orders.SELECT"]
+    command: ["/automigrate", "postgres://postgres@postgres", "env://POSTGRES_PASSWORD", "indexer;env://INDEX_PASSWORD;orders.SELECT,orders.INSERT,orders.UPDATE", "spendrecorder;env://SPENDRECORDER_PASSWORD;orders.SELECT,orders.INSERT,orders.UPDATE", "search;env://SEARCH_PASSWORD;orders.SELECT"]
     depends_on:
       - postgres
     restart: on-failure
