@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	db, err := dbModule.GetDB(os.Args[1], os.args[2])
+	db, err := dbModule.GetDB(os.Args[1], os.Args[2])
 	if err != nil {
 		log.Fatalf("Could not open database connection: %v", err.Error())
 	}

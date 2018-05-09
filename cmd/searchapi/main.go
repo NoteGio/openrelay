@@ -18,7 +18,7 @@ import (
 func main() {
 	redisURL := os.Args[1]
 	blockChannel := os.Args[2]
-	db, err := dbModule.GetDB(os.Args[3], os.args[4])
+	db, err := dbModule.GetDB(os.Args[3], os.Args[4])
 	if err != nil {
 		log.Fatalf("Could not open database connection: %v", err.Error())
 	}
