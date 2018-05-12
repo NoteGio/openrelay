@@ -14,6 +14,7 @@ import (
 	"math/big"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type IngestError struct {
@@ -148,6 +149,32 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 					"ecSignature",
 					1005,
 					"Signature validation failed",
+				}},
+			}, 400)
+			return
+		}
+		bigTime := big.NewInt(time.Now().Unix())
+		if order.ExpirationTimestampInSec.Big().Cmp(bigTime) < 0 {
+			returnError(w, IngestError{
+				100,
+				"Validation Failed",
+				[]ValidationError{ValidationError{
+					"expirationUnixTimestampSec",
+					1004,
+					"Order already expired",
+				}},
+			}, 400)
+			return
+		}
+		futureTime := big.NewInt(0).Add(bigTime, big.NewInt(31536000000))
+		if futureTime.Cmp(order.ExpirationTimestampInSec.Big()) < 0 {
+			returnError(w, IngestError{
+				100,
+				"Validation Failed",
+				[]ValidationError{ValidationError{
+					"expirationUnixTimestampSec",
+					1004,
+					"Expiration in distant future",
 				}},
 			}, 400)
 			return

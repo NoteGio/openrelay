@@ -7,7 +7,7 @@
   "takerTokenAddress": "0x05d090b51c40b020eab3bfcb6a2dff130df22e9c",
   "takerTokenAmount": "1000000000000000000",
   "takerFee": "0",
-  "expirationUnixTimestampSec": "1502841540",
+  "expirationUnixTimestampSec": "5797808836",
   "feeRecipient": "0x0000000000000000000000000000000000000000",
   "salt": "11065671350908846865864045738088581419204014210814002044381812654087807531",
   "ecSignature": {
