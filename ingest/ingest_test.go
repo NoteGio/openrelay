@@ -336,30 +336,6 @@ func TestValid(t *testing.T) {
 		t.Errorf("Unexpected message data")
 	}
 }
-func TestBadTaker(t *testing.T) {
-	publisher := TestPublisher{}
-	handler := ingest.Handler(&publisher, &TestAccountService{false, new(big.Int)}, &TestAffiliateService{new(big.Int), nil})
-	data, _ := hex.DecodeString("90fe2af704b34e0224bf2299c838e04d4dcf1364324454186bb728a3ea55750e0618ff1b18ce6cf80000000000b000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000059938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b1b021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
-	reader := TestReader{
-		data[:377],
-		nil,
-	}
-	request, _ := http.NewRequest("POST", "/", reader)
-	request.Header["Content-Type"] = []string{"application/octet-stream"}
-	recorder := httptest.NewRecorder()
-	handler(recorder, request)
-	if recorder.Code != 400 {
-		t.Errorf("Expected error code 202, got '%v'", recorder.Code)
-	}
-	body := recorder.Body.String()
-	if body != "{\"code\":100,\"reason\":\"Validation Failed\",\"validationErrors\":[{\"field\":\"taker\",\"code\":1002,\"reason\":\"Taker address must be empty\"}]}" {
-		t.Errorf("Got unexpected body: '%v' - %v", body, len(body))
-	}
-	if len(publisher.messages) != 0 {
-		t.Errorf("Unexpected message count '%v'", len(publisher.messages))
-		return
-	}
-}
 func TestBadExchange(t *testing.T) {
 	publisher := TestPublisher{}
 	handler := ingest.Handler(&publisher, &TestAccountService{false, new(big.Int)}, &TestAffiliateService{new(big.Int), nil})
