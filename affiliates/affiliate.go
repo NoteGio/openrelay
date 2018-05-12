@@ -5,13 +5,13 @@ import (
 )
 
 type affiliate struct {
-	baseFee    *big.Int
-	feePercent int64
+	BaseFee    *big.Int
+	FeePercent int64
 }
 
 func (acct *affiliate) Fee() *big.Int {
 	fee := new(big.Int)
-	fee.Mul(acct.baseFee, big.NewInt(acct.feePercent))
+	fee.Mul(acct.BaseFee, big.NewInt(acct.FeePercent))
 	return fee.Div(fee, big.NewInt(100))
 }
 

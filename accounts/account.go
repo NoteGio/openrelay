@@ -6,26 +6,26 @@ import (
 )
 
 type account struct {
-	blacklisted        bool
-	baseFee            *big.Int `json:"-"`
-	discountPercentage int64
-	expiration         int64
+	Bl        bool
+	BaseFee            *big.Int `json:"-"`
+	Dp int64
+	Expiration         int64
 }
 
 func (acct *account) Blacklisted() bool {
-	return acct.blacklisted
+	return acct.Bl
 }
 
 func (acct *account) Discount() *big.Int {
-	if acct.expiration < time.Now().Unix() {
+	if acct.Expiration < time.Now().Unix() {
 		// Account is expired. No discount
 		return new(big.Int)
 	}
 	discount := new(big.Int)
-	discount.Mul(acct.baseFee, big.NewInt(acct.discountPercentage))
+	discount.Mul(acct.BaseFee, big.NewInt(acct.Dp))
 	return discount.Div(discount, big.NewInt(100))
 }
 
-func NewAccount(blacklisted bool, baseFee *big.Int, discountPercentage, expiration int64) Account {
-	return &account{blacklisted, baseFee, discountPercentage, expiration}
+func NewAccount(Bl bool, BaseFee *big.Int, Dp, Expiration int64) Account {
+	return &account{Bl, BaseFee, Dp, Expiration}
 }
