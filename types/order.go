@@ -67,7 +67,7 @@ type Order struct {
 	TakerFee                  *Uint256
 	ExpirationTimestampInSec  *Uint256 `gorm:"index"`
 	Salt                      *Uint256
-	Signature                 *Signature `gorm:"type:bytea"`
+	Signature                 *Signature //`gorm:"type:bytea"`
 	TakerTokenAmountFilled    *Uint256
 	TakerTokenAmountCancelled *Uint256
 }

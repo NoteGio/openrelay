@@ -8,6 +8,10 @@
 			"tree": true
 		},
 		{
+			"path": "appengine/cloudsql",
+			"revision": ""
+		},
+		{
 			"path": "bufio",
 			"revision": "",
 			"tree": true
@@ -482,6 +486,12 @@
 			"revisionTime": "2017-12-22T21:37:37Z"
 		},
 		{
+			"checksumSHA1": "JXVlDIoOSmyi1QAgDI455Wsr/gY=",
+			"path": "github.com/go-sql-driver/mysql",
+			"revision": "3287d94d4c6a48a63e16fffaabf27ab20203af2a",
+			"revisionTime": "2018-04-13T18:15:57Z"
+		},
+		{
 			"checksumSHA1": "KZ3QD2QgUS4RcoKiA3mn5pSlJxQ=",
 			"origin": "github.com/ethereum/go-ethereum/vendor/github.com/go-stack/stack",
 			"path": "github.com/go-stack/stack",
@@ -787,6 +797,12 @@
 			"revision": "17ce0a37de5a2712a8bf9d58df705e718b3b2cd6",
 			"revisionTime": "2017-08-08T17:10:09Z",
 			"tree": true
+		},
+		{
+			"checksumSHA1": "LiyXfqOzaeQ8vgYZH3t2hUEdVTw=",
+			"path": "google.golang.org/appengine/cloudsql",
+			"revision": "962cbd1200af94a5a35ba8d512e9f91271b4d01a",
+			"revisionTime": "2018-04-27T17:34:10Z"
 		},
 		{
 			"checksumSHA1": "+4r0PnLwwyhO5/jvU5R/TEJb4kA=",

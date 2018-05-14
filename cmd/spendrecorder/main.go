@@ -3,32 +3,19 @@ package main
 import (
 	"github.com/notegio/openrelay/channels"
 	dbModule "github.com/notegio/openrelay/db"
-	"github.com/notegio/openrelay/common"
 	// "github.com/notegio/openrelay/funds"
 	"gopkg.in/redis.v3"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"log"
 	"os"
 	"os/signal"
-	"fmt"
 )
 
 func main() {
 	redisURL := os.Args[1]
 	srcChannel := os.Args[2]
-	pgHost := os.Args[3]
-	pgUser := os.Args[4]
-	pgPassword := common.GetSecret(os.Args[5])
-	connectionString := fmt.Sprintf(
-		"host=%v dbname=postgres sslmode=disable user=%v password=%v",
-		pgHost,
-		pgUser,
-		pgPassword,
-	)
-	db, err := gorm.Open("postgres", connectionString)
+	db, err := dbModule.GetDB(os.Args[3], os.Args[4])
 	if err != nil {
-		log.Fatalf("Could not open postgres connection: %v", err.Error())
+		log.Fatalf("Could not open database connection: %v", err.Error())
 	}
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: redisURL,

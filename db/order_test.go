@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
 	dbModule "github.com/notegio/openrelay/db"
 	"github.com/notegio/openrelay/types"
 	"os"
@@ -29,12 +28,11 @@ func sampleOrder() *types.Order {
 
 func getDb() (*gorm.DB, error) {
 	connectionString := fmt.Sprintf(
-		"host=%v sslmode=disable user=%v password=%v",
-		os.Getenv("POSTGRES_HOST"),
+		"postgres://%v@%v",
 		os.Getenv("POSTGRES_USER"),
-		os.Getenv("POSTGRES_PASSWORD"),
+		os.Getenv("POSTGRES_HOST"),
 	)
-	db, err := gorm.Open("postgres", connectionString)
+	db, err := dbModule.GetDB(connectionString, os.Getenv("POSTGRES_PASSWORD"))
 	// db.LogMode(true)
 	return db, err
 }

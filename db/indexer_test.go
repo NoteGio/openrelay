@@ -3,7 +3,6 @@ package db_test
 import (
 	"encoding/json"
 	"fmt"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
 	dbModule "github.com/notegio/openrelay/db"
 	"github.com/notegio/openrelay/types"
 	"math/big"

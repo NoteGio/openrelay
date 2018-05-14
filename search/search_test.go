@@ -77,12 +77,11 @@ func getTestOrderBookHandler(db *gorm.DB) func(http.ResponseWriter, *http.Reques
 
 func getDb() (*gorm.DB, error) {
 	connectionString := fmt.Sprintf(
-		"host=%v sslmode=disable user=%v password=%v",
-		os.Getenv("POSTGRES_HOST"),
+		"postgres://%v@%v",
 		os.Getenv("POSTGRES_USER"),
-		os.Getenv("POSTGRES_PASSWORD"),
+		os.Getenv("POSTGRES_HOST"),
 	)
-	db, err := gorm.Open("postgres", connectionString)
+	db, err := dbModule.GetDB(connectionString, os.Getenv("POSTGRES_PASSWORD"))
 	// db.LogMode(true)
 	return db, err
 }

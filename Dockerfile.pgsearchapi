@@ -4,4 +4,4 @@ COPY bin/searchapi /searchapi
 
 COPY docker-cfg/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 
-CMD ["/searchapi", "redis:6379", "topic://newblocks", "postgres", "postgres", "secret"]
+CMD ["/searchapi", "redis:6379", "topic://newblocks", "postgres://postgres@postgres", "secret"]
