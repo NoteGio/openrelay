@@ -49,8 +49,11 @@ func (data *Uint256) Scan(src interface{}) error {
 }
 
 func (data *Uint256) String() (string) {
-	bigInt := new(big.Int).SetBytes(data[:])
-	return bigInt.String()
+	return data.Big().String()
+}
+
+func (data *Uint256) Big() (*big.Int) {
+	return new(big.Int).SetBytes(data[:])
 }
 
 // Order represents an 0x order object

@@ -14,6 +14,7 @@ import (
 	"math/big"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type IngestError struct {
@@ -52,21 +53,18 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 	ValidExchangeAddresses := []types.Address{}
 	// TODO: Look up valid exchanges from Redis dynamically
 	addrBytes := &types.Address{}
-	addr, _ := hex.DecodeString("12459c951127e0c374ff9105dda097662a027093")
-	copy(addrBytes[:], addr)
-	ValidExchangeAddresses = append(ValidExchangeAddresses, *addrBytes)
-	addr, _ = hex.DecodeString("479cc461fecd078f766ecc58533d6f69580cf3ac")
-	copy(addrBytes[:], addr)
-	ValidExchangeAddresses = append(ValidExchangeAddresses, *addrBytes)
-	addr, _ = hex.DecodeString("90fe2af704b34e0224bf2299c838e04d4dcf1364")
-	copy(addrBytes[:], addr)
-	ValidExchangeAddresses = append(ValidExchangeAddresses, *addrBytes)
-	addr, _ = hex.DecodeString("b69e673309512a9d726f87304c6984054f87a93b")
-	copy(addrBytes[:], addr)
-	ValidExchangeAddresses = append(ValidExchangeAddresses, *addrBytes)
-	addr, _ = hex.DecodeString("48bacb9266a570d521063ef5dd96e61686dbe788")
-	copy(addrBytes[:], addr)
-	ValidExchangeAddresses = append(ValidExchangeAddresses, *addrBytes)
+	knownExchanges := []string{
+		"12459c951127e0c374ff9105dda097662a027093",
+		"479cc461fecd078f766ecc58533d6f69580cf3ac",
+		"90fe2af704b34e0224bf2299c838e04d4dcf1364",
+		"b69e673309512a9d726f87304c6984054f87a93b",
+		"48bacb9266a570d521063ef5dd96e61686dbe788",
+	}
+	for _, addrString := range knownExchanges {
+		addr, _ := hex.DecodeString(addrString)
+		copy(addrBytes[:], addr)
+		ValidExchangeAddresses = append(ValidExchangeAddresses, *addrBytes)
+	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
 			// Health checks
@@ -131,20 +129,6 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 			return
 		}
 		// At this point we've errored out, or we have an Order object
-		emptyBytes := [20]byte{}
-		if !bytes.Equal(order.Taker[:], emptyBytes[:]) {
-			log.Printf("'%v' != '%v'", hex.EncodeToString(order.Taker[:]), hex.EncodeToString(emptyBytes[:]))
-			returnError(w, IngestError{
-				100,
-				"Validation Failed",
-				[]ValidationError{ValidationError{
-					"taker",
-					1002,
-					"Taker address must be empty",
-				}},
-			}, 400)
-			return
-		}
 		if !valInList(order.ExchangeAddress, ValidExchangeAddresses) {
 			returnError(w, IngestError{
 				100,
@@ -165,6 +149,32 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 					"ecSignature",
 					1005,
 					"Signature validation failed",
+				}},
+			}, 400)
+			return
+		}
+		bigTime := big.NewInt(time.Now().Unix())
+		if order.ExpirationTimestampInSec.Big().Cmp(bigTime) < 0 {
+			returnError(w, IngestError{
+				100,
+				"Validation Failed",
+				[]ValidationError{ValidationError{
+					"expirationUnixTimestampSec",
+					1004,
+					"Order already expired",
+				}},
+			}, 400)
+			return
+		}
+		futureTime := big.NewInt(0).Add(bigTime, big.NewInt(31536000000))
+		if futureTime.Cmp(order.ExpirationTimestampInSec.Big()) < 0 {
+			returnError(w, IngestError{
+				100,
+				"Validation Failed",
+				[]ValidationError{ValidationError{
+					"expirationUnixTimestampSec",
+					1004,
+					"Expiration in distant future",
 				}},
 			}, 400)
 			return
