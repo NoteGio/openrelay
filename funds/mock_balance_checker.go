@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"github.com/notegio/openrelay/types"
+	"github.com/notegio/openrelay/channels"
 	"math/big"
 )
 
@@ -34,6 +35,10 @@ func (funds *mockBalanceChecker) GetAllowance(tokenAddrBytes, userAddrBytes, sen
 	return nil, errors.New("(GetAllowance) Token not found " + hex.EncodeToString(tokenAddrBytes[:]))
 }
 
+func (funds *mockBalanceChecker) Consume(msg channels.Delivery) {
+	msg.Ack()
+}
+
 func NewMockBalanceChecker(balanceMap map[types.Address]map[types.Address]*big.Int) BalanceChecker {
 	return &mockBalanceChecker{balanceMap}
 }
@@ -48,6 +53,10 @@ func (funds *errorMockBalanceChecker) GetBalance(tokenAddrBytes, userAddrBytes *
 
 func (funds *errorMockBalanceChecker) GetAllowance(tokenAddrBytes, userAddrBytes, senderAddress *types.Address) (*big.Int, error) {
 	return nil, funds.err
+}
+
+func (funds *errorMockBalanceChecker) Consume(msg channels.Delivery) {
+	msg.Ack()
 }
 
 func NewErrorMockBalanceChecker(err error) BalanceChecker {

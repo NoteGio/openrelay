@@ -7,36 +7,85 @@ import (
 	orCommon "github.com/notegio/openrelay/common"
 	tokenModule "github.com/notegio/openrelay/token"
 	"github.com/notegio/openrelay/types"
+	"github.com/notegio/openrelay/channels"
 	"math/big"
+	"sync"
+	"fmt"
 )
 
 type BalanceChecker interface {
 	GetBalance(tokenAddress, userAddress *types.Address) (*big.Int, error)
 	GetAllowance(tokenAddress, ownerAddress, spenderAddress *types.Address) (*big.Int, error)
+	Consume(msg channels.Delivery)
 }
 
 type rpcBalanceChecker struct {
 	conn bind.ContractBackend
+	lookupCache map[string]*big.Int
+	cacheMutex *sync.Mutex
 }
 
 func (funds *rpcBalanceChecker) GetBalance(tokenAddrBytes, userAddrBytes *types.Address) (*big.Int, error) {
+	cacheKey := fmt.Sprintf("b-%#x-%#x", tokenAddrBytes[:], userAddrBytes[:])
+	if funds.lookupCache != nil {
+		funds.cacheMutex.Lock()
+		if balance, ok := funds.lookupCache[cacheKey]; ok {
+			funds.cacheMutex.Unlock()
+			return balance, nil
+		}
+		funds.cacheMutex.Unlock()
+	}
 	token, err := tokenModule.NewToken(orCommon.ToGethAddress(tokenAddrBytes), funds.conn)
 	if err != nil {
 		return nil, err
 	}
-	return token.BalanceOf(nil, orCommon.ToGethAddress(userAddrBytes))
+	balance, err := token.BalanceOf(nil, orCommon.ToGethAddress(userAddrBytes))
+	if err != nil {
+		return nil, err
+	}
+	if funds.lookupCache != nil {
+		funds.cacheMutex.Lock()
+		defer funds.cacheMutex.Unlock()
+		funds.lookupCache[cacheKey] = balance
+	}
+	return balance, nil
 }
 
 func (funds *rpcBalanceChecker) GetAllowance(tokenAddrBytes, ownerAddress, spenderAddress *types.Address) (*big.Int, error) {
+	cacheKey := fmt.Sprintf("a-%#x-%#x-%#x", tokenAddrBytes[:], ownerAddress[:], spenderAddress[:])
+	if funds.lookupCache != nil {
+		funds.cacheMutex.Lock()
+		if allowance, ok := funds.lookupCache[cacheKey]; ok {
+			funds.cacheMutex.Unlock()
+			return allowance, nil
+		}
+		funds.cacheMutex.Unlock()
+	}
 	token, err := tokenModule.NewToken(orCommon.ToGethAddress(tokenAddrBytes), funds.conn)
 	if err != nil {
 		return nil, err
 	}
-	return token.Allowance(nil, orCommon.ToGethAddress(ownerAddress), orCommon.ToGethAddress(spenderAddress))
+	allowance, err := token.Allowance(nil, orCommon.ToGethAddress(ownerAddress), orCommon.ToGethAddress(spenderAddress))
+	if err != nil {
+		return nil, err
+	}
+	if funds.lookupCache != nil {
+		funds.cacheMutex.Lock()
+		defer funds.cacheMutex.Unlock()
+		funds.lookupCache[cacheKey] = allowance
+	}
+	return allowance, nil
 }
 
-func NewRpcBalanceChecker(rpcUrl string) (BalanceChecker, error) {
-	conn, err := ethclient.Dial(rpcUrl)
+func (funds *rpcBalanceChecker) Consume(msg channels.Delivery) {
+	defer msg.Ack()
+	funds.cacheMutex.Lock()
+	defer funds.cacheMutex.Unlock()
+	funds.lookupCache = make(map[string]*big.Int)
+}
+
+func NewRpcBalanceChecker(rpcURL string) (BalanceChecker, error) {
+	conn, err := ethclient.Dial(rpcURL)
 	if err != nil {
 		return nil, err
 	}
@@ -46,5 +95,5 @@ func NewRpcBalanceChecker(rpcUrl string) (BalanceChecker, error) {
 		// function we call isn't important, but SyncProgress is pretty cheap.
 		return nil, err
 	}
-	return &rpcBalanceChecker{conn}, nil
+	return &rpcBalanceChecker{conn, nil, &sync.Mutex{}}, nil
 }
