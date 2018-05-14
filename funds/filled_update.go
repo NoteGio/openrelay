@@ -8,6 +8,8 @@ import (
 	orCommon "github.com/notegio/openrelay/common"
 	"github.com/notegio/openrelay/exchangecontract"
 	"github.com/notegio/openrelay/types"
+	// "github.com/notegio/openrelay/channels"
+	"github.com/notegio/openrelay/fillbloom"
 	"log"
 	"math/big"
 )
@@ -19,10 +21,15 @@ type FilledLookup interface {
 
 type rpcFilledLookup struct {
 	conn bind.ContractBackend
+	fillBloom *fillbloom.FillBloom
 }
 
 func (filled *rpcFilledLookup) GetAmountCancelled(order *types.Order) (*types.Uint256, error) {
 	cancelledAmount := &types.Uint256{}
+	if filled.fillBloom != nil && filled.fillBloom.Initialized && !filled.fillBloom.Test(order.Hash()) {
+		log.Printf("Bloom filter missing order: %#x", order.Hash())
+		return cancelledAmount, nil
+	}
 	exchange, err := exchangecontract.NewExchange(orCommon.ToGethAddress(order.ExchangeAddress), filled.conn)
 	if err != nil {
 		log.Printf("Error intializing exchange contract '%v': '%v'", hex.EncodeToString(order.ExchangeAddress[:]), err.Error())
@@ -43,6 +50,10 @@ func (filled *rpcFilledLookup) GetAmountCancelled(order *types.Order) (*types.Ui
 
 func (filled *rpcFilledLookup) GetAmountFilled(order *types.Order) (*types.Uint256, error) {
 	filledAmount := &types.Uint256{}
+	if filled.fillBloom != nil && filled.fillBloom.Initialized && !filled.fillBloom.Test(order.Hash()) {
+		log.Printf("Bloom filter missing order: %#x", order.Hash())
+		return filledAmount, nil
+	}
 	exchange, err := exchangecontract.NewExchange(orCommon.ToGethAddress(order.ExchangeAddress), filled.conn)
 	if err != nil {
 		log.Printf("Error intializing exchange contract '%v': '%v'", hex.EncodeToString(order.ExchangeAddress[:]), err.Error())
@@ -61,15 +72,16 @@ func (filled *rpcFilledLookup) GetAmountFilled(order *types.Order) (*types.Uint2
 	return filledAmount, nil
 }
 
-// TODO: Test FilledChecker
-// TODO: Make FundCheckRelay update order with TakerTokenAmountFilled
 
-func NewRpcFilledLookup(rpcUrl string) (FilledLookup, error) {
-	conn, err := ethclient.Dial(rpcUrl)
+func NewRPCFilledLookup(rpcURL string, fillBloom *fillbloom.FillBloom) (FilledLookup, error) {
+	conn, err := ethclient.Dial(rpcURL)
 	if err != nil {
 		return nil, err
 	}
-	return &rpcFilledLookup{conn}, nil
+	if fillBloom != nil {
+		fillBloom.Initialize(conn, 0, []common.Address{})
+	}
+	return &rpcFilledLookup{conn, fillBloom}, nil
 }
 
 type MockFilledLookup struct {

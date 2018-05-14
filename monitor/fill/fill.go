@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	// "github.com/ethereum/go-ethereum/core/types"
 	// "github.com/notegio/openrelay/funds"
+	"github.com/notegio/openrelay/fillbloom"
 	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/db"
 	"github.com/notegio/openrelay/monitor/blocks"
@@ -22,6 +23,7 @@ type fillBlockConsumer struct {
 	cancelTopic       *big.Int // 0x67d66f160bc93d925d05dae1794c90d2d6d6688b29b84ff069398a9b04587131
 	logFilter         ethereum.LogFilterer
 	publisher         channels.Publisher
+	fillBloom         *fillbloom.FillBloom
 }
 
 func (consumer *fillBlockConsumer) Consume(delivery channels.Delivery) {
@@ -29,6 +31,13 @@ func (consumer *fillBlockConsumer) Consume(delivery channels.Delivery) {
 	err := json.Unmarshal([]byte(delivery.Payload()), block)
 	if err != nil {
 		log.Printf("Error parsing payload: %v\n", err.Error())
+	}
+	if !consumer.fillBloom.Initialized {
+		consumer.fillBloom.Initialize(
+			consumer.logFilter,
+			block.Number.Int64(),
+			[]common.Address{common.BigToAddress(consumer.exchangeAddress)},
+		)
 	}
 	if (block.Bloom.Test(consumer.fillTopic) || block.Bloom.Test(consumer.cancelTopic)) && block.Bloom.Test(consumer.exchangeAddress) {
 		log.Printf("Block %#x bloom filter indicates fill event for %#x", block.Hash, consumer.exchangeAddress)
@@ -59,6 +68,7 @@ func (consumer *fillBlockConsumer) Consume(delivery channels.Delivery) {
 					FilledTakerTokenAmount: takerTokenFilled.Text(10),
 					CancelledTakerTokenAmount: "0",
 				}
+				consumer.fillBloom.Add(orderHash)
 			} else {
 				takerTokenCancelled := big.NewInt(0)
 				takerTokenCancelled.SetBytes(fillLog.Data[32*3:32*4])
@@ -68,6 +78,7 @@ func (consumer *fillBlockConsumer) Consume(delivery channels.Delivery) {
 					FilledTakerTokenAmount: "0",
 					CancelledTakerTokenAmount: takerTokenCancelled.Text(10),
 				}
+				consumer.fillBloom.Add(orderHash)
 			}
 			msg, err := json.Marshal(fr)
 			if err != nil {
@@ -77,23 +88,26 @@ func (consumer *fillBlockConsumer) Consume(delivery channels.Delivery) {
 			consumer.publisher.Publish(string(msg))
 		}
 	} else {
-		log.Printf("Block %v shows no approval events", block.Hash)
+		log.Printf("Block %#x shows no fill events", block.Hash)
+	}
+	if err := consumer.fillBloom.Save(); err != nil {
+		log.Printf("error saving bloom filter: %v", err.Error())
 	}
 	delivery.Ack()
 }
 
-func NewFillBlockConsumer(exchangeAddress *big.Int, lf ethereum.LogFilterer, publisher channels.Publisher) (channels.Consumer) {
+func NewFillBlockConsumer(exchangeAddress *big.Int, lf ethereum.LogFilterer, publisher channels.Publisher, fb *fillbloom.FillBloom) (channels.Consumer) {
 	fillTopic := &big.Int{}
 	fillTopic.SetString("0d0b9391970d9a25552f37d436d2aae2925e2bfe1b2a923754bada030c498cb3", 16)
 	cancelTopic := &big.Int{}
 	cancelTopic.SetString("67d66f160bc93d925d05dae1794c90d2d6d6688b29b84ff069398a9b04587131", 16)
-	return &fillBlockConsumer{exchangeAddress, fillTopic, cancelTopic, lf, publisher}
+	return &fillBlockConsumer{exchangeAddress, fillTopic, cancelTopic, lf, publisher, fb}
 }
 
-func NewRPCFillBlockConsumer(rpcURL string, exchangeAddress string, publisher channels.Publisher) (channels.Consumer, error) {
+func NewRPCFillBlockConsumer(rpcURL string, exchangeAddress string, publisher channels.Publisher, fb *fillbloom.FillBloom) (channels.Consumer, error) {
 	client, err := ethclient.Dial(rpcURL)
 	if err != nil {
 		return nil, err
 	}
-	return NewFillBlockConsumer(common.HexToAddress(exchangeAddress).Big(), client, publisher), nil
+	return NewFillBlockConsumer(common.HexToAddress(exchangeAddress).Big(), client, publisher, fb), nil
 }

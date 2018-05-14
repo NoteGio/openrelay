@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/funds"
+	"github.com/notegio/openrelay/fillbloom"
 	"gopkg.in/redis.v3"
 
 	"log"
@@ -15,10 +16,12 @@ func main() {
 	redisURL := os.Args[1]
 	rpcURL := os.Args[2]
 	src := os.Args[3]
-	allDest := os.Args[4]
+	fillSrc := os.Args[4]
+	bloomURI := os.Args[5]
+	allDest := os.Args[6]
 	var changeDest string
-	if len(os.Args) >= 6 {
-		changeDest = os.Args[5]
+	if len(os.Args) >= 8 {
+		changeDest = os.Args[7]
 	}
 	if redisURL == "" {
 		log.Fatalf("Please specify redis URL")
@@ -31,6 +34,10 @@ func main() {
 	})
 	consumerChannel, err := channels.ConsumerFromURI(src, redisClient)
 	if err != nil { log.Fatalf(err.Error()) }
+	fillConsumerChannel, err := channels.ConsumerFromURI(fillSrc, redisClient)
+	if err != nil { log.Fatalf(err.Error()) }
+	fillBloom, err := fillbloom.NewFillBloom(bloomURI)
+	if err != nil { log.Fatalf(err.Error()) }
 	allPublisher, err := channels.PublisherFromURI(allDest, redisClient)
 	if err != nil { log.Fatalf(err.Error()) }
 	var changePublisher channels.Publisher
@@ -38,11 +45,13 @@ func main() {
 		changePublisher, err = channels.PublisherFromURI(changeDest, redisClient)
 		if err != nil { log.Fatalf(err.Error()) }
 	}
-	lookup, err := funds.NewRpcFilledLookup(rpcURL)
+	lookup, err := funds.NewRPCFilledLookup(rpcURL, fillBloom)
 	if err != nil { log.Fatalf(err.Error()) }
 	fillConsumer := funds.NewFillConsumer(allPublisher, changePublisher, lookup)
 	consumerChannel.AddConsumer(&fillConsumer)
 	consumerChannel.StartConsuming()
+	fillConsumerChannel.AddConsumer(fillBloom)
+	fillConsumerChannel.StartConsuming()
 	log.Printf("Starting fillupdate consumer on '%v'", src)
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
@@ -50,4 +59,5 @@ func main() {
 		break
 	}
 	consumerChannel.StopConsuming()
+	fillConsumerChannel.StopConsuming()
 }

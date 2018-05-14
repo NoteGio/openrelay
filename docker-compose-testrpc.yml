@@ -60,7 +60,9 @@ services:
       context: ./
       dockerfile: Dockerfile.fillupdate
     image: openrelay/fillupdate
-    command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://fillupdate", "queue://fundcheck"]
+    command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://fillupdate", "topic://ordersfilled", "file:///bloom/data/testdata", "queue://fundcheck"]
+    volumes:
+      - bloomdata:/bloom/data
     depends_on:
       - redis
       - ethnode
@@ -111,7 +113,9 @@ services:
       context: ./
       dockerfile: Dockerfile.fillmonitorng
     image: openrelay/fillmonitorng
-    command: ["/fillmonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://fillblocks", "queue://ordersfilled", "0x48bacb9266a570d521063ef5dd96e61686dbe788"]
+    command: ["/fillmonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://fillblocks", "queue://ordersfilled", "file:///bloom/data/testdata", "0x48bacb9266a570d521063ef5dd96e61686dbe788"]
+    volumes:
+      - bloomdata:/bloom/data
     depends_on:
       - redis
       - ethnode
@@ -162,7 +166,9 @@ services:
       context: ./
       dockerfile: Dockerfile.fillupdate
     image: openrelay/fillupdate
-    command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://recheck", "queue://recheck2"]
+    command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://recheck", "topic://ordersfilled", "file:///bloom/data/testdata", "queue://recheck2"]
+    volumes:
+      - bloomdata:/bloom/data
     depends_on:
       - redis
       - ethnode
@@ -173,7 +179,7 @@ services:
   fundcheckrelay2:
     build:
       context: ./
-      dockerfile: Dockerfile.fundcfheckrelay
+      dockerfile: Dockerfile.fundcheckrelay
     image: openrelay/fundcheckrelay
     command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://recheck2", "queue://preindex", "--invalidation=topic://newblocks"]
     depends_on:
@@ -263,7 +269,7 @@ services:
       context: ./
       dockerfile: Dockerfile.simplerelay
     image: openrelay/simplerelay
-    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://ordersfilled", "queue://pgordersfilled"]
+    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://ordersfilled", "queue://pgordersfilled", "topic://ordersfilled"]
     depends_on:
       - redis
     deploy:
@@ -291,7 +297,7 @@ services:
       context: ./
       dockerfile: Dockerfile.simplerelay
     image: openrelay/simplerelay
-    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://newblocks", "queue://allowanceblocks", "queue://spendblocks", "topic://newblocks"]
+    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://newblocks", "queue://allowanceblocks", "queue://spendblocks", "topic://newblocks", "queue://fillblocks"]
     depends_on:
       - redis
     deploy:
@@ -342,3 +348,5 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
+volumes:
+  bloomdata:
