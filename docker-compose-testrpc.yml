@@ -106,15 +106,12 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
-  blockmonitor:
+  fillmonitor:
     build:
       context: ./
-      dockerfile: Dockerfile.blockmonitor
-    image: openrelay/blockmonitor
-    command: ["./node_modules/.bin/truffle", "exec", "blockMonitor.js", "redis://${REDIS_HOST:-redis:6379}", "topic://newblocks", "--network", "main"]
-    environment:
-      ETHEREUM_URL: "http://ethnode:8545"
-      USE_FILTER_PROVIDER: "1"
+      dockerfile: Dockerfile.fillmonitorng
+    image: openrelay/fillmonitorng
+    command: ["/fillmonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://fillblocks", "queue://ordersfilled", "0x48bacb9266a570d521063ef5dd96e61686dbe788"]
     depends_on:
       - redis
       - ethnode
@@ -123,29 +120,20 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
-  exchangemonitor:
+  multisigmonitor:
     build:
       context: ./
-      dockerfile: Dockerfile.fillmonitor
-    image: openrelay/fillmonitor
-    command: ["./node_modules/.bin/truffle", "exec", "exchangeMonitor.js", "redis://${REDIS_HOST:-redis:6379}", "queue://ordersfilled", "0xC22d5b2951DB72B44CFb8089bb8CD374A3c354eA", "--network", "main"]
-    environment:
-      ETHEREUM_URL: "http://ethnode:8545"
-      USE_FILTER_PROVIDER: "1"
+      dockerfile: Dockerfile.multisigmonitor
+    image: openrelay/multisigmonitor
+    command: ["/multisigmonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://multisigblocks", "0x48bacb9266a570d521063ef5dd96e61686dbe788"]
     depends_on:
+      - redis
       - ethnode
-  fillindexer:
-    build:
-      context: ./
-      dockerfile: Dockerfile.fillindexer
-    image: openrelay/fillindexer
-    command: ["python", "/project/fill_indexer.py", "${REDIS_HOST:-redis:6379}", "dynamodbordersfilled", "-l", "DEBUG"]
-    environment:
-      DYNAMODB_HOST: http://dynamo:8000
-      AWS_ACCESS_KEY_ID: x
-      AWS_SECRET_ACCESS_KEY: x
-    depends_on:
-      - dynamo
+    restart: on-failure
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
 
   pgfillindexer:
     build:
@@ -155,8 +143,6 @@ services:
     command: ["/fillindexer", "redis:6379", "queue://pgordersfilled", "postgres", "postgres", "env://POSTGRES_PASSWORD"]
     environment:
       POSTGRES_PASSWORD: secret
-    depends_on:
-      - dynamo
     restart: on-failure
 
   simplerelayreleased:
@@ -217,8 +203,6 @@ services:
     volumes:
       - "./js:/project"
     command: ["node", "/project/hang.js"]
-  dynamo:
-    image: cnadiminti/dynamodb-local
   pgindexer:
     build:
       context: ./
@@ -240,33 +224,11 @@ services:
       POSTGRES_PASSWORD: secret
       INDEX_PASSWORD: password
       SEARCH_PASSWORD: password
-    command: ["/automigrate", "postgres", "postgres", "env://POSTGRES_PASSWORD", "indexer;env://INDEX_PASSWORD;orders.SELECT,orders.INSERT,orders.UPDATE", "search;env://SEARCH_PASSWORD;orders.SELECT"]
+      SPENDRECORDER_PASSWORD: password
+    command: ["/automigrate", "postgres", "postgres", "env://POSTGRES_PASSWORD", "indexer;env://INDEX_PASSWORD;orders.SELECT,orders.INSERT,orders.UPDATE", "spendrecorder;env://SPENDRECORDER_PASSWORD;orders.SELECT,orders.INSERT,orders.UPDATE", "search;env://SEARCH_PASSWORD;orders.SELECT"]
     depends_on:
       - postgres
     restart: on-failure
-  indexer:
-    build:
-      context: ./
-      dockerfile: Dockerfile.indexer
-    image: openrelay/indexer
-    environment:
-      DYNAMODB_HOST: http://dynamo:8000
-      AWS_ACCESS_KEY_ID: x
-      AWS_SECRET_ACCESS_KEY: x
-    command: ["python", "/project/indexer.py", "${REDIS_HOST:-redis:6379}", "indexer", "--create"]
-    depends_on:
-      - dynamo
-      - redis
-  api:
-    build:
-      context: ./
-      dockerfile: Dockerfile.searchapi
-    image: openrelay/searchapi
-    environment:
-      DYNAMODB_HOST: http://dynamo:8000
-      AWS_ACCESS_KEY_ID: x
-      AWS_SECRET_ACCESS_KEY: x
-    command: ["python", "/project/api.py", "${REDIS_HOST:-redis:6379}", "newblocks", "-l", "debug"]
   pgapi:
     build:
       context: ./
@@ -284,42 +246,12 @@ services:
       restart_policy:
         condition: on-failure
     restart: on-failure
-  ordercheckenqueue:
-    # This node uses dynamodb to continuously requeue orders to be checked
-    # again on an ongoing basis
-    build:
-      context: ./
-      dockerfile: Dockerfile.queueorders
-    image: openrelay/queueorders
-    environment:
-      DYNAMODB_HOST: http://dynamo:8000
-      AWS_ACCESS_KEY_ID: x
-      AWS_SECRET_ACCESS_KEY: x
-    command: ["python", "/project/queue_orders.py", "${REDIS_HOST:-redis:6379}", "continuous_recheck", "-r", "-l", "debug"]
-    depends_on:
-      - indexer
-  fillupdate_continous:
-    # This node makes sure filled / cancelled values are up to date. Any
-    # changes get forwarded to the indexer, and all orders get forwarded to the
-    # inverted fund checker
-    build:
-      context: ./
-      dockerfile: Dockerfile.fillupdate
-    image: openrelay/fillupdate
-    command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://continuous_recheck", "queue://fund_continuous_recheck", "queue://preindex"]
-    depends_on:
-      - redis
-      - ethnode
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: on-failure
   simplerelayindexer:
     build:
       context: ./
       dockerfile: Dockerfile.simplerelay
     image: openrelay/simplerelay
-    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://preindex", "queue://indexer", "queue://pgindexer"]
+    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://preindex", "queue://pgindexer"]
     depends_on:
       - redis
     deploy:
@@ -331,47 +263,82 @@ services:
       context: ./
       dockerfile: Dockerfile.simplerelay
     image: openrelay/simplerelay
-    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://ordersfilled", "queue://dynamodbordersfilled", "queue://pgordersfilled"]
+    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://ordersfilled", "queue://pgordersfilled"]
     depends_on:
       - redis
     deploy:
       replicas: 1
       restart_policy:
         condition: on-failure
-
-  fundcheckrelay_continuous:
-    # This fund checker passes on orders that have insufficient funds to be
-    # removed from the index
+  blockmonitorng:
     build:
       context: ./
-      dockerfile: Dockerfile.fundcheckrelay
-    image: openrelay/fundcheckrelay
-    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://fund_continuous_recheck", "queue://unindexer", "queue://pgunindexer", "--invert"]
+      dockerfile: Dockerfile.blockmonitorng
+    image: openrelay/blockmonitorng
+    command: ["/blockmonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://newblocks"]
+    environment:
+      ETHEREUM_URL: "http://ethnode:8545"
     depends_on:
+      - redis
       - ethnode
     restart: on-failure
-  unindexer:
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  simplerelaynewblocks:
     build:
       context: ./
-      dockerfile: Dockerfile.indexer
-    image: openrelay/indexer
-    environment:
-      DYNAMODB_HOST: http://dynamo:8000
-      AWS_ACCESS_KEY_ID: x
-      AWS_SECRET_ACCESS_KEY: x
-    command: ["python", "/project/indexer.py", "${REDIS_HOST:-redis:6379}", "unindexer", "--unindex"]
+      dockerfile: Dockerfile.simplerelay
+    image: openrelay/simplerelay
+    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://newblocks", "queue://allowanceblocks", "queue://spendblocks", "topic://newblocks"]
     depends_on:
-      - dynamo
       - redis
-  pgunindexer:
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  allowancemonitor:
     build:
       context: ./
-      dockerfile: Dockerfile.pgindexer
-    image: openrelay/pgindexer
-    environment:
-      POSTGRES_PASSWORD: secret
-    command: ["/indexer", "${REDIS_HOST:-redis:6379}", "queue://pgunindexer", "postgres", "postgres", "env://POSTGRES_PASSWORD", "--unfunded"]
+      dockerfile: Dockerfile.allowancemonitor
+    image: openrelay/allowancemonitor
+    command: ["/allowancemonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://allowanceblocks", "queue://recordspend", "0x48bacb9266a570d521063ef5dd96e61686dbe788"]
     depends_on:
-      - postgres
       - redis
+      - ethnode
     restart: on-failure
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  spendmonitor:
+    build:
+      context: ./
+      dockerfile: Dockerfile.spendmonitor
+    image: openrelay/spendmonitor
+    command: ["/spendmonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://spendblocks", "queue://recordspend", "0x48bacb9266a570d521063ef5dd96e61686dbe788"]
+    depends_on:
+      - redis
+      - ethnode
+    restart: on-failure
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  spendrecorder:
+    build:
+      context: ./
+      dockerfile: Dockerfile.spendrecorder
+    image: openrelay/spendrecorder
+    command: ["/spendrecorder", "${REDIS_HOST:-redis:6379}", "queue://recordspend", "postgres", "spendrecorder", "env://POSTGRES_PASSWORD"]
+    environment:
+      POSTGRES_PASSWORD: password
+    depends_on:
+      - redis
+      - ethnode
+    restart: on-failure
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure

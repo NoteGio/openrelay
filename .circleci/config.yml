@@ -1,21 +1,5 @@
 version: 2
 jobs:
-  python_build_and_test:
-    docker:
-      - image: circleci/python:3.6
-        environment:
-          AWS_ACCESS_KEY_ID: placeholder
-          AWS_SECRET_ACCESS_KEY: placeholder
-          AWS_DEFAULT_REGION: us-east-1
-      - image: cnadiminti/dynamodb-local
-    steps:
-      - checkout
-      - run: sudo apt install python3-virtualenv python3-dev libev-dev
-      # - run: sudo ln -s /usr/lib/python3/dist-packages/virtualenv.py /usr/local/bin/virtualenv
-      - run: sudo  chmod +x /usr/lib/python3/dist-packages/virtualenv.py
-      - run: make mock
-      - run: make pytest
-
   node_build_and_test:
     docker:
       - image: circleci/node:8
@@ -29,7 +13,6 @@ jobs:
       - run: npm install
       - run: make mock
       - run: make nodesetup
-      - run: make jstest
   golang_build_delayrelay:
     docker:
       - image: circleci/golang:1.8
@@ -160,6 +143,56 @@ jobs:
           root: bin
           paths:
             - searchapi
+  golang_build_blockmonitor:
+    docker:
+      - image: circleci/golang:1.8
+    steps:
+      - checkout
+      - run: make bin/blockmonitor
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - blockmonitor
+  golang_build_allowancemonitor:
+    docker:
+      - image: circleci/golang:1.8
+    steps:
+      - checkout
+      - run: make bin/allowancemonitor
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - allowancemonitor
+  golang_build_spendmonitor:
+    docker:
+      - image: circleci/golang:1.8
+    steps:
+      - checkout
+      - run: make bin/spendmonitor
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - spendmonitor
+  golang_build_fillmonitor:
+    docker:
+      - image: circleci/golang:1.8
+    steps:
+      - checkout
+      - run: make bin/fillmonitor
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - fillmonitor
+  golang_build_multisigmonitor:
+    docker:
+      - image: circleci/golang:1.8
+    steps:
+      - checkout
+      - run: make bin/multisigmonitor
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - multisigmonitor
   golang_test:
     docker:
       # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
@@ -183,7 +216,6 @@ workflows:
   version: 2
   build_and_test:
     jobs:
-      - python_build_and_test
       - node_build_and_test
       - golang_build_delayrelay
       - golang_build_fundcheckrelay
@@ -198,6 +230,8 @@ workflows:
       - golang_build_exchangesplitter
       - golang_build_automigrate
       - golang_build_searchapi
+      - golang_build_blockmonitor
+      - golang_build_allowancemonitor
       - golang_build_delayrelay
       - golang_test:
           requires:
@@ -214,3 +248,4 @@ workflows:
             - golang_build_exchangesplitter
             - golang_build_automigrate
             - golang_build_searchapi
+            - golang_build_blockmonitor

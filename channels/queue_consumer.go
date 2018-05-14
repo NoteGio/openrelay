@@ -133,7 +133,7 @@ func (queue *queueConsumerChannel) consume() {
 	for {
 		result := queue.redisClient.BRPopLPush(queue.readyKey, queue.unackedKey, time.Second)
 		if !redisErrIsNil(result) {
-			queue.deliveryChan <- newQueueDelivery(result.Val(), queue.unackedKey, queue.rejectedKey, queue.redisClient)
+			queue.deliveryChan <- newQueueDelivery(result.Val(), queue.unackedKey, queue.rejectedKey, queue.readyKey, queue.redisClient)
 		}
 		if queue.consumingStopped != nil {
 			queue.consumingStopped <- true

@@ -1,7 +1,0 @@
-FROM python:3.6
-
-ADD ./py /project
-
-RUN pip install -r project/requirements/indexer.txt
-
-CMD ["python", "/project/indexer.py", "redis:6379", "released"]

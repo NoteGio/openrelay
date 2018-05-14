@@ -305,7 +305,7 @@ func TestNotFeeRecipient(t *testing.T) {
 		t.Errorf("Expected error code 402, got '%v'", recorder.Code)
 	}
 	body := recorder.Body.String()
-	if body != "{\"code\":100,\"reason\":\"Validation Failed\",\"validationErrors\":[{\"field\":\"feeRecipient\",\"code\":1002,\"reason\":\"Invalid fee recpient\"}]}" {
+	if body != "{\"code\":100,\"reason\":\"Validation Failed\",\"validationErrors\":[{\"field\":\"feeRecipient\",\"code\":1002,\"reason\":\"Invalid fee recipient\"}]}" {
 		t.Errorf("Got unexpected body: '%v' - %v", body, len(body))
 	}
 	if len(publisher.messages) != 0 {

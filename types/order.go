@@ -28,20 +28,29 @@ func (addr *Address) Scan(src interface{}) error {
 	}
 }
 
+func (addr *Address) String() string {
+	return fmt.Sprintf("%#x", addr[:])
+}
+
 type Uint256 [32]byte
 
 func (data *Uint256) Value() (driver.Value, error) {
 	return data[:], nil
 }
 
-func (addr *Uint256) Scan(src interface{}) error {
+func (data *Uint256) Scan(src interface{}) error {
 	switch v := src.(type) {
 	case []byte:
-		copy(addr[:], v)
+		copy(data[:], v)
 		return nil
 	default:
 		return errors.New("Uint256 scanner src should be []byte")
 	}
+}
+
+func (data *Uint256) String() (string) {
+	bigInt := new(big.Int).SetBytes(data[:])
+	return bigInt.String()
 }
 
 // Order represents an 0x order object
@@ -229,7 +238,7 @@ func (order *Order) UnmarshalJSON(b []byte) error {
 	if jOrder.TakerTokenAmountCancelled == "" {
 		jOrder.TakerTokenAmountCancelled = "0"
 	}
-	order.fromStrings(
+	return order.fromStrings(
 		jOrder.Maker,
 		jOrder.Taker,
 		jOrder.MakerToken,
@@ -248,8 +257,6 @@ func (order *Order) UnmarshalJSON(b []byte) error {
 		jOrder.TakerTokenAmountFilled,
 		jOrder.TakerTokenAmountCancelled,
 	)
-
-	return nil
 }
 
 func (order *Order) MarshalJSON() ([]byte, error) {

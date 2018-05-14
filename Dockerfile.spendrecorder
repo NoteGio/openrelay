@@ -1,0 +1,7 @@
+FROM scratch
+
+COPY bin/spendrecorder /spendrecorder
+
+COPY docker-cfg/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+
+CMD ["/spendrecorder", "redis:6379", "queue://recordspend", "postgres", "postgres", "/run/secrets/postgress_password"]

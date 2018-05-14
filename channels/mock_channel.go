@@ -1,10 +1,16 @@
 package channels
 
+import (
+	"time"
+	"errors"
+)
+
 type mockConsumerChannel struct {
 	channel   chan Delivery
 	consumers []Consumer
 	unacked   *deliveries
 	rejected  *deliveries
+	processed uint
 }
 
 func (mock *mockConsumerChannel) AddConsumer(consumer Consumer) bool {
@@ -19,6 +25,7 @@ func (mock *mockConsumerChannel) StartConsuming() bool {
 			for _, consumer := range mock.consumers {
 				consumer.Consume(message)
 			}
+			mock.processed++
 		}
 	}()
 	return true
@@ -101,6 +108,10 @@ func (mock *mockDelivery) Reject() bool {
 	return false
 }
 
+func (mock *mockDelivery) Return() bool {
+	return true
+}
+
 func MockChannel() (Publisher, ConsumerChannel) {
 	channel := make(chan Delivery, 5)
 	unacked := &deliveries{}
@@ -115,6 +126,7 @@ func MockChannel() (Publisher, ConsumerChannel) {
 		[]Consumer{},
 		unacked,
 		rejected,
+		0,
 	}
 	return pub, consume
 }
@@ -128,4 +140,16 @@ func MockPublisher() (Publisher, chan Delivery) {
 		unacked,
 		rejected,
 	}, channel
+}
+
+func MockFinish(channel ConsumerChannel, count uint) error {
+	switch mockChannel := channel.(type) {
+	case *mockConsumerChannel:
+		for mockChannel.processed < count {
+			time.Sleep(10 * time.Millisecond)
+		}
+		return nil
+	default:
+		return errors.New("Channel not a mockConsumerChannel")
+	}
 }

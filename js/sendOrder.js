@@ -34,18 +34,23 @@ module.exports = function(done){
             takerTokenAmount: new web3.BigNumber(10000),
         };
         zeroEx.proxy.getContractAddressAsync().then((proxyAddress) => {
+            console.log(proxyAddress);
             return Promise.all([
                 getAsync(redisClient, "feeToken::address").then((feeAddress) => {
+                    console.log(feeAddress);
                     Token.at("0x" + feeAddress).approve(proxyAddress, requiredFee.div(2));
                 }),
                 getAsync(redisClient, "tokenX::address").then((address) => {
+                    console.log(address);
                     order["makerTokenAddress"] = "0x" + address;
                     Token.at("0x" + address).approve(proxyAddress, new web3.BigNumber(10000));
                 }),
                 getAsync(redisClient, "tokenY::address").then((address) => {
+                    console.log(address);
                     order["takerTokenAddress"] = "0x" + address;
                 }),
                 zeroEx.exchange.getContractAddressAsync().then((address) => {
+                    console.log(address);
                     order["exchangeContractAddress"] = address;
                 })
             ])
@@ -74,6 +79,6 @@ module.exports = function(done){
             });
             req.write(JSON.stringify(order));
             req.end();
-        });
+        }).catch(console.log);
     });
 }

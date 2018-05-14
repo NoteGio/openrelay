@@ -8,6 +8,7 @@ type Delivery interface {
 	Payload() string
 	Ack() bool
 	Reject() bool
+	Return() bool
 }
 
 type topicDelivery struct {
@@ -29,6 +30,11 @@ func (delivery *topicDelivery) Reject() bool {
 	return true
 }
 
+func (delivery *topicDelivery) Return() bool {
+	// Topics can't actually be Returned, but we want the interface to be the same
+	return true
+}
+
 func newTopicDelivery(payload string, client *redis.Client) *topicDelivery {
 	return &topicDelivery{payload, client}
 }
@@ -37,6 +43,7 @@ type queueDelivery struct {
 	payload     string
 	unackedKey  string
 	rejectedKey string
+	sourceKey   string
 	redisClient *redis.Client
 }
 
@@ -54,7 +61,19 @@ func (delivery *queueDelivery) Ack() bool {
 
 func (delivery *queueDelivery) Reject() bool {
 	return delivery.move(delivery.rejectedKey)
+}
 
+func (delivery *queueDelivery) Return() bool {
+	if redisErrIsNil(delivery.redisClient.RPush(delivery.sourceKey, delivery.payload)) {
+		return false
+	}
+
+	if redisErrIsNil(delivery.redisClient.LRem(delivery.unackedKey, 1, delivery.payload)) {
+		return false
+	}
+
+	// debug(fmt.Sprintf("delivery rejected %s", delivery)) // COMMENTOUT
+	return true
 }
 
 func (delivery *queueDelivery) move(key string) bool {
@@ -70,6 +89,6 @@ func (delivery *queueDelivery) move(key string) bool {
 	return true
 }
 
-func newQueueDelivery(payload, unackedKey, rejectedKey string, client *redis.Client) *queueDelivery {
-	return &queueDelivery{payload, unackedKey, rejectedKey, client}
+func newQueueDelivery(payload, unackedKey, rejectedKey, sourceKey string, client *redis.Client) *queueDelivery {
+	return &queueDelivery{payload, unackedKey, rejectedKey, sourceKey, client}
 }
