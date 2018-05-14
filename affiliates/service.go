@@ -6,6 +6,7 @@ import (
 	"github.com/notegio/openrelay/types"
 	"gopkg.in/redis.v3"
 	"math/big"
+	"fmt"
 )
 
 type redisAffiliateService struct {
@@ -15,7 +16,7 @@ type redisAffiliateService struct {
 
 func (affiliateService *redisAffiliateService) Get(address *types.Address) (Affiliate, error) {
 	acct := &affiliate{new(big.Int), 100}
-	acctJSON, err := affiliateService.redisClient.Get("affiliate::" + string(address[:])).Result()
+	acctJSON, err := affiliateService.redisClient.Get(fmt.Sprintf("affiliate::%x", address[:])).Result()
 	if err != nil {
 		// Affiliate not found, return the default value
 		return nil, err
@@ -27,7 +28,7 @@ func (affiliateService *redisAffiliateService) Get(address *types.Address) (Affi
 		return nil, err
 	}
 	json.Unmarshal([]byte(acctJSON), acct)
-	acct.baseFee = fee
+	acct.BaseFee = fee
 	return acct, nil
 }
 
@@ -36,7 +37,7 @@ func (affiliateService *redisAffiliateService) Set(address *types.Address, acct 
 	if err != nil {
 		return err
 	}
-	return affiliateService.redisClient.Set("affiliate::"+string(address[:]), string(data), 0).Err()
+	return affiliateService.redisClient.Set(fmt.Sprintf("affiliate::%x", address[:]), string(data), 0).Err()
 }
 
 func NewRedisAffiliateService(redisClient *redis.Client) AffiliateService {
