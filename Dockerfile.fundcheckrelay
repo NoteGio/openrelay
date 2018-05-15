@@ -2,4 +2,6 @@ FROM scratch
 
 COPY bin/fundcheckrelay /fundcheckrelay
 
+COPY docker-cfg/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+
 CMD ["/fundcheckrelay"]

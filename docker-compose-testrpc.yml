@@ -33,7 +33,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.ingest
-    image: openrelay/ingest
+    image: "openrelay/ingest:${TAG:-latest}"
     ports:
       - "8081:8080"
     command: ["/ingest", "${REDIS_HOST:-redis:6379}", "C22d5b2951DB72B44CFb8089bb8CD374A3c354eA"]
@@ -47,7 +47,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.exchangesplitter
-    image: openrelay/exchangesplitter
+    image: "openrelay/exchangesplitter:${TAG:-latest}"
     command: ["/exchangesplitter", "${REDIS_HOST:-redis:6379}", "queue://ingest", "queue://fillupdate", "0x1dad4783cf3fe3085c1426157ab175a6119a04ba=queue://fillupdate-othernet"]
     depends_on:
       - redis
@@ -59,7 +59,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.fillupdate
-    image: openrelay/fillupdate
+    image: "openrelay/fillupdate:${TAG:-latest}"
     command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://fillupdate", "topic://ordersfilled", "file:///bloom/data/testdata", "queue://fundcheck"]
     volumes:
       - bloomdata:/bloom/data
@@ -74,7 +74,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.fundcheckrelay
-    image: openrelay/fundcheckrelay
+    image: "openrelay/fundcheckrelay:${TAG:-latest}"
     command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://fundcheck", "queue://delay1", "topic://instant-broadcast", "--invalidation=topic://newblocks"]
     depends_on:
       - redis
@@ -88,7 +88,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.delayrelay
-    image: openrelay/delayrelay
+    image: "openrelay/delayrelay:${TAG:-latest}"
     command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "queue://delay1", "queue://delay2", "topic://delay1trigger"]
     depends_on:
       - redis
@@ -100,7 +100,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.delayrelay
-    image: openrelay/delayrelay
+    image: "openrelay/delayrelay:${TAG:-latest}"
     command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "queue://delay2", "queue://released", "topic://newblocks", "topic://delay1trigger"]
     depends_on:
       - redis
@@ -112,7 +112,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.fillmonitorng
-    image: openrelay/fillmonitorng
+    image: "openrelay/fillmonitorng:${TAG:-latest}"
     command: ["/fillmonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://fillblocks", "queue://ordersfilled", "file:///bloom/data/testdata", "0x48bacb9266a570d521063ef5dd96e61686dbe788"]
     volumes:
       - bloomdata:/bloom/data
@@ -128,7 +128,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.multisigmonitor
-    image: openrelay/multisigmonitor
+    image: "openrelay/multisigmonitor:${TAG:-latest}"
     command: ["/multisigmonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://multisigblocks", "0x48bacb9266a570d521063ef5dd96e61686dbe788"]
     depends_on:
       - redis
@@ -143,7 +143,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.pgfillindexer
-    image: openrelay/pgfillindexer
+    image: "openrelay/pgfillindexer:${TAG:-latest}"
     command: ["/fillindexer", "redis:6379", "queue://pgordersfilled", "postgres://postgres@postgres", "env://POSTGRES_PASSWORD"]
     environment:
       POSTGRES_PASSWORD: secret
@@ -153,7 +153,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.simplerelay
-    image: openrelay/simplerelay
+    image: "openrelay/simplerelay:${TAG:-latest}"
     command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://released", "queue://recheck", "topic://released-broadcast"]
     depends_on:
       - redis
@@ -165,7 +165,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.fillupdate
-    image: openrelay/fillupdate
+    image: "openrelay/fillupdate:${TAG:-latest}"
     command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://recheck", "topic://ordersfilled", "file:///bloom/data/testdata", "queue://recheck2"]
     volumes:
       - bloomdata:/bloom/data
@@ -180,8 +180,8 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.fundcheckrelay
-    image: openrelay/fundcheckrelay
-    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://recheck2", "queue://preindex", "--invalidation=topic://newblocks"]
+    image: "openrelay/fundcheckrelay:${TAG:-latest}"
+    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://recheck2", "queue://pgindexer", "--invalidation=topic://newblocks"]
     depends_on:
       - ethnode
     restart: on-failure
@@ -189,7 +189,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.initialize
-    image: openrelay/initialize
+    image: "openrelay/initialize:${TAG:-latest}"
     command: ["/initialize", "${REDIS_HOST:-redis:6379}", "${ZRX_FEE:-500000000000000000}", "${RELAY_ADDRESS:-C22d5b2951DB72B44CFb8089bb8CD374A3c354eA}"]
     depends_on:
       - redis
@@ -213,7 +213,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.pgindexer
-    image: openrelay/pgindexer
+    image: "openrelay/pgindexer:${TAG:-latest}"
     environment:
       POSTGRES_PASSWORD: password
     command: ["/indexer", "${REDIS_HOST:-redis:6379}", "queue://pgindexer", "postgres://indexer@postgres", "env://POSTGRES_PASSWORD"]
@@ -225,7 +225,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.automigrate
-    image: openrelay/automigrate
+    image: "openrelay/automigrate:${TAG:-latest}"
     environment:
       POSTGRES_PASSWORD: secret
       INDEX_PASSWORD: password
@@ -239,7 +239,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.pgsearchapi
-    image: openrelay/pgsearchapi
+    image: "openrelay/pgsearchapi:${TAG:-latest}"
     ports:
       - "8082:8080"
     command: ["/searchapi", "${REDIS_HOST:-redis:6379}", "topic://newblocks", "postgres://search@postgres", "env://POSTGRES_PASSWORD"]
@@ -252,23 +252,11 @@ services:
       restart_policy:
         condition: on-failure
     restart: on-failure
-  simplerelayindexer:
-    build:
-      context: ./
-      dockerfile: Dockerfile.simplerelay
-    image: openrelay/simplerelay
-    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://preindex", "queue://pgindexer"]
-    depends_on:
-      - redis
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: on-failure
   simplerelayfillindexer:
     build:
       context: ./
       dockerfile: Dockerfile.simplerelay
-    image: openrelay/simplerelay
+    image: "openrelay/simplerelay:${TAG:-latest}"
     command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://ordersfilled", "queue://pgordersfilled", "topic://ordersfilled"]
     depends_on:
       - redis
@@ -280,7 +268,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.blockmonitorng
-    image: openrelay/blockmonitorng
+    image: "openrelay/blockmonitorng:${TAG:-latest}"
     command: ["/blockmonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://newblocks"]
     environment:
       ETHEREUM_URL: "http://ethnode:8545"
@@ -296,7 +284,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.simplerelay
-    image: openrelay/simplerelay
+    image: "openrelay/simplerelay:${TAG:-latest}"
     command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://newblocks", "queue://allowanceblocks", "queue://spendblocks", "topic://newblocks", "queue://fillblocks"]
     depends_on:
       - redis
@@ -308,7 +296,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.allowancemonitor
-    image: openrelay/allowancemonitor
+    image: "openrelay/allowancemonitor:${TAG:-latest}"
     command: ["/allowancemonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://allowanceblocks", "queue://recordspend", "0x48bacb9266a570d521063ef5dd96e61686dbe788"]
     depends_on:
       - redis
@@ -322,7 +310,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.spendmonitor
-    image: openrelay/spendmonitor
+    image: "openrelay/spendmonitor:${TAG:-latest}"
     command: ["/spendmonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://spendblocks", "queue://recordspend", "0x48bacb9266a570d521063ef5dd96e61686dbe788"]
     depends_on:
       - redis
@@ -336,7 +324,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.spendrecorder
-    image: openrelay/spendrecorder
+    image: "openrelay/spendrecorder:${TAG:-latest}"
     command: ["/spendrecorder", "${REDIS_HOST:-redis:6379}", "queue://recordspend", "postgres://spendrecorder@postgres", "env://POSTGRES_PASSWORD"]
     environment:
       POSTGRES_PASSWORD: password
