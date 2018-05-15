@@ -11,7 +11,6 @@ import (
 	"github.com/notegio/openrelay/db"
 	"github.com/notegio/openrelay/objectstorage"
 	"log"
-	"compress/gzip"
 	"errors"
 	"sync"
 )
@@ -50,12 +49,11 @@ func (fb *FillBloom) Initialize(lf ethereum.LogFilterer, endBlock int64, exchang
 				orderHash := log.Data[len(log.Data)-32:]
 				fb.Add(orderHash)
 			}
+			log.Printf("Populating %v / %v = %v %%", lastBlock, endBlock, (lastBlock / endBlock))
 			lastBlock = lastBlock + 100000
 		}
 	} else {
-		reader, err := gzip.NewReader(itemReader)
-		if err != nil { return err }
-		if count, err := fb.b.ReadFrom(reader); err != nil { return err } else {
+		if count, err := fb.b.ReadFrom(itemReader); err != nil { return err } else {
 			log.Printf("Loaded bloom filter with %v bytes", count)
 		}
 	}
@@ -79,12 +77,11 @@ func (fb *FillBloom) Test(data []byte) bool {
 func (fb *FillBloom) Save() error {
 	fb.m.Lock()
 	defer fb.m.Unlock()
+	log.Printf("Save()")
 	b, err := fb.store.Writer()
 	if err != nil { return err }
-	w := gzip.NewWriter(b)
-	if _, err := fb.b.WriteTo(w); err != nil { return err }
-	err = w.Close()
-	return err
+	if _, err := fb.b.WriteTo(b); err != nil { return err }
+	return b.Close()
 }
 
 func (fb *FillBloom) Consume(delivery channels.Delivery) {

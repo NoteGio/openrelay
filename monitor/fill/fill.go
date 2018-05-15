@@ -33,11 +33,13 @@ func (consumer *fillBlockConsumer) Consume(delivery channels.Delivery) {
 		log.Printf("Error parsing payload: %v\n", err.Error())
 	}
 	if !consumer.fillBloom.Initialized {
-		consumer.fillBloom.Initialize(
+		if err := consumer.fillBloom.Initialize(
 			consumer.logFilter,
 			block.Number.Int64(),
 			[]common.Address{common.BigToAddress(consumer.exchangeAddress)},
-		)
+		); err != nil {
+			log.Fatalf("Failed to initialize bloom filter: %v", err.Error())
+		}
 	}
 	if (block.Bloom.Test(consumer.fillTopic) || block.Bloom.Test(consumer.cancelTopic)) && block.Bloom.Test(consumer.exchangeAddress) {
 		log.Printf("Block %#x bloom filter indicates fill event for %#x", block.Hash, consumer.exchangeAddress)
@@ -87,11 +89,11 @@ func (consumer *fillBlockConsumer) Consume(delivery channels.Delivery) {
 			}
 			consumer.publisher.Publish(string(msg))
 		}
+		if err := consumer.fillBloom.Save(); err != nil {
+			log.Printf("error saving bloom filter: %v", err.Error())
+		}
 	} else {
 		log.Printf("Block %#x shows no fill events", block.Hash)
-	}
-	if err := consumer.fillBloom.Save(); err != nil {
-		log.Printf("error saving bloom filter: %v", err.Error())
 	}
 	delivery.Ack()
 }

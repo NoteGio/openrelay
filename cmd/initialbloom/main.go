@@ -13,12 +13,16 @@ func main() {
 	rpcURL := os.Args[1]
 	conn, err := ethclient.Dial(rpcURL)
 	if err != nil { log.Panicf(err.Error()); }
-	startBlock, err := strconv.Atoi(os.Args[2])
+	_, err = strconv.Atoi(os.Args[2])
 	if err != nil { log.Panicf(err.Error()); }
 	endBlock, err := strconv.Atoi(os.Args[3])
 	if err != nil { log.Panicf(err.Error()); }
 	exchangeAddress := common.HexToAddress(os.Args[4])
-	bloom, err := fillbloom.Initialize(int64(startBlock), int64(endBlock), exchangeAddress, conn)
+	bloom, err := fillbloom.NewFillBloom(os.Args[5])
 	if err != nil { log.Panicf(err.Error()); }
-	bloom.WriteTo(os.Stdout)
+	err = bloom.Initialize(conn, int64(endBlock), []common.Address{exchangeAddress})
+	if err != nil { log.Panicf(err.Error()); }
+	if err = bloom.Save(); err != nil {
+		log.Panicf(err.Error());
+	}
 }
