@@ -2,4 +2,6 @@ FROM scratch
 
 COPY bin/blockmonitor /blockmonitor
 
+COPY docker-cfg/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+
 CMD ["/blockmonitor", "redis:6379", "ethnode:8545", "queue://newblocks"]
