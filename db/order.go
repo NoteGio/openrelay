@@ -46,19 +46,23 @@ func (order *Order) Save(db *gorm.DB, status int64) *gorm.DB {
 	thresholdAmount := new(big.Int)
 	remainingAmount.SetBytes(order.TakerTokenAmount[:])
 	thresholdAmount.SetBytes(order.TakerTokenAmount[:])
-	// We want to consider it filled once it's 99% filled
-	thresholdAmount.Mul(thresholdAmount, new(big.Int).SetInt64(99))
-	thresholdAmount.Div(thresholdAmount, new(big.Int).SetInt64(100))
-	remainingAmount.Sub(remainingAmount, new(big.Int).SetBytes(order.TakerTokenAmountFilled[:]))
-	remainingAmount.Sub(remainingAmount, new(big.Int).SetBytes(order.TakerTokenAmountCancelled[:]))
-	thresholdAmount.Sub(thresholdAmount, new(big.Int).SetBytes(order.TakerTokenAmountFilled[:]))
-	thresholdAmount.Sub(thresholdAmount, new(big.Int).SetBytes(order.TakerTokenAmountCancelled[:]))
+	// If the order is larger than 100 base units, we want to remove it from the
+	// orderbook when it's 99% filled. For fewer than 100 base units, integer
+	// arithmetic makes this not work the way we want it to.
+	if thresholdAmount.Cmp(big.NewInt(100)) > 0 {
+		thresholdAmount.Mul(thresholdAmount, big.NewInt(99))
+		thresholdAmount.Div(thresholdAmount, big.NewInt(100))
+	}
+	remainingAmount.Sub(remainingAmount, order.TakerTokenAmountFilled.Big())
+	remainingAmount.Sub(remainingAmount, order.TakerTokenAmountCancelled.Big())
+	thresholdAmount.Sub(thresholdAmount, order.TakerTokenAmountFilled.Big())
+	thresholdAmount.Sub(thresholdAmount, order.TakerTokenAmountCancelled.Big())
 
 	// makerRemainingInt = (MakerTokenAmount * RemainingAmount) / TakerTokenAmount
-	makerRemainingInt := new(big.Int).Div(new(big.Int).Mul(new(big.Int).SetBytes(order.MakerTokenAmount[:]), remainingAmount), new(big.Int).SetBytes(order.TakerTokenAmount[:]))
+	makerRemainingInt := new(big.Int).Div(new(big.Int).Mul(order.MakerTokenAmount.Big(), remainingAmount), order.TakerTokenAmount.Big())
 	makerRemaining := &types.Uint256{}
 	copy(makerRemaining[:], abi.U256(makerRemainingInt))
-	makerFeeRemainingInt := new(big.Int).Div(new(big.Int).Mul(new(big.Int).SetBytes(order.MakerFee[:]), remainingAmount), new(big.Int).SetBytes(order.TakerTokenAmount[:]))
+	makerFeeRemainingInt := new(big.Int).Div(new(big.Int).Mul(order.MakerFee.Big(), remainingAmount), order.TakerTokenAmount.Big())
 	makerFeeRemaining := &types.Uint256{}
 	copy(makerFeeRemaining[:], abi.U256(makerFeeRemainingInt))
 	updates := map[string]interface{}{
@@ -68,7 +72,7 @@ func (order *Order) Save(db *gorm.DB, status int64) *gorm.DB {
 		"maker_fee_remaining":          makerFeeRemaining,
 		"status":                       status,
 	}
-	if thresholdAmount.Cmp(new(big.Int).SetInt64(0)) <= 0 {
+	if thresholdAmount.Cmp(big.NewInt(0)) <= 0 {
 		updates["status"] = StatusFilled
 	}
 	updateScope := db.Model(Order{}).Where("order_hash = ?", order.OrderHash).Updates(updates)
@@ -79,9 +83,9 @@ func (order *Order) Save(db *gorm.DB, status int64) *gorm.DB {
 		return updateScope
 	}
 
-	takerTokenAmount := new(big.Float).SetInt(new(big.Int).SetBytes(order.TakerTokenAmount[:]))
-	makerTokenAmount := new(big.Float).SetInt(new(big.Int).SetBytes(order.MakerTokenAmount[:]))
-	takerFeeAmount := new(big.Float).SetInt(new(big.Int).SetBytes(order.TakerFee[:]))
+	takerTokenAmount := new(big.Float).SetInt(order.TakerTokenAmount.Big())
+	makerTokenAmount := new(big.Float).SetInt(order.MakerTokenAmount.Big())
+	takerFeeAmount := new(big.Float).SetInt(order.TakerFee.Big())
 
 	order.Price, _ = new(big.Float).Quo(takerTokenAmount, makerTokenAmount).Float64()
 	order.FeeRate, _ = new(big.Float).Quo(takerFeeAmount, takerTokenAmount).Float64()
