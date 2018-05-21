@@ -336,5 +336,20 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
+
+  queuemonitor:
+    build:
+      context: ./
+      dockerfile: Dockerfile.queuemonitor
+    image: "openrelay/queuemonitor:${TAG:-latest}"
+    command: ["/queuemonitor", "${REDIS_HOST:-redis:6379}", "1", "newblocks-ropsten", "ordersfilled", "pgordersfilled", "newblocks", "released-ropsten", "fundcheck-ropsten", "allowanceblocks", "recheck-ropsten", "fillupdate-ropsten", "indexer", "preindexer", "spendblocks-ropsten", "recordspend", "ordersfilled-ropsten", "delay2-ropsten", "released", "fundcheck", "allowanceblocks-ropsten", "recheck2-ropsten", "fillupdate", "fillblocks-ropsten", "spendblocks", "recheck2", "delay1", "delay2", "ingest", "fillblocks", "pgindexer", "delay1-ropsten", "multisigblocks", "recheck"]
+    depends_on:
+      - redis
+    restart: on-failure
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
 volumes:
   bloomdata:

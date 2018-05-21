@@ -82,7 +82,10 @@ bin/automigrate: $(BASE) cmd/automigrate/main.go
 bin/searchapi: $(BASE) cmd/searchapi/main.go
 	cd $(BASE) && $(GOSTATIC) -o bin/searchapi cmd/searchapi/main.go
 
-bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate bin/indexer bin/fillindexer bin/automigrate bin/searchapi bin/exchangesplitter bin/blockmonitor bin/allowancemonitor bin/spendmonitor bin/fillmonitor bin/multisigmonitor bin/spendrecorder
+bin/queuemonitor: $(BASE) cmd/queuemonitor/main.go
+	cd $(BASE) && CGO_ENABLED=0 $(GOSTATIC) -o bin/queuemonitor cmd/queuemonitor/main.go
+
+bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate bin/indexer bin/fillindexer bin/automigrate bin/searchapi bin/exchangesplitter bin/blockmonitor bin/allowancemonitor bin/spendmonitor bin/fillmonitor bin/multisigmonitor bin/spendrecorder bin/queuemonitor
 
 truffleCompile:
 	cd js ; node_modules/.bin/truffle compile

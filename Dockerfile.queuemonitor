@@ -1,0 +1,5 @@
+FROM scratch
+
+COPY bin/queuemonitor /queuemonitor
+
+CMD ["/queuemonitor", "redis:6379", "1", "newblocks-ropsten"]
