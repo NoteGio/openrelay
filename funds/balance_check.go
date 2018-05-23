@@ -11,6 +11,7 @@ import (
 	"math/big"
 	"sync"
 	"fmt"
+	"log"
 )
 
 type BalanceChecker interface {
@@ -78,6 +79,9 @@ func (funds *rpcBalanceChecker) GetAllowance(tokenAddrBytes, ownerAddress, spend
 }
 
 func (funds *rpcBalanceChecker) Consume(msg channels.Delivery) {
+	if funds.lookupCache == nil {
+		log.Printf("Inititalizing lookup cache")
+	}
 	defer msg.Ack()
 	funds.cacheMutex.Lock()
 	defer funds.cacheMutex.Unlock()

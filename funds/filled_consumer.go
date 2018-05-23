@@ -3,6 +3,7 @@ package funds
 import (
 	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/types"
+	"github.com/notegio/openrelay/common"
 
 	"log"
 	"reflect"
@@ -18,32 +19,38 @@ func doLookup(order *types.Order, oldValue *types.Uint256, lookupFn func(*types.
 	changeChan <- !reflect.DeepEqual(value, oldValue)
 }
 
+
 type FillConsumer struct {
 	allPublisher    channels.Publisher
 	changePublisher channels.Publisher
 	lookup          FilledLookup
+	s               common.Semaphore
 }
 
 func (consumer *FillConsumer) Consume(msg channels.Delivery) {
-	orderBytes := [441]byte{}
-	copy(orderBytes[:], []byte(msg.Payload()))
-	order := types.OrderFromBytes(orderBytes)
-	cancelledChan := make(chan *types.Uint256)
-	filledChan := make(chan *types.Uint256)
-	changes := make(chan bool, 2)
-	go doLookup(order, order.TakerTokenAmountCancelled, consumer.lookup.GetAmountCancelled, cancelledChan, changes)
-	go doLookup(order, order.TakerTokenAmountFilled, consumer.lookup.GetAmountFilled, filledChan, changes)
-	order.TakerTokenAmountCancelled = <-cancelledChan
-	order.TakerTokenAmountFilled = <-filledChan
-	orderBytes = order.Bytes()
-	payload := string(orderBytes[:])
-	consumer.allPublisher.Publish(payload)
-	if (<-changes || <-changes) && consumer.changePublisher != nil {
-		consumer.changePublisher.Publish(payload)
-	}
-	msg.Ack()
+	go func() {
+		consumer.s.Acquire()
+		defer consumer.s.Release()
+		orderBytes := [441]byte{}
+		copy(orderBytes[:], []byte(msg.Payload()))
+		order := types.OrderFromBytes(orderBytes)
+		cancelledChan := make(chan *types.Uint256)
+		filledChan := make(chan *types.Uint256)
+		changes := make(chan bool, 2)
+		go doLookup(order, order.TakerTokenAmountCancelled, consumer.lookup.GetAmountCancelled, cancelledChan, changes)
+		go doLookup(order, order.TakerTokenAmountFilled, consumer.lookup.GetAmountFilled, filledChan, changes)
+		order.TakerTokenAmountCancelled = <-cancelledChan
+		order.TakerTokenAmountFilled = <-filledChan
+		orderBytes = order.Bytes()
+		payload := string(orderBytes[:])
+		consumer.allPublisher.Publish(payload)
+		if (<-changes || <-changes) && consumer.changePublisher != nil {
+			consumer.changePublisher.Publish(payload)
+		}
+		msg.Ack()
+	}()
 }
 
-func NewFillConsumer(allPublisher channels.Publisher, changePublisher channels.Publisher, lookup FilledLookup) FillConsumer {
-	return FillConsumer{allPublisher, changePublisher, lookup}
+func NewFillConsumer(allPublisher channels.Publisher, changePublisher channels.Publisher, lookup FilledLookup, concurrency int) FillConsumer {
+	return FillConsumer{allPublisher, changePublisher, lookup, make(common.Semaphore, concurrency)}
 }

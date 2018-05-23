@@ -28,6 +28,11 @@ type boolOrErr struct {
 func (funds *orderValidator) checkBalance(tokenAddress, userAddress *types.Address, required []byte, respond chan boolOrErr) {
 	requiredInt := new(big.Int)
 	requiredInt.SetBytes(required[:])
+	if requiredInt.Cmp(big.NewInt(0)) == 0 {
+		// If the required amount is 0, there's no point in looking up the balance
+		respond <- boolOrErr{true, nil}
+		return
+	}
 	balance, err := funds.balanceChecker.GetBalance(tokenAddress, userAddress)
 	if err != nil {
 		log.Printf("'%v': '%v', '%v'", err.Error(), hex.EncodeToString(tokenAddress[:]), hex.EncodeToString(userAddress[:]))
@@ -40,6 +45,11 @@ func (funds *orderValidator) checkBalance(tokenAddress, userAddress *types.Addre
 func (funds *orderValidator) checkAllowance(tokenAddress, userAddress, proxyAddress *types.Address, required []byte, respond chan boolOrErr) {
 	requiredInt := new(big.Int)
 	requiredInt.SetBytes(required[:])
+	if requiredInt.Cmp(big.NewInt(0)) == 0 {
+		// If the required amount is 0, there's no point in looking up the allowance
+		respond <- boolOrErr{true, nil}
+		return
+	}
 	balance, err := funds.balanceChecker.GetAllowance(tokenAddress, userAddress, proxyAddress)
 	if err != nil {
 		log.Printf("'%v': '%v', '%v'", err.Error(), hex.EncodeToString(tokenAddress[:]), hex.EncodeToString(userAddress[:]))

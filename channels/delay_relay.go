@@ -1,5 +1,9 @@
 package channels
 
+import (
+	"github.com/notegio/openrelay/common"
+)
+
 type DelayRelay struct {
 	*Relay
 	sourcePublisher Publisher
@@ -43,6 +47,7 @@ func NewDelayRelay(sourcePublisher Publisher, channel ConsumerChannel, publisher
 			channel,
 			[]Publisher{publisher},
 			&DelayRelayFilter{sentinel, delayChan},
+			make(common.Semaphore, 1), // DelayRelays can't handle concurrency > 1
 		},
 		sourcePublisher,
 		sentinel,

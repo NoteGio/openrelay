@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"log"
+	"strconv"
 )
 
 func main() {
@@ -25,7 +26,11 @@ func main() {
 		if err != nil { log.Fatalf(err.Error())}
 		publishers = append(publishers, publisher)
 	}
-	relay := channels.NewRelay(consumerChannel, publishers, &channels.IncludeAll{})
+	concurrency, err := strconv.Atoi(os.Getenv("CONCURRENCY"))
+	if err != nil {
+		concurrency = 5
+	}
+	relay := channels.NewRelay(consumerChannel, publishers, &channels.IncludeAll{}, concurrency)
 	log.Printf("Starting simple relay '%v' -> '%v'", src, os.Args[3:])
 	relay.Start()
 	c := make(chan os.Signal, 1)

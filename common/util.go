@@ -64,3 +64,18 @@ func GetSecret(uri string) string {
 	}
 	return uri
 }
+
+type empty struct{}
+type Semaphore chan empty
+
+func NewSemaphore(count int) Semaphore {
+	return make(Semaphore, count)
+}
+
+func (sem Semaphore) Acquire() {
+	sem <- empty{}
+}
+
+func (sem Semaphore) Release() {
+	<-sem
+}

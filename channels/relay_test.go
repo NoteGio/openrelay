@@ -17,7 +17,7 @@ func TestRelay(t *testing.T) {
 	testConsumer := testConsumer{make(chan string), make(chan bool), make(chan bool)}
 	destChannel.AddConsumer(&testConsumer)
 	destChannel.StartConsuming()
-	relay := channels.NewRelay(sourceChannel, []channels.Publisher{destPublisher}, &channels.IncludeAll{})
+	relay := channels.NewRelay(sourceChannel, []channels.Publisher{destPublisher}, &channels.IncludeAll{}, 1)
 	relay.Start()
 	defer relay.Stop()
 	sourcePublisher.Publish("test")
@@ -33,7 +33,7 @@ func TestInvertFilter(t *testing.T) {
 	testConsumer := testConsumer{make(chan string), make(chan bool), make(chan bool)}
 	destChannel.AddConsumer(&testConsumer)
 	destChannel.StartConsuming()
-	relay := channels.NewRelay(sourceChannel, []channels.Publisher{destPublisher}, &channels.InvertFilter{&TestFilter{}})
+	relay := channels.NewRelay(sourceChannel, []channels.Publisher{destPublisher}, &channels.InvertFilter{&TestFilter{}}, 1)
 	relay.Start()
 	defer relay.Stop()
 	sourcePublisher.Publish("test")
