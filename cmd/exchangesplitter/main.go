@@ -35,7 +35,11 @@ func main() {
 		}
 		mapping[*common.BytesToOrAddress(addressBytes)] = publisher
 	}
-	exchangeSplitter := splitter.NewExchangeSplitterConsumer(mapping, defaultPublisher)
+	concurrency, err := strconv.Atoi(os.Getenv("CONCURRENCY"))
+	if err != nil {
+		concurrency = 5
+	}
+	exchangeSplitter := splitter.NewExchangeSplitterConsumer(mapping, defaultPublisher, concurrency)
 	sourceConsumerChannel.AddConsumer(exchangeSplitter)
 	sourceConsumerChannel.StartConsuming()
 	log.Printf("Consuming on '%v'", src)
