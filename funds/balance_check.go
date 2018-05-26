@@ -32,6 +32,7 @@ func (funds *rpcBalanceChecker) GetBalance(tokenAddrBytes, userAddrBytes *types.
 		funds.cacheMutex.Lock()
 		if balance, ok := funds.lookupCache[cacheKey]; ok {
 			funds.cacheMutex.Unlock()
+
 			return balance, nil
 		}
 		funds.cacheMutex.Unlock()

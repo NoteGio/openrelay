@@ -29,6 +29,9 @@ package channels
 import (
 	"gopkg.in/redis.v3"
 	"time"
+	"strconv"
+	"log"
+	"os"
 	// "fmt"
 )
 
@@ -40,6 +43,7 @@ type queueConsumerChannel struct {
 	rejectedKey      string
 	consumingStopped chan bool
 	deliveryChan     chan Delivery
+	ackChan          chan bool
 }
 
 // NewQueueConsumerChannel returns a ConsumerChannel that uses Redis queues for
@@ -52,6 +56,7 @@ func NewQueueConsumerChannel(channelName string, redisClient *redis.Client) Cons
 		channelName,
 		channelName + "::unacked",
 		channelName + "::rejected",
+		nil,
 		nil,
 		nil,
 	}
@@ -123,9 +128,25 @@ func (queue *queueConsumerChannel) StartConsuming() bool {
 	if queue.deliveryChan != nil {
 		return false // already consuming
 	}
-
-	queue.deliveryChan = make(chan Delivery, prefetchLimit)
+	concurrency, err := strconv.Atoi(os.Getenv("CONCURRENCY"))
+	if err != nil {
+		concurrency = prefetchLimit
+	}
+	queue.deliveryChan = make(chan Delivery, concurrency)
+	queue.ackChan = make(chan bool, concurrency)
 	go queue.consume()
+	go func(ackChan chan bool) {
+		lastTime := time.Now()
+		counts := make(map[bool]int)
+		for {
+			counts[<-ackChan]++
+			if duration := time.Since(lastTime); duration > 1 * time.Minute {
+				log.Printf("In %v seconds - Acks: %v ; Rejects: %v", duration, counts[true], counts[false])
+				counts = make(map[bool]int)
+				lastTime = time.Now()
+			}
+		}
+	}(queue.ackChan)
 	return true
 }
 
@@ -133,7 +154,7 @@ func (queue *queueConsumerChannel) consume() {
 	for {
 		result := queue.redisClient.BRPopLPush(queue.readyKey, queue.unackedKey, time.Second)
 		if !redisErrIsNil(result) {
-			queue.deliveryChan <- newQueueDelivery(result.Val(), queue.unackedKey, queue.rejectedKey, queue.readyKey, queue.redisClient)
+			queue.deliveryChan <- newQueueDelivery(result.Val(), queue.unackedKey, queue.rejectedKey, queue.readyKey, queue.redisClient, queue.ackChan)
 		}
 		if queue.consumingStopped != nil {
 			queue.consumingStopped <- true
