@@ -17,6 +17,9 @@ func main() {
 	if err := db.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		log.Fatalf("Error migrating database: %v", err.Error())
 	}
+	if err := db.Model(&dbModule.Order{}).AddIndex("idx_order_maker_token_taker_token", "maker_token", "taker_token").Error; err != nil {
+		log.Fatalf("Error adding token pair index: %v", err.Error())
+	}
 	for _, credString := range(os.Args[3:]) {
 		creds := strings.Split(credString, ";")
 		if len(creds) != 3 {
