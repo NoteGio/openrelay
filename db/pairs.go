@@ -21,7 +21,15 @@ func (pair *Pair) MarshalJSON() ([]byte, error) {
 // pairs currently present in the database, limited by a count and offset.
 func GetAllTokenPairs(db *gorm.DB, offset, count int) ([]Pair, error) {
 	tokenPairs := []Pair{}
-	if err := db.Model(&Order{}).Select("DISTINCT LEAST(maker_token, taker_token) as token_a, GREATEST(maker_token, taker_token) as token_b").Offset(offset).Limit(count).Scan(&tokenPairs).Error; err != nil {
+	// This uses a subquery, as `DISTINCT maker_token, taker_token` can be
+	// determined easily based on indexes, but includes duplicate token pairs
+	// showing both (A, B) and (B, A). Once we've done that, we reduce duplicates
+	// by getting min(A, B), max(A, B).
+	//
+	// The results would be the same if we queried the orders table directly
+	// instead of doing a subquery, but indexes would not be used, and the query
+	// would be very inefficient.
+	if err := db.Raw("SELECT DISTINCT LEAST(x.maker_token, x.taker_token) as token_a, GREATEST(x.maker_token, x.taker_token) as token_b from (SELECT DISTINCT maker_token, taker_token from orders) as x").Offset(offset).Limit(count).Scan(&tokenPairs).Error; err != nil {
 		return tokenPairs, err
 	}
 	return tokenPairs, nil
@@ -32,7 +40,7 @@ func GetAllTokenPairs(db *gorm.DB, offset, count int) ([]Pair, error) {
 // and limited by a count and offset.
 func GetTokenAPairs(db *gorm.DB, tokenA *types.Address, offset, count int) ([]Pair, error) {
 	tokenPairs := []Pair{}
-	if err := db.Model(&Order{}).Select("DISTINCT LEAST(maker_token, taker_token) as token_a, GREATEST(maker_token, taker_token) as token_b").Where("taker_token = ? or maker_token = ?", tokenA, tokenA).Offset(offset).Limit(count).Scan(&tokenPairs).Error; err != nil {
+	if err := db.Raw("SELECT DISTINCT LEAST(x.maker_token, x.taker_token) as token_a, GREATEST(x.maker_token, x.taker_token) as token_b from (SELECT DISTINCT maker_token, taker_token from orders) as x WHERE x.taker_token = ? or x.maker_token = ?", tokenA, tokenA).Offset(offset).Limit(count).Scan(&tokenPairs).Error; err != nil {
 		return tokenPairs, err
 	}
 	return tokenPairs, nil
@@ -46,7 +54,7 @@ func GetTokenAPairs(db *gorm.DB, tokenA *types.Address, offset, count int) ([]Pa
 // methods.
 func GetTokenABPairs(db *gorm.DB, tokenA, tokenB *types.Address) ([]Pair, error) {
 	tokenPairs := []Pair{}
-	if err := db.Model(&Order{}).Select("DISTINCT LEAST(maker_token, taker_token) as token_a, GREATEST(maker_token, taker_token) as token_b").Where("(taker_token = ? AND maker_token = ?) or (maker_token = ? and taker_token = ?)", tokenA, tokenB, tokenA, tokenB).Limit(1).Scan(&tokenPairs).Error; err != nil {
+	if err := db.Raw("SELECT DISTINCT LEAST(x.maker_token, x.taker_token) as token_a, GREATEST(x.maker_token, x.taker_token) as token_b from (SELECT DISTINCT maker_token, taker_token from orders) as x WHERE (x.taker_token = ? AND x.maker_token = ?) or (x.maker_token = ? and x.taker_token = ?)", tokenA, tokenB, tokenA, tokenB).Offset(offset).Limit(count).Scan(&tokenPairs).Error; err != nil {
 		return tokenPairs, err
 	}
 	return tokenPairs, nil
