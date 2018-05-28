@@ -36,7 +36,7 @@ services:
     image: "openrelay/ingest:${TAG:-latest}"
     ports:
       - "8081:8080"
-    command: ["/ingest", "${REDIS_HOST:-redis:6379}", "C22d5b2951DB72B44CFb8089bb8CD374A3c354eA"]
+    command: ["/ingest", "${REDIS_HOST:-redis:6379}", "C22d5b2951DB72B44CFb8089bb8CD374A3c354eA", "queue://ingest"]
     depends_on:
       - redis
     deploy:
@@ -60,7 +60,7 @@ services:
       context: ./
       dockerfile: Dockerfile.fillupdate
     image: "openrelay/fillupdate:${TAG:-latest}"
-    command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://fillupdate", "topic://ordersfilled", "file:///bloom/data/testdata", "queue://fundcheck"]
+    command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "topic://ordersfilled", "file:///bloom/data/testdata", "queue://fillupdate=>queue://fundcheck", "queue://recheck=>queue://recheck2"]
     volumes:
       - bloomdata:/bloom/data
     depends_on:
@@ -75,7 +75,7 @@ services:
       context: ./
       dockerfile: Dockerfile.fundcheckrelay
     image: "openrelay/fundcheckrelay:${TAG:-latest}"
-    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://fundcheck", "queue://delay1", "topic://instant-broadcast", "--invalidation=topic://newblocks"]
+    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://fundcheck=>queue://delay1=>topic://instant-broadcast", "queue://recheck2=>queue://pgindexer", "--invalidation=topic://newblocks"]
     depends_on:
       - redis
       - ethnode
@@ -89,25 +89,25 @@ services:
       context: ./
       dockerfile: Dockerfile.delayrelay
     image: "openrelay/delayrelay:${TAG:-latest}"
-    command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "queue://delay1", "queue://delay2", "topic://delay1trigger"]
+    command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "topic://delay1trigger,queue://delay1=>queue://delay2", "topic://newblocks,queue://delay2=>queue://recheck=>topic://released-broadcast;topic://delay1trigger"]
     depends_on:
       - redis
     deploy:
       replicas: 1
       restart_policy:
         condition: on-failure
-  delayrelay2:
-    build:
-      context: ./
-      dockerfile: Dockerfile.delayrelay
-    image: "openrelay/delayrelay:${TAG:-latest}"
-    command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "queue://delay2", "queue://released", "topic://newblocks", "topic://delay1trigger"]
-    depends_on:
-      - redis
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: on-failure
+  # delayrelay2:
+  #   build:
+  #     context: ./
+  #     dockerfile: Dockerfile.delayrelay
+  #   image: "openrelay/delayrelay:${TAG:-latest}"
+  #   command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "queue://delay2", "queue://released", "topic://newblocks", "topic://delay1trigger"]
+  #   depends_on:
+  #     - redis
+  #   deploy:
+  #     replicas: 1
+  #     restart_policy:
+  #       condition: on-failure
   fillmonitor:
     build:
       context: ./
@@ -149,42 +149,42 @@ services:
       POSTGRES_PASSWORD: secret
     restart: on-failure
 
-  simplerelayreleased:
-    build:
-      context: ./
-      dockerfile: Dockerfile.simplerelay
-    image: "openrelay/simplerelay:${TAG:-latest}"
-    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://released", "queue://recheck", "topic://released-broadcast"]
-    depends_on:
-      - redis
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: on-failure
-  fillupdate2:
-    build:
-      context: ./
-      dockerfile: Dockerfile.fillupdate
-    image: "openrelay/fillupdate:${TAG:-latest}"
-    command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://recheck", "topic://ordersfilled", "file:///bloom/data/testdata", "queue://recheck2"]
-    volumes:
-      - bloomdata:/bloom/data
-    depends_on:
-      - redis
-      - ethnode
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: on-failure
-  fundcheckrelay2:
-    build:
-      context: ./
-      dockerfile: Dockerfile.fundcheckrelay
-    image: "openrelay/fundcheckrelay:${TAG:-latest}"
-    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://recheck2", "queue://pgindexer", "--invalidation=topic://newblocks"]
-    depends_on:
-      - ethnode
-    restart: on-failure
+  # simplerelayreleased:
+  #   build:
+  #     context: ./
+  #     dockerfile: Dockerfile.simplerelay
+  #   image: "openrelay/simplerelay:${TAG:-latest}"
+  #   command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://released", "queue://recheck", "topic://released-broadcast"]
+  #   depends_on:
+  #     - redis
+  #   deploy:
+  #     replicas: 1
+  #     restart_policy:
+  #       condition: on-failure
+  # fillupdate2:
+  #   build:
+  #     context: ./
+  #     dockerfile: Dockerfile.fillupdate
+  #   image: "openrelay/fillupdate:${TAG:-latest}"
+  #   command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://recheck", "topic://ordersfilled", "file:///bloom/data/testdata", "queue://recheck2"]
+  #   volumes:
+  #     - bloomdata:/bloom/data
+  #   depends_on:
+  #     - redis
+  #     - ethnode
+  #   deploy:
+  #     replicas: 1
+  #     restart_policy:
+  #       condition: on-failure
+  # fundcheckrelay2:
+  #   build:
+  #     context: ./
+  #     dockerfile: Dockerfile.fundcheckrelay
+  #   image: "openrelay/fundcheckrelay:${TAG:-latest}"
+  #   command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://recheck2", "queue://pgindexer", "--invalidation=topic://newblocks"]
+  #   depends_on:
+  #     - ethnode
+  #   restart: on-failure
   initialize:
     build:
       context: ./
@@ -252,12 +252,12 @@ services:
       restart_policy:
         condition: on-failure
     restart: on-failure
-  simplerelayfillindexer:
+  simplerelay:
     build:
       context: ./
       dockerfile: Dockerfile.simplerelay
     image: "openrelay/simplerelay:${TAG:-latest}"
-    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://ordersfilled", "queue://pgordersfilled", "topic://ordersfilled"]
+    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://ordersfilled=>queue://pgordersfilled=>topic://ordersfilled", "queue://newblocks=>queue://allowanceblocks=>queue://spendblocks=>topic://newblocks=>queue://fillblocks"]
     depends_on:
       - redis
     deploy:
@@ -280,18 +280,18 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
-  simplerelaynewblocks:
-    build:
-      context: ./
-      dockerfile: Dockerfile.simplerelay
-    image: "openrelay/simplerelay:${TAG:-latest}"
-    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://newblocks", "queue://allowanceblocks", "queue://spendblocks", "topic://newblocks", "queue://fillblocks"]
-    depends_on:
-      - redis
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: on-failure
+  # simplerelaynewblocks:
+  #   build:
+  #     context: ./
+  #     dockerfile: Dockerfile.simplerelay
+  #   image: "openrelay/simplerelay:${TAG:-latest}"
+  #   command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://newblocks", "queue://allowanceblocks", "queue://spendblocks", "topic://newblocks", "queue://fillblocks"]
+  #   depends_on:
+  #     - redis
+  #   deploy:
+  #     replicas: 1
+  #     restart_policy:
+  #       condition: on-failure
   allowancemonitor:
     build:
       context: ./

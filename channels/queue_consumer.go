@@ -170,3 +170,7 @@ func (queue *queueConsumerChannel) StopConsuming() bool {
 	}
 	return false
 }
+
+func (queue *queueConsumerChannel) Publisher() Publisher {
+	return NewRedisQueuePublisher(queue.readyKey, queue.redisClient)
+}

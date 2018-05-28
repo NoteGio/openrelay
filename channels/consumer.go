@@ -15,4 +15,5 @@ type ConsumerChannel interface {
 	StopConsuming() bool
 	ReturnAllUnacked() int
 	PurgeRejected() int
+	Publisher() Publisher
 }

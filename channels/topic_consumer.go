@@ -81,3 +81,7 @@ func (topic *topicConsumerChannel) StopConsuming() bool {
 	}
 	return false
 }
+
+func (topic *topicConsumerChannel) Publisher() Publisher {
+	return NewRedisTopicPublisher(topic.channelName, topic.redisClient)
+}

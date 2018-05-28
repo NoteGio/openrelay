@@ -16,9 +16,10 @@ import (
 func main() {
 	redisURL := os.Args[1]
 	defaultFeeRecipientString := os.Args[2]
+	dstChannel := os.Args[3]
 	var port string
-	if len(os.Args) >= 4 {
-		port = os.Args[3]
+	if len(os.Args) >= 5 {
+		port = os.Args[4]
 	} else {
 		port = "8080"
 	}
@@ -36,7 +37,8 @@ func main() {
 	copy(defaultFeeRecipientBytes[:], defaultFeeRecipientSlice[:])
 	affiliateService := affiliates.NewRedisAffiliateService(redisClient)
 	accountService := accounts.NewRedisAccountService(redisClient)
-	publisher := channels.NewRedisQueuePublisher("ingest", redisClient)
+	publisher, err := channels.PublisherFromURI(dstChannel, redisClient)
+	if err != nil { log.Fatalf(err.Error()) }
 	handler := ingest.Handler(publisher, accountService, affiliateService)
 	feeHandler := ingest.FeeHandler(publisher, accountService, affiliateService, defaultFeeRecipientBytes)
 
