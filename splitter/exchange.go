@@ -6,15 +6,16 @@ import (
 	"github.com/notegio/openrelay/common"
 )
 
-// ExchangeSplitterConsumer relays orders to different channels based on the
+// AddressSplitterConsumer relays orders to different channels based on the
 // exchange specified in the order.
-type ExchangeSplitterConsumer struct {
+type AddressSplitterConsumer struct {
 	exchanges        map[types.Address]channels.Publisher
 	defaultPublisher channels.Publisher
+	addrGetter       func(*types.Order) (types.Address)
 	s                common.Semaphore
 }
 
-func (consumer *ExchangeSplitterConsumer) Consume(delivery channels.Delivery) {
+func (consumer *AddressSplitterConsumer) Consume(delivery channels.Delivery) {
 	consumer.s.Acquire()
 	go func(){
 		defer consumer.s.Release()
@@ -36,6 +37,10 @@ func (consumer *ExchangeSplitterConsumer) Consume(delivery channels.Delivery) {
 	}()
 }
 
-func NewExchangeSplitterConsumer(exchanges map[types.Address]channels.Publisher, defaultPublisher channels.Publisher, concurrency int) (*ExchangeSplitterConsumer) {
-	return &ExchangeSplitterConsumer{exchanges, defaultPublisher, make(common.Semaphore, concurrency)}
+func NewExchangeSplitterConsumer(exchanges map[types.Address]channels.Publisher, defaultPublisher channels.Publisher, concurrency int) (*AddressSplitterConsumer) {
+	return &AddressSplitterConsumer{exchanges, defaultPublisher, func(order *types.Order) (types.Address) {return *order.ExchangeAddress}, make(common.Semaphore, concurrency)}
+}
+
+func NewMakerSplitterConsumer(exchanges map[types.Address]channels.Publisher, defaultPublisher channels.Publisher, concurrency int) (*AddressSplitterConsumer) {
+	return &AddressSplitterConsumer{exchanges, defaultPublisher, func(order *types.Order) (types.Address) {return *order.Maker}, make(common.Semaphore, concurrency)}
 }
