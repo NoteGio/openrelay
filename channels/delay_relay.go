@@ -2,6 +2,7 @@ package channels
 
 import (
 	"github.com/notegio/openrelay/common"
+	"sync"
 )
 
 type DelayRelay struct {
@@ -9,11 +10,15 @@ type DelayRelay struct {
 	sourcePublisher Publisher
 	sentinel        string
 	delayChan       chan bool
+	once            *sync.Once
 }
 
 func (relay *DelayRelay) Flush() {
-	relay.sourcePublisher.Publish(relay.sentinel)
-	relay.delayChan <- true
+	relay.once.Do(func() {
+		relay.sourcePublisher.Publish(relay.sentinel)
+		relay.delayChan <- true
+		relay.once = &sync.Once{}
+	})
 }
 
 type DelayRelayFilter struct {
@@ -52,6 +57,7 @@ func NewDelayRelay(sourcePublisher Publisher, channel ConsumerChannel, publisher
 		sourcePublisher,
 		sentinel,
 		delayChan,
+		&sync.Once{},
 	}
 	relay.consumerChannel.AddConsumer(&RelayConsumer{relay.Relay})
 	sourcePublisher.Publish(sentinel)
