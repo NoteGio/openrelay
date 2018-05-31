@@ -11,6 +11,7 @@ import (
 	"encoding/hex"
 	"log"
 	"strings"
+	"strconv"
 )
 
 type FundFilter struct {
@@ -83,7 +84,12 @@ func main() {
 	if invert {
 		fundFilter = &channels.InvertFilter{fundFilter}
 	}
-	relay := channels.NewRelay(consumerChannel, publishers, fundFilter)
+	concurrency, err := strconv.Atoi(os.Getenv("CONCURRENCY"))
+	if err != nil {
+		concurrency = 5
+	}
+
+	relay := channels.NewRelay(consumerChannel, publishers, fundFilter, concurrency)
 	log.Printf("Starting fundcheck")
 	relay.Start()
 	c := make(chan os.Signal, 1)

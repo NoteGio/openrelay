@@ -45,6 +45,7 @@ type queueDelivery struct {
 	rejectedKey string
 	sourceKey   string
 	redisClient *redis.Client
+	ackChan     chan bool
 }
 
 func (delivery *queueDelivery) Payload() string {
@@ -56,10 +57,12 @@ func (delivery *queueDelivery) Ack() bool {
 	if redisErrIsNil(result) {
 		return false
 	}
+	delivery.ackChan <- true
 	return result.Val() == 1
 }
 
 func (delivery *queueDelivery) Reject() bool {
+	delivery.ackChan <- false
 	return delivery.move(delivery.rejectedKey)
 }
 
@@ -89,6 +92,6 @@ func (delivery *queueDelivery) move(key string) bool {
 	return true
 }
 
-func newQueueDelivery(payload, unackedKey, rejectedKey, sourceKey string, client *redis.Client) *queueDelivery {
-	return &queueDelivery{payload, unackedKey, rejectedKey, sourceKey, client}
+func newQueueDelivery(payload, unackedKey, rejectedKey, sourceKey string, client *redis.Client, ackChan chan bool) *queueDelivery {
+	return &queueDelivery{payload, unackedKey, rejectedKey, sourceKey, client, ackChan}
 }

@@ -25,7 +25,7 @@ func IndexConsumerDefaultStatus(status int64, t *testing.T) {
 	}
 	order := sampleOrder()
 	publisher, channel := channels.MockChannel()
-	consumer := dbModule.NewIndexConsumer(tx, status)
+	consumer := dbModule.NewIndexConsumer(tx, status, 1)
 	channel.AddConsumer(consumer)
 	channel.StartConsuming()
 	defer channel.StopConsuming()

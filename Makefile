@@ -26,7 +26,7 @@ nodesetup:
 	cd js ; npm install
 
 bin/delayrelay: $(BASE) cmd/delayrelay/main.go
-	cd $(BASE) &&  CGO_ENABLED=0 $(GOSTATIC) -o bin/delayrelay cmd/delayrelay/main.go
+	cd $(BASE) && $(GOSTATIC) -o bin/delayrelay cmd/delayrelay/main.go
 
 bin/fundcheckrelay: $(BASE) cmd/fundcheckrelay/main.go
 	cd $(BASE) && $(GOSTATIC) -o bin/fundcheckrelay cmd/fundcheckrelay/main.go
@@ -41,7 +41,7 @@ bin/initialize: $(BASE) cmd/initialize/main.go
 	cd $(BASE) && $(GOSTATIC) -o bin/initialize cmd/initialize/main.go
 
 bin/simplerelay: $(BASE) cmd/simplerelay/main.go
-	cd $(BASE) && CGO_ENABLED=0 $(GOSTATIC) -o bin/simplerelay cmd/simplerelay/main.go
+	cd $(BASE) && $(GOSTATIC) -o bin/simplerelay cmd/simplerelay/main.go
 
 bin/validateorder: $(BASE) cmd/validateorder/main.go
 	cd $(BASE) && $(GOSTATIC) -o bin/validateorder cmd/validateorder/main.go

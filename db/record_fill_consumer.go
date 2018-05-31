@@ -4,24 +4,30 @@ import (
 	"encoding/json"
 	"github.com/jinzhu/gorm"
 	"github.com/notegio/openrelay/channels"
+	"github.com/notegio/openrelay/common"
 	"log"
 )
 
 type RecordFillConsumer struct {
 	idx *Indexer
+	s   common.Semaphore
 }
 
 func (consumer *RecordFillConsumer) Consume(msg channels.Delivery) {
-	fillRecord := &FillRecord{}
-	json.Unmarshal([]byte(msg.Payload()), fillRecord)
-	if err := consumer.idx.RecordFill(fillRecord); err == nil {
-		msg.Ack()
-	} else {
-		log.Printf("Failed to record fill: '%v', '%v'", fillRecord.OrderHash, err.Error())
-		msg.Reject()
-	}
+	consumer.s.Acquire()
+	go func (){
+		defer consumer.s.Release()
+		fillRecord := &FillRecord{}
+		json.Unmarshal([]byte(msg.Payload()), fillRecord)
+		if err := consumer.idx.RecordFill(fillRecord); err == nil {
+			msg.Ack()
+			} else {
+				log.Printf("Failed to record fill: '%v', '%v'", fillRecord.OrderHash, err.Error())
+				msg.Reject()
+			}
+	}()
 }
 
-func NewRecordFillConsumer(db *gorm.DB) *RecordFillConsumer {
-	return &RecordFillConsumer{NewIndexer(db, StatusOpen)}
+func NewRecordFillConsumer(db *gorm.DB, concurrency int) *RecordFillConsumer {
+	return &RecordFillConsumer{NewIndexer(db, StatusOpen), make(common.Semaphore, concurrency)}
 }

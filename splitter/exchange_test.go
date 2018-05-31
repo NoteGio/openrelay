@@ -31,7 +31,7 @@ func TestExchangeSplitter(t *testing.T) {
 	otherPublisher, otherConsumerChannel := channels.MockChannel()
 	mapping := make(map[types.Address]channels.Publisher)
 	mapping[*sampleOrder().ExchangeAddress] = otherPublisher
-	exchangeSplitter := splitter.NewExchangeSplitterConsumer(mapping, defaultPublisher)
+	exchangeSplitter := splitter.NewExchangeSplitterConsumer(mapping, defaultPublisher, 1)
 	sourceConsumerChannel.AddConsumer(exchangeSplitter)
 	sourceConsumerChannel.StartConsuming()
 	defaultConsumerChannel.StartConsuming()
@@ -55,7 +55,7 @@ func TestExchangeSplitterDefault(t *testing.T) {
 	otherPublisher, otherConsumerChannel := channels.MockChannel()
 	mapping := make(map[types.Address]channels.Publisher)
 	mapping[*sampleOrder().Taker] = otherPublisher
-	exchangeSplitter := splitter.NewExchangeSplitterConsumer(mapping, defaultPublisher)
+	exchangeSplitter := splitter.NewExchangeSplitterConsumer(mapping, defaultPublisher, 1)
 	sourceConsumerChannel.AddConsumer(exchangeSplitter)
 	sourceConsumerChannel.StartConsuming()
 	defaultConsumerChannel.StartConsuming()

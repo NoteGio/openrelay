@@ -53,6 +53,7 @@ func (fb *FillBloom) Initialize(lf ethereum.LogFilterer, endBlock int64, exchang
 			lastBlock = lastBlock + 100000
 		}
 	} else {
+		log.Printf("Loading bloom filter from file")
 		if count, err := fb.b.ReadFrom(itemReader); err != nil { return err } else {
 			log.Printf("Loaded bloom filter with %v bytes", count)
 		}

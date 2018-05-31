@@ -35,7 +35,7 @@ func TestSpendConsumer(t *testing.T) {
 		order.MakerTokenAmount,
 	)
 	publisher, channel := channels.MockChannel()
-	consumer := dbModule.NewRecordSpendConsumer(tx)
+	consumer := dbModule.NewRecordSpendConsumer(tx, 1)
 	channel.AddConsumer(consumer)
 	channel.StartConsuming()
 	defer channel.StopConsuming()
@@ -80,7 +80,7 @@ func TestSpendConsumerInsufficient(t *testing.T) {
 		order.TakerToken,
 	)
 	publisher, channel := channels.MockChannel()
-	consumer := dbModule.NewRecordSpendConsumer(tx)
+	consumer := dbModule.NewRecordSpendConsumer(tx, 1)
 	channel.AddConsumer(consumer)
 	channel.StartConsuming()
 	defer channel.StopConsuming()

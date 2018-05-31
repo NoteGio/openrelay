@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 )
 
 func main() {
@@ -24,7 +25,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error establishing consumer channel: %v", err.Error())
 	}
-	consumerChannel.AddConsumer(dbModule.NewRecordSpendConsumer(db))
+	concurrency, err := strconv.Atoi(os.Getenv("CONCURRENCY"))
+	if err != nil {
+		concurrency = 5
+	}
+	consumerChannel.AddConsumer(dbModule.NewRecordSpendConsumer(db, concurrency))
 	consumerChannel.StartConsuming()
 	log.Printf("Starting spend recorder consumer on '%v'", srcChannel)
 	c := make(chan os.Signal, 1)

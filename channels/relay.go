@@ -2,6 +2,7 @@ package channels
 
 import (
 	"log"
+	"github.com/notegio/openrelay/common"
 )
 
 // RelayFilter objects provide a predicate function to determine whether a
@@ -32,6 +33,7 @@ type Relay struct {
 	consumerChannel ConsumerChannel
 	publishers      []Publisher
 	filter          RelayFilter
+	s               common.Semaphore
 }
 
 func (relay *Relay) Start() bool {
@@ -54,19 +56,24 @@ func (consumer *RelayConsumer) Consume(delivery Delivery) {
 			panic(r)
 		}
 	}()
-	if consumer.relay.filter.Filter(delivery) {
-		for _, publisher := range consumer.relay.publishers {
-			publisher.Publish(delivery.Payload())
+	consumer.relay.s.Acquire()
+	go func() {
+		defer consumer.relay.s.Release()
+		if consumer.relay.filter.Filter(delivery) {
+			for _, publisher := range consumer.relay.publishers {
+				publisher.Publish(delivery.Payload())
+			}
 		}
-	}
-	delivery.Ack()
+		delivery.Ack()
+	}()
 }
 
-func NewRelay(channel ConsumerChannel, publishers []Publisher, filter RelayFilter) Relay {
+func NewRelay(channel ConsumerChannel, publishers []Publisher, filter RelayFilter, concurrency int) Relay {
 	relay := Relay{
 		channel,
 		publishers,
 		filter,
+		make(common.Semaphore, concurrency),
 	}
 	relay.consumerChannel.AddConsumer(&RelayConsumer{&relay})
 	return relay

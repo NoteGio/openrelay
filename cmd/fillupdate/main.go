@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 )
 
 
@@ -47,7 +48,11 @@ func main() {
 	}
 	lookup, err := funds.NewRPCFilledLookup(rpcURL, fillBloom)
 	if err != nil { log.Fatalf(err.Error()) }
-	fillConsumer := funds.NewFillConsumer(allPublisher, changePublisher, lookup)
+	concurrency, err := strconv.Atoi(os.Getenv("CONCURRENCY"))
+	if err != nil {
+		concurrency = 5
+	}
+	fillConsumer := funds.NewFillConsumer(allPublisher, changePublisher, lookup, concurrency)
 	consumerChannel.AddConsumer(&fillConsumer)
 	consumerChannel.StartConsuming()
 	fillConsumerChannel.AddConsumer(fillBloom)

@@ -39,7 +39,7 @@ func TestFillConsumer(t *testing.T) {
 		takerTokenAmount.String(),
 	)
 	publisher, channel := channels.MockChannel()
-	consumer := dbModule.NewRecordFillConsumer(tx)
+	consumer := dbModule.NewRecordFillConsumer(tx, 1)
 	channel.AddConsumer(consumer)
 	channel.StartConsuming()
 	defer channel.StopConsuming()
