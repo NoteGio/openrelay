@@ -67,28 +67,38 @@ func (consumer *spendBlockConsumer) Consume(delivery channels.Delivery) {
 				continue
 			}
 			tradedTokens[pairKey] = struct{}{}
-			balance, err := consumer.balanceChecker.GetBalance(tokenAddress, senderAddress)
-			if err != nil {
-				if err.Error() == "abi: unmarshalling empty output" || err.Error() == "no contract code at given address" {
-					balance = big.NewInt(0)
-				} else {
-					delivery.Return()
-					log.Fatalf("Failed to get balance: %v", err.Error())
-				}
-			}
+			var balance *big.Int
 			allowance, err := consumer.balanceChecker.GetAllowance(tokenAddress, senderAddress, consumer.tokenProxyAddress)
 			if err != nil {
 				if err.Error() == "abi: unmarshalling empty output" || err.Error() == "no contract code at given address" {
+					log.Printf("balance checker gave error: %v -- using 0 balance", err.Error())
 					allowance = big.NewInt(0)
 				} else {
 					delivery.Return()
 					log.Fatalf("Failed to get balance")
 				}
 			}
-			if allowance.Cmp(balance) < 0 {
-				// If allowance < balance, we should use that as our removal criteria
+			if allowance.Cmp(big.NewInt(0)) == 0 {
+				// If the allowance is 0, then the balance we want to report is 0, and
+				// we don't need to get the actual balance.
 				balance = allowance
+			} else {
+				balance, err = consumer.balanceChecker.GetBalance(tokenAddress, senderAddress)
+				if err != nil {
+					if err.Error() == "abi: unmarshalling empty output" || err.Error() == "no contract code at given address" {
+						log.Printf("balance checker gave error: %v -- using 0 balance", err.Error())
+						balance = big.NewInt(0)
+						} else {
+							delivery.Return()
+							log.Fatalf("Failed to get balance: %v", err.Error())
+						}
+					}
+					if allowance.Cmp(balance) < 0 {
+						// If allowance < balance, we should use that as our removal criteria
+						balance = allowance
+					}
 			}
+
 			sr := &db.SpendRecord{
 				TokenAddress: strings.ToLower(spendLog.Address.String()),
 				SpenderAddress: hexutil.Encode(spendLog.Topics[1][12:]),
