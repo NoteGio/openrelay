@@ -38,3 +38,14 @@ func NewRedisTopicPublisher(key string, client *redis.Client) Publisher {
 func (publisher *redisTopicPublisher) Publish(payload string) bool {
 	return !redisErrIsNil(publisher.redisClient.Publish(publisher.key, payload))
 }
+
+
+type MultiPublisher []Publisher
+
+func (mp MultiPublisher) Publish(payload string) bool {
+	success := true
+	for _, publisher := range mp {
+		success = success && publisher.Publish(payload)
+	}
+	return success
+}

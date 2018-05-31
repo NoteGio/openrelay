@@ -11,6 +11,7 @@ type mockConsumerChannel struct {
 	unacked   *deliveries
 	rejected  *deliveries
 	processed uint
+	publisher *mockPublisher
 }
 
 func (mock *mockConsumerChannel) AddConsumer(consumer Consumer) bool {
@@ -55,6 +56,10 @@ func (mock *mockConsumerChannel) PurgeRejected() int {
 	rejected := len(mock.rejected.deliveries)
 	mock.rejected.deliveries = []Delivery{}
 	return rejected
+}
+
+func (mock *mockConsumerChannel) Publisher() Publisher {
+	return mock.publisher
 }
 
 type mockPublisher struct {
@@ -127,6 +132,7 @@ func MockChannel() (Publisher, ConsumerChannel) {
 		unacked,
 		rejected,
 		0,
+		pub,
 	}
 	return pub, consume
 }
