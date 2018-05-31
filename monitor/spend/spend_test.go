@@ -94,7 +94,7 @@ func TestSpendFromBlock(t *testing.T) {
 	copy(tokenProxyAddress[:], tokenProxyBytes[:])
 	tokenBytes := common.HexToAddress("0x3495ffcee09012ab7d827abf3e3b3ae428a38443")
 	tokenAddress := &orTypes.Address{}
-	spenderBytes := common.HexToAddress("0x12459c951127e0c374ff9105dda097662a027093")
+	spenderBytes := common.HexToAddress("0x34ab4a96678c4de8eb34597dbbcf09c27d9bc79d")
 	spenderAddress := &orTypes.Address{}
 	copy(tokenAddress[:], tokenBytes[:])
 	copy(spenderAddress[:], spenderBytes[:])
