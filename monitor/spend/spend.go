@@ -75,7 +75,7 @@ func (consumer *spendBlockConsumer) Consume(delivery channels.Delivery) {
 					allowance = big.NewInt(0)
 				} else {
 					delivery.Return()
-					log.Fatalf("Failed to get balance")
+					log.Fatalf("Failed to get allowance for '%v' - '%v': %v", tokenAddress, senderAddress, err.Error())
 				}
 			}
 			if allowance.Cmp(big.NewInt(0)) == 0 {
@@ -90,7 +90,7 @@ func (consumer *spendBlockConsumer) Consume(delivery channels.Delivery) {
 						balance = big.NewInt(0)
 						} else {
 							delivery.Return()
-							log.Fatalf("Failed to get balance: %v", err.Error())
+							log.Fatalf("Failed to get balance for '%v' - '%v': %v", tokenAddress, senderAddress, err.Error())
 						}
 					}
 					if allowance.Cmp(balance) < 0 {
