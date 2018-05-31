@@ -57,7 +57,7 @@ func (consumer *spendBlockConsumer) Consume(delivery channels.Delivery) {
 		for _, spendLog := range logs {
 			senderAddress := &types.Address{}
 			tokenAddress := &types.Address{}
-			copy(senderAddress[:], spendLog.Topics[2][12:])
+			copy(senderAddress[:], spendLog.Topics[1][12:])
 			copy(tokenAddress[:], spendLog.Address[:])
 			pairKey := fmt.Sprintf("%#x:%#x", senderAddress, tokenAddress)
 			if _, ok := tradedTokens[pairKey]; ok {

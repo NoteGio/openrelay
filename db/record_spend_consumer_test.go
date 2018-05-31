@@ -53,6 +53,55 @@ func TestSpendConsumer(t *testing.T) {
 		t.Errorf("Order status should be open, got %v", dbOrder.Status)
 	}
 }
+
+func TestSpendConsumerMakerZRX(t *testing.T) {
+	db, err := getDb()
+	if err != nil {
+		t.Errorf(err.Error())
+		return
+	}
+	tx := db.Begin()
+	defer func() {
+		tx.Rollback()
+		db.Close()
+	}()
+	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	order := sampleOrder()
+	dbOrder := &dbModule.Order{}
+	dbOrder.Order = *order
+	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	fillString := fmt.Sprintf(
+		"{\"tokenAddress\": \"%v\",\"spenderAddress\": \"%v\",\"zrxToken\": \"%v\",\"balance\": \"%v\"}",
+		order.TakerToken,
+		order.Maker,
+		order.TakerToken,
+		order.MakerTokenAmount,
+	)
+	tx.LogMode(true)
+	defer tx.LogMode(false)
+	publisher, channel := channels.MockChannel()
+	consumer := dbModule.NewRecordSpendConsumer(tx, 1)
+	channel.AddConsumer(consumer)
+	channel.StartConsuming()
+	defer channel.StopConsuming()
+	publisher.Publish(fillString)
+	if err := channels.MockFinish(channel, 1); err != nil {
+		t.Errorf(err.Error())
+	}
+
+	dbOrder = &dbModule.Order{}
+	dbOrder.Initialize()
+	if err := tx.Model(&dbModule.Order{}).Where("order_hash = ?", order.Hash()).First(dbOrder).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	if dbOrder.Status != dbModule.StatusOpen {
+		t.Errorf("Order status should be open, got %v", dbOrder.Status)
+	}
+}
 func TestSpendConsumerInsufficient(t *testing.T) {
 	db, err := getDb()
 	if err != nil {
