@@ -1,5 +1,15 @@
+FROM golang:1.8 as corebuild
+
+RUN mkdir -p /go/src/github.com/notegio/openrelay
+
+WORKDIR /go/src/github.com/notegio/openrelay
+
+COPY . .
+
+RUN make clean bin
+
 FROM scratch
 
-COPY bin/spendmonitor /spendmonitor
+COPY --from=corebuild /go/src/github.com/notegio/openrelay/bin/spendmonitor /spendmonitor
 
 CMD ["/spendmonitor", "redis:6379", "ethnode:8545", "queue://newblocks", "queue://recordspend", "0x48bacb9266a570d521063ef5dd96e61686dbe788"]

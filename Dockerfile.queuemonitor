@@ -1,5 +1,15 @@
+FROM golang:1.8 as corebuild
+
+RUN mkdir -p /go/src/github.com/notegio/openrelay
+
+WORKDIR /go/src/github.com/notegio/openrelay
+
+COPY . .
+
+RUN make clean bin
+
 FROM scratch
 
-COPY bin/queuemonitor /queuemonitor
+COPY --from=corebuild /go/src/github.com/notegio/openrelay/bin/queuemonitor /queuemonitor
 
 CMD ["/queuemonitor", "redis:6379", "1", "newblocks-ropsten"]

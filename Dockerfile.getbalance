@@ -1,5 +1,15 @@
+FROM golang:1.8 as corebuild
+
+RUN mkdir -p /go/src/github.com/notegio/openrelay
+
+WORKDIR /go/src/github.com/notegio/openrelay
+
+COPY . .
+
+RUN make clean bin
+
 FROM scratch
 
-COPY bin/getbalance /getbalance
+COPY --from=corebuild /go/src/github.com/notegio/openrelay/bin/getbalance /getbalance
 
 CMD ["/getbalance"]

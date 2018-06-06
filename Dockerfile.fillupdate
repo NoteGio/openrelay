@@ -1,6 +1,16 @@
+FROM golang:1.8 as corebuild
+
+RUN mkdir -p /go/src/github.com/notegio/openrelay
+
+WORKDIR /go/src/github.com/notegio/openrelay
+
+COPY . .
+
+RUN make clean bin
+
 FROM scratch
 
-COPY bin/fillupdate /fillupdate
+COPY --from=corebuild /go/src/github.com/notegio/openrelay/bin/fillupdate /fillupdate
 
 COPY docker-cfg/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 
