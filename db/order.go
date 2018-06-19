@@ -28,6 +28,10 @@ type Order struct {
 	MakerFeeRemaining *types.Uint256
 }
 
+type (order *Order) TableName() string {
+	return "orderv2"
+}
+
 // Save records the order in the database, defaulting to the specified status.
 // Status should either be db.StatusOpen, or db.StatusUnfunded. If the order
 // is filled based on order.TakerTokenAmountFilled + order.TakerTokenAmountCancelled
