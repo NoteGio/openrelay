@@ -23,7 +23,7 @@ services:
       context: ./
       dockerfile: Dockerfile.testrpc
     ports:
-      - "8545"
+      - "18545:8545"
     deploy:
       replicas: 1
       restart_policy:
@@ -130,6 +130,20 @@ services:
       dockerfile: Dockerfile.multisigmonitor
     image: "openrelay/multisigmonitor:${TAG:-latest}"
     command: ["/multisigmonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://multisigblocks", "0x48bacb9266a570d521063ef5dd96e61686dbe788"]
+    depends_on:
+      - redis
+      - ethnode
+    restart: on-failure
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  affiliatemonitor:
+    build:
+      context: ./
+      dockerfile: Dockerfile.affiliatemonitor
+    image: "openrelay/affiliatemonitor:${TAG:-latest}"
+    command: ["/affiliatemonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://affiliateblocks", "0x4112f5fc3f737e813ca8cc1a48d1da3dc8719435"]
     depends_on:
       - redis
       - ethnode
@@ -257,7 +271,7 @@ services:
       context: ./
       dockerfile: Dockerfile.simplerelay
     image: "openrelay/simplerelay:${TAG:-latest}"
-    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://ordersfilled=>queue://pgordersfilled=>topic://ordersfilled", "queue://newblocks=>queue://allowanceblocks=>queue://spendblocks=>topic://newblocks=>queue://fillblocks"]
+    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://ordersfilled=>queue://pgordersfilled=>topic://ordersfilled", "queue://newblocks=>queue://allowanceblocks=>queue://spendblocks=>topic://newblocks=>queue://fillblocks=>queue://affiliateblocks"]
     depends_on:
       - redis
     deploy:
