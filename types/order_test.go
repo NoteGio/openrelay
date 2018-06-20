@@ -3,17 +3,17 @@ package types_test
 import (
 	// "database/sql"
 	// "database/sql/driver"
-	// "encoding/hex"
+	"encoding/hex"
 	// "encoding/json"
-	// "github.com/notegio/openrelay/types"
+	"github.com/notegio/openrelay/types"
 	// "io/ioutil"
 	// "reflect"
-	// "testing"
+	"testing"
 )
 
 func checkOrder(order *types.Order, t *testing.T) {
-	if hex.EncodeToString(order.MakerToken[:]) != "0000000000000000000000000000000000000000" {
-		t.Errorf("Unexpected MakerToken")
+	if hex.EncodeToString(order.MakerAssetData[:]) != "0000000000000000000000000000000000000000" {
+		t.Errorf("Unexpected MakerAssetData: %#x", order.MakerAssetData[:])
 	}
 	if hex.EncodeToString(order.Maker[:]) != "0000000000000000000000000000000000000000" {
 		t.Errorf("Unexpected Maker")
@@ -24,17 +24,14 @@ func checkOrder(order *types.Order, t *testing.T) {
 	if hex.EncodeToString(order.FeeRecipient[:]) != "0000000000000000000000000000000000000000" {
 		t.Errorf("Unexpected FeeRecipient")
 	}
-	if hex.EncodeToString(order.TakerToken[:]) != "0000000000000000000000000000000000000000" {
-		t.Errorf("Unexpected TakerToken")
+	if hex.EncodeToString(order.TakerAssetData[:]) != "0000000000000000000000000000000000000000" {
+		t.Errorf("Unexpected TakerAssetData: %#x", order.TakerAssetData[:])
 	}
-	if hex.EncodeToString(order.ExchangeAddress[:]) != "0000000000000000000000000000000000000000" {
-		t.Errorf("Unexpected TakerToken")
+	if hex.EncodeToString(order.MakerAssetAmount[:]) != "0000000000000000000000000000000000000000000000000000000000000000" {
+		t.Errorf("Unexpected MakerAssetAmount")
 	}
-	if hex.EncodeToString(order.MakerTokenAmount[:]) != "0000000000000000000000000000000000000000000000000000000000000000" {
-		t.Errorf("Unexpected MakerTokenAmount")
-	}
-	if hex.EncodeToString(order.TakerTokenAmount[:]) != "0000000000000000000000000000000000000000000000000000000000000000" {
-		t.Errorf("Unexpected MakerTokenAmount")
+	if hex.EncodeToString(order.TakerAssetAmount[:]) != "0000000000000000000000000000000000000000000000000000000000000000" {
+		t.Errorf("Unexpected MakerAssetAmount")
 	}
 	if hex.EncodeToString(order.MakerFee[:]) != "0000000000000000000000000000000000000000000000000000000000000000" {
 		t.Errorf("Unexpected MakerFee")
@@ -72,6 +69,18 @@ func checkOrder(order *types.Order, t *testing.T) {
 	// 	t.Errorf("Unexpected byte stream")
 	// }
 }
+
+func TestOrderHash(t *testing.T) {
+	order := &types.Order{}
+	order.Initialize()
+	exchangeAddressBytes, err := types.HexStringToBytes("b69e673309512a9d726f87304c6984054f87a93b")
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	copy(order.ExchangeAddress[:], exchangeAddressBytes)
+	checkOrder(order, t)
+}
+
 //
 // func TestByteDeserialize(t *testing.T) {
 // 	testOrderBytes, _ := hex.DecodeString("90fe2af704b34e0224bf2299c838e04d4dcf1364324454186bb728a3ea55750e0618ff1b18ce6cf800000000000000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000159938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b1b37adbc51c87a2f4c8c40c25fab5a73c65d078322f1db5739ee6fd49f18ce44637382de9b4cf7ceaf602f221132c9ddf41b83fb9666839022703da852d4ed88af")

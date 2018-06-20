@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto/sha3"
 	// "github.com/ethereum/go-ethereum/accounts/abi"
 	"math/big"
-	"strconv"
+	// "strconv"
 	// "log"
 )
 
@@ -75,7 +75,7 @@ type Order struct {
 	TakerFee                  *Uint256
 	ExpirationTimestampInSec  *Uint256 `gorm:"index"`
 	Salt                      *Uint256
-	Signature                 *[]byte //`gorm:"type:bytea"`
+	Signature                 Signature //`gorm:"type:bytea"`
 	TakerAssetAmountFilled    *Uint256
 	TakerAssetAmountCancelled *Uint256
 }
@@ -86,9 +86,10 @@ func (order *Order) Initialize() {
 	order.Taker = &Address{}
 	order.MakerAsset = &Address{}
 	order.TakerAsset = &Address{}
-	order.MakerAssetData = []byte{}
-	order.TakerAssetData = []byte{}
+	order.MakerAssetData = make([]byte, 20)
+	order.TakerAssetData = make([]byte, 20)
 	order.FeeRecipient = &Address{}
+	order.SenderAddress = &Address{}
 	order.MakerAssetAmount = &Uint256{}
 	order.TakerAssetAmount = &Uint256{}
 	order.MakerFee = &Uint256{}
@@ -97,36 +98,36 @@ func (order *Order) Initialize() {
 	order.Salt = &Uint256{}
 	order.TakerAssetAmountFilled = &Uint256{}
 	order.TakerAssetAmountCancelled = &Uint256{}
-	order.Signature = &Signature{}
+	order.Signature = Signature{}
 }
 
 // NewOrder takes string representations of values and converts them into an Order object
-func NewOrder(maker, taker, makerToken, takerToken, feeRecipient, exchangeAddress, makerTokenAmount, takerTokenAmount, makerFee, takerFee, expirationTimestampInSec, salt, sigV, sigR, sigS, takerTokenAmountFilled, takerTokenAmountCancelled string) (*Order, error) {
+func NewOrder(maker, taker, makerToken, takerToken, feeRecipient, exchangeAddress, makerTokenAmount, takerTokenAmount, makerFee, takerFee, expirationTimestampInSec, salt, sig, takerTokenAmountFilled, takerTokenAmountCancelled string) (*Order, error) {
 	order := Order{}
-	if err := order.fromStrings(maker, taker, makerToken, takerToken, feeRecipient, exchangeAddress, makerTokenAmount, takerTokenAmount, makerFee, takerFee, expirationTimestampInSec, salt, sigV, sigR, sigS, takerTokenAmountFilled, takerTokenAmountCancelled); err != nil {
+	if err := order.fromStrings(maker, taker, makerToken, takerToken, feeRecipient, exchangeAddress, makerTokenAmount, takerTokenAmount, makerFee, takerFee, expirationTimestampInSec, salt, sig, takerTokenAmountFilled, takerTokenAmountCancelled); err != nil {
 		return nil, err
 	}
 	return &order, nil
 }
 
 
-jOrder.Maker,
-jOrder.Taker,
-jOrder.MakerAsset,
-jOrder.TakerAsset,
-jOrder.FeeRecipient,
-jOrder.ExchangeAddress,
-jOrder.MakerAssetAmount,
-jOrder.TakerAssetAmount,
-jOrder.MakerFee,
-jOrder.TakerFee,
-jOrder.ExpirationTimestampInSec,
-jOrder.Salt,
-jOrder.Signature,
-jOrder.TakerAssetAmountFilled,
-jOrder.TakerAssetAmountCancelled,
+// jOrder.Maker,
+// jOrder.Taker,
+// jOrder.MakerAsset,
+// jOrder.TakerAsset,
+// jOrder.FeeRecipient,
+// jOrder.ExchangeAddress,
+// jOrder.MakerAssetAmount,
+// jOrder.TakerAssetAmount,
+// jOrder.MakerFee,
+// jOrder.TakerFee,
+// jOrder.ExpirationTimestampInSec,
+// jOrder.Salt,
+// jOrder.Signature,
+// jOrder.TakerAssetAmountFilled,
+// jOrder.TakerAssetAmountCancelled,
 
-func (order *Order) fromStrings(maker, taker, makerToken, takerToken, feeRecipient, exchangeAddress, makerTokenAmount, takerTokenAmount, makerFee, takerFee, expirationTimestampInSec, salt, sigV, sigR, sigS, takerTokenAmountFilled, takerTokenAmountCancelled string) error {
+func (order *Order) fromStrings(maker, taker, makerToken, takerToken, feeRecipient, exchangeAddress, makerTokenAmount, takerTokenAmount, makerFee, takerFee, expirationTimestampInSec, salt, sig, takerTokenAmountFilled, takerTokenAmountCancelled string) error {
 	order.Initialize()
 	makerBytes, err := HexStringToBytes(maker)
 	if err != nil {
@@ -136,11 +137,11 @@ func (order *Order) fromStrings(maker, taker, makerToken, takerToken, feeRecipie
 	if err != nil {
 		return err
 	}
-	makerTokenBytes, err := HexStringToBytes(makerToken)
+	makerAssetDataBytes, err := HexStringToBytes(makerToken)
 	if err != nil {
 		return err
 	}
-	takerTokenBytes, err := HexStringToBytes(takerToken)
+	takerAssetDataBytes, err := HexStringToBytes(takerToken)
 	if err != nil {
 		return err
 	}
@@ -149,6 +150,10 @@ func (order *Order) fromStrings(maker, taker, makerToken, takerToken, feeRecipie
 		return err
 	}
 	exchangeAddressBytes, err := HexStringToBytes(exchangeAddress)
+	if err != nil {
+		return err
+	}
+	signatureBytes, err := HexStringToBytes(sig)
 	if err != nil {
 		return err
 	}
@@ -176,18 +181,6 @@ func (order *Order) fromStrings(maker, taker, makerToken, takerToken, feeRecipie
 	if err != nil {
 		return err
 	}
-	sigVInt, err := strconv.Atoi(sigV)
-	if err != nil {
-		return err
-	}
-	sigRBytes, err := HexStringToBytes(sigR)
-	if err != nil {
-		return err
-	}
-	sigSBytes, err := HexStringToBytes(sigS)
-	if err != nil {
-		return err
-	}
 	takerTokenAmountFilledBytes, err := intStringToBytes(takerTokenAmountFilled)
 	if err != nil {
 		return err
@@ -198,21 +191,21 @@ func (order *Order) fromStrings(maker, taker, makerToken, takerToken, feeRecipie
 	}
 	copy(order.Maker[:], makerBytes)
 	copy(order.Taker[:], takerBytes)
-	copy(order.MakerAsset[:], makerTokenBytes)
-	copy(order.TakerAsset[:], takerTokenBytes)
 	copy(order.FeeRecipient[:], feeRecipientBytes)
 	copy(order.ExchangeAddress[:], exchangeAddressBytes)
+	copy(order.TakerAssetData[:], takerAssetDataBytes)
+	copy(order.MakerAssetData[:], makerAssetDataBytes)
 	copy(order.MakerAssetAmount[:], makerTokenAmountBytes)
 	copy(order.TakerAssetAmount[:], takerTokenAmountBytes)
 	copy(order.MakerFee[:], makerFeeBytes)
 	copy(order.TakerFee[:], takerFeeBytes)
 	copy(order.ExpirationTimestampInSec[:], expirationTimestampInSecBytes)
 	copy(order.Salt[:], saltBytes)
-	order.Signature = &Signature{}
-	order.Signature.V = byte(sigVInt)
-	copy(order.Signature.S[:], sigSBytes)
-	copy(order.Signature.R[:], sigRBytes)
-	copy(order.Signature.Hash[:], order.Hash())
+	copy(order.Signature[:], signatureBytes)
+	// order.Signature.V = byte(sigVInt)
+	// copy(order.Signature.S[:], sigSBytes)
+	// copy(order.Signature.R[:], sigRBytes)
+	// copy(order.Signature.Hash[:], order.Hash())
 	copy(order.TakerAssetAmountFilled[:], takerTokenAmountFilledBytes)
 	copy(order.TakerAssetAmountCancelled[:], takerTokenAmountCancelledBytes)
 	return nil
@@ -238,19 +231,36 @@ func (order *Order) Hash() []byte {
 // expirationTimeSeconds: new BigNumber(0),
 // }
 
+	domainSchemaSha := sha3.NewKeccak256()
+	domainSchemaSha.Write([]byte("DomainSeparator(address contract)"))
+	orderSchemaSha := sha3.NewKeccak256()
+	orderSchemaSha.Write([]byte("Order(address makerAddress,address takerAddress,address feeRecipientAddress,address senderAddress,uint256 makerAssetAmount,uint256 takerAssetAmount,uint256 makerFee,uint256 takerFee,uint256 expirationTimeSeconds,uint256 salt,bytes makerAssetData,bytes takerAssetData,)"))
+	exchangeSha := sha3.NewKeccak256()
+	exchangeSha.Write(order.ExchangeAddress[:])
+	makerAssetDataSha := sha3.NewKeccak256()
+	makerAssetDataSha.Write(order.MakerAssetData[:])
+	takerAssetDataSha := sha3.NewKeccak256()
+	takerAssetDataSha.Write(order.TakerAssetData[:])
+	orderSha := sha3.NewKeccak256()
+	orderSha.Write(order.Maker[:])
+	orderSha.Write(order.Taker[:])
+	orderSha.Write(order.FeeRecipient[:])
+	orderSha.Write(order.SenderAddress[:])
+	orderSha.Write(order.MakerAssetAmount[:])
+	orderSha.Write(order.TakerAssetAmount[:])
+	orderSha.Write(order.MakerFee[:])
+	orderSha.Write(order.TakerFee[:])
+	orderSha.Write(order.ExpirationTimestampInSec[:])
+	orderSha.Write(order.Salt[:])
+	orderSha.Write(makerAssetDataSha.Sum(nil))
+	orderSha.Write(takerAssetDataSha.Sum(nil))
+
 	sha := sha3.NewKeccak256()
-	sha.Write(order.ExchangeAddress[:])
-	sha.Write(order.Maker[:])
-	sha.Write(order.Taker[:])
-	sha.Write(order.MakerAsset[:])
-	sha.Write(order.TakerAsset[:])
-	sha.Write(order.FeeRecipient[:])
-	sha.Write(order.MakerAssetAmount[:])
-	sha.Write(order.TakerAssetAmount[:])
-	sha.Write(order.MakerFee[:])
-	sha.Write(order.TakerFee[:])
-	sha.Write(order.ExpirationTimestampInSec[:])
-	sha.Write(order.Salt[:])
+	sha.Write(domainSchemaSha.Sum(nil))
+	sha.Write(exchangeSha.Sum(nil))
+	sha.Write(orderSchemaSha.Sum(nil))
+	sha.Write(orderSha.Sum(nil))
+
 	return sha.Sum(nil)
 }
 
@@ -272,8 +282,8 @@ func (order *Order) Hash() []byte {
 type jsonOrder struct {
 	Maker                     string  `json:"makerAddress"`
 	Taker                     string  `json:"takerAddress"`
-	MakerAssetData            string  `json:"makerAssetData"`
-	TakerAssetData            string  `json:"takerAssetData"`
+	MakerAsset                string  `json:"makerAssetData"`
+	TakerAsset                string  `json:"takerAssetData"`
 	FeeRecipient              string  `json:"feeRecipientAddress"`
 	ExchangeAddress           string  `json:"exchangeAddress"`
 	SenderAddress             string  `json:"senderAddress"`
@@ -299,6 +309,23 @@ func (order *Order) UnmarshalJSON(b []byte) error {
 	if jOrder.TakerAssetAmountCancelled == "" {
 		jOrder.TakerAssetAmountCancelled = "0"
 	}
+	// maker
+	// taker
+	// makerToken
+	// takerToken
+	// feeRecipient
+	// exchangeAddress
+	// makerTokenAmount
+	// takerTokenAmount
+	// makerFee
+	// takerFee
+	// expirationTimestampInSec
+	// salt
+	// sigV
+	// sigR
+	// sigS
+	// takerTokenAmountFilled
+	// takerTokenAmountCancelled
 	return order.fromStrings(
 		jOrder.Maker,
 		jOrder.Taker,
@@ -332,10 +359,7 @@ func (order *Order) MarshalJSON() ([]byte, error) {
 	jsonOrder.TakerFee = new(big.Int).SetBytes(order.TakerFee[:]).String()
 	jsonOrder.ExpirationTimestampInSec = new(big.Int).SetBytes(order.ExpirationTimestampInSec[:]).String()
 	jsonOrder.Salt = new(big.Int).SetBytes(order.Salt[:]).String()
-	jsonOrder.Signature = jsonSignature{}
-	jsonOrder.Signature.R = fmt.Sprintf("%#x", order.Signature.R[:])
-	jsonOrder.Signature.V = json.Number(fmt.Sprintf("%v", order.Signature.V))
-	jsonOrder.Signature.S = fmt.Sprintf("%#x", order.Signature.S[:])
+	jsonOrder.Signature = fmt.Sprintf("%#x", order.Signature)
 	jsonOrder.TakerAssetAmountFilled = new(big.Int).SetBytes(order.TakerAssetAmountFilled[:]).String()
 	jsonOrder.TakerAssetAmountCancelled = new(big.Int).SetBytes(order.TakerAssetAmountCancelled[:]).String()
 	return json.Marshal(jsonOrder)
@@ -355,9 +379,9 @@ func (order *Order) Bytes() [441]byte {
 	copy(output[216:248], order.TakerFee[:])                 // 32
 	copy(output[248:280], order.ExpirationTimestampInSec[:]) // 32
 	copy(output[280:312], order.Salt[:])                     // 32
-	output[312] = order.Signature.V
-	copy(output[313:345], order.Signature.R[:])
-	copy(output[345:377], order.Signature.S[:])
+	// output[312] = order.Signature.V
+	// copy(output[313:345], order.Signature.R[:])
+	// copy(output[345:377], order.Signature.S[:])
 	copy(output[377:409], order.TakerAssetAmountFilled[:])
 	copy(output[409:441], order.TakerAssetAmountCancelled[:])
 	return output
@@ -377,11 +401,11 @@ func (order *Order) FromBytes(data [441]byte) {
 	copy(order.TakerFee[:], data[216:248])
 	copy(order.ExpirationTimestampInSec[:], data[248:280])
 	copy(order.Salt[:], data[280:312])
-	order.Signature = &Signature{}
-	order.Signature.V = data[312]
-	copy(order.Signature.R[:], data[313:345])
-	copy(order.Signature.S[:], data[345:377])
-	copy(order.Signature.Hash[:], order.Hash())
+	// order.Signature = &Signature{}
+	// order.Signature.V = data[312]
+	// copy(order.Signature.R[:], data[313:345])
+	// copy(order.Signature.S[:], data[345:377])
+	// copy(order.Signature.Hash[:], order.Hash())
 	copy(order.TakerAssetAmountFilled[:], data[377:409])
 	copy(order.TakerAssetAmountCancelled[:], data[409:441])
 }
