@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/crypto/sha3"
+	"github.com/ethereum/go-ethereum/rlp"
 	// "github.com/ethereum/go-ethereum/accounts/abi"
 	"math/big"
 	// "strconv"
@@ -57,23 +58,37 @@ func (data *Uint256) Big() (*big.Int) {
 	return new(big.Int).SetBytes(data[:])
 }
 
+type AssetData []byte
+
+func (data AssetData) ProxyId() (byte) {
+	return data[len(data) - 1]
+}
+
+func (data AssetData) AssetAddress() (*Address) {
+	address := &Address{}
+	if proxyId := data.ProxyId(); proxyId == 1 || proxyId == 2 {
+		copy(address[:], data[:20])
+	}
+	return address
+}
+
 
 // Order represents an 0x order object
 type Order struct {
-	Maker                     *Address `gorm:"index"`
-	Taker                     *Address `gorm:"index"`
-	MakerAsset                *Address `gorm:"index"`
-	TakerAsset                *Address `gorm:"index"`
-	MakerAssetData            []byte   `gorm:"index"`
-	TakerAssetData            []byte   `gorm:"index"`
-	FeeRecipient              *Address `gorm:"index"`
-	ExchangeAddress           *Address `gorm:"index"`
-	SenderAddress             *Address `gorm:"index"`
+	Maker                     *Address  `gorm:"index"`
+	Taker                     *Address  `gorm:"index"`
+	MakerAssetAddress         *Address  `gorm:"index"`
+	TakerAssetAddress         *Address  `gorm:"index"`
+	MakerAssetData            AssetData `gorm:"index"`
+	TakerAssetData            AssetData `gorm:"index"`
+	FeeRecipient              *Address  `gorm:"index"`
+	ExchangeAddress           *Address  `gorm:"index"`
+	SenderAddress             *Address  `gorm:"index"`
 	MakerAssetAmount          *Uint256
 	TakerAssetAmount          *Uint256
 	MakerFee                  *Uint256
 	TakerFee                  *Uint256
-	ExpirationTimestampInSec  *Uint256 `gorm:"index"`
+	ExpirationTimestampInSec  *Uint256  `gorm:"index"`
 	Salt                      *Uint256
 	Signature                 Signature //`gorm:"type:bytea"`
 	TakerAssetAmountFilled    *Uint256
@@ -84,8 +99,8 @@ func (order *Order) Initialize() {
 	order.ExchangeAddress = &Address{}
 	order.Maker = &Address{}
 	order.Taker = &Address{}
-	order.MakerAsset = &Address{}
-	order.TakerAsset = &Address{}
+	order.MakerAssetAddress = &Address{}
+	order.TakerAssetAddress = &Address{}
 	order.MakerAssetData = make([]byte, 20)
 	order.TakerAssetData = make([]byte, 20)
 	order.FeeRecipient = &Address{}
@@ -282,8 +297,8 @@ func (order *Order) Hash() []byte {
 type jsonOrder struct {
 	Maker                     string  `json:"makerAddress"`
 	Taker                     string  `json:"takerAddress"`
-	MakerAsset                string  `json:"makerAssetData"`
-	TakerAsset                string  `json:"takerAssetData"`
+	MakerAssetData            string  `json:"makerAssetData"`
+	TakerAssetData            string  `json:"takerAssetData"`
 	FeeRecipient              string  `json:"feeRecipientAddress"`
 	ExchangeAddress           string  `json:"exchangeAddress"`
 	SenderAddress             string  `json:"senderAddress"`
@@ -329,8 +344,8 @@ func (order *Order) UnmarshalJSON(b []byte) error {
 	return order.fromStrings(
 		jOrder.Maker,
 		jOrder.Taker,
-		jOrder.MakerAsset,
-		jOrder.TakerAsset,
+		jOrder.MakerAssetData,
+		jOrder.TakerAssetData,
 		jOrder.FeeRecipient,
 		jOrder.ExchangeAddress,
 		jOrder.MakerAssetAmount,
@@ -349,8 +364,8 @@ func (order *Order) MarshalJSON() ([]byte, error) {
 	jsonOrder := &jsonOrder{}
 	jsonOrder.Maker = fmt.Sprintf("%#x", order.Maker[:])
 	jsonOrder.Taker = fmt.Sprintf("%#x", order.Taker[:])
-	jsonOrder.MakerAsset = fmt.Sprintf("%#x", order.MakerAsset[:])
-	jsonOrder.TakerAsset = fmt.Sprintf("%#x", order.TakerAsset[:])
+	jsonOrder.MakerAssetData = fmt.Sprintf("%#x", order.MakerAssetData[:])
+	jsonOrder.TakerAssetData = fmt.Sprintf("%#x", order.TakerAssetData[:])
 	jsonOrder.FeeRecipient = fmt.Sprintf("%#x", order.FeeRecipient[:])
 	jsonOrder.ExchangeAddress = fmt.Sprintf("%#x", order.ExchangeAddress[:])
 	jsonOrder.MakerAssetAmount = new(big.Int).SetBytes(order.MakerAssetAmount[:]).String()
@@ -365,53 +380,57 @@ func (order *Order) MarshalJSON() ([]byte, error) {
 	return json.Marshal(jsonOrder)
 }
 
-func (order *Order) Bytes() [441]byte {
-	var output [441]byte
-	copy(output[0:20], order.ExchangeAddress[:])             // 20
-	copy(output[20:40], order.Maker[:])                      // 20
-	copy(output[40:60], order.Taker[:])                      // 20
-	copy(output[60:80], order.MakerAsset[:])                 // 20
-	copy(output[80:100], order.TakerAsset[:])                // 20
-	copy(output[100:120], order.FeeRecipient[:])             // 20
-	copy(output[120:152], order.MakerAssetAmount[:])         // 32
-	copy(output[152:184], order.TakerAssetAmount[:])         // 32
-	copy(output[184:216], order.MakerFee[:])                 // 32
-	copy(output[216:248], order.TakerFee[:])                 // 32
-	copy(output[248:280], order.ExpirationTimestampInSec[:]) // 32
-	copy(output[280:312], order.Salt[:])                     // 32
-	// output[312] = order.Signature.V
-	// copy(output[313:345], order.Signature.R[:])
-	// copy(output[345:377], order.Signature.S[:])
-	copy(output[377:409], order.TakerAssetAmountFilled[:])
-	copy(output[409:441], order.TakerAssetAmountCancelled[:])
-	return output
+func (order *Order) Bytes() []byte {
+	data, _ := rlp.EncodeToBytes(order)
+	return data
+	// var output []byte
+	// copy(output[0:20], order.ExchangeAddress[:])             // 20
+	// copy(output[20:40], order.Maker[:])                      // 20
+	// copy(output[40:60], order.Taker[:])                      // 20
+	// copy(output[60:80], order.MakerAssetData[:])                 // 20
+	// copy(output[80:100], order.TakerAssetData[:])                // 20
+	// copy(output[100:120], order.FeeRecipient[:])             // 20
+	// copy(output[120:152], order.MakerAssetAmount[:])         // 32
+	// copy(output[152:184], order.TakerAssetAmount[:])         // 32
+	// copy(output[184:216], order.MakerFee[:])                 // 32
+	// copy(output[216:248], order.TakerFee[:])                 // 32
+	// copy(output[248:280], order.ExpirationTimestampInSec[:]) // 32
+	// copy(output[280:312], order.Salt[:])                     // 32
+	// // output[312] = order.Signature.V
+	// // copy(output[313:345], order.Signature.R[:])
+	// // copy(output[345:377], order.Signature.S[:])
+	// copy(output[377:409], order.TakerAssetAmountFilled[:])
+	// copy(output[409:441], order.TakerAssetAmountCancelled[:])
+	// return output
 }
 
-func (order *Order) FromBytes(data [441]byte) {
-	order.Initialize()
-	copy(order.ExchangeAddress[:], data[0:20])
-	copy(order.Maker[:], data[20:40])
-	copy(order.Taker[:], data[40:60])
-	copy(order.MakerAsset[:], data[60:80])
-	copy(order.TakerAsset[:], data[80:100])
-	copy(order.FeeRecipient[:], data[100:120])
-	copy(order.MakerAssetAmount[:], data[120:152])
-	copy(order.TakerAssetAmount[:], data[152:184])
-	copy(order.MakerFee[:], data[184:216])
-	copy(order.TakerFee[:], data[216:248])
-	copy(order.ExpirationTimestampInSec[:], data[248:280])
-	copy(order.Salt[:], data[280:312])
-	// order.Signature = &Signature{}
-	// order.Signature.V = data[312]
-	// copy(order.Signature.R[:], data[313:345])
-	// copy(order.Signature.S[:], data[345:377])
-	// copy(order.Signature.Hash[:], order.Hash())
-	copy(order.TakerAssetAmountFilled[:], data[377:409])
-	copy(order.TakerAssetAmountCancelled[:], data[409:441])
+func (order *Order) FromBytes(data []byte) (error) {
+	return rlp.DecodeBytes(data, order)
+	// order.Initialize()
+	// copy(order.ExchangeAddress[:], data[0:20])
+	// copy(order.Maker[:], data[20:40])
+	// copy(order.Taker[:], data[40:60])
+	// copy(order.MakerAssetData[:], data[60:80])
+	// copy(order.TakerAssetData[:], data[80:100])
+	// copy(order.FeeRecipient[:], data[100:120])
+	// copy(order.MakerAssetAmount[:], data[120:152])
+	// copy(order.TakerAssetAmount[:], data[152:184])
+	// copy(order.MakerFee[:], data[184:216])
+	// copy(order.TakerFee[:], data[216:248])
+	// copy(order.ExpirationTimestampInSec[:], data[248:280])
+	// copy(order.Salt[:], data[280:312])
+	// // order.Signature = &Signature{}
+	// // order.Signature.V = data[312]
+	// // copy(order.Signature.R[:], data[313:345])
+	// // copy(order.Signature.S[:], data[345:377])
+	// // copy(order.Signature.Hash[:], order.Hash())
+	// copy(order.TakerAssetAmountFilled[:], data[377:409])
+	// copy(order.TakerAssetAmountCancelled[:], data[409:441])
 }
 
-func OrderFromBytes(data [441]byte) *Order {
+func OrderFromBytes(data []byte) (*Order, error)  {
+	// TODO: Since orders are no longer strictly 441 bytes, and must be properly
+	// RLP encoded, this can fail now.
 	order := Order{}
-	order.FromBytes(data)
-	return &order
+	return &order, order.FromBytes(data)
 }

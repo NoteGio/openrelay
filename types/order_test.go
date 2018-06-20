@@ -9,6 +9,7 @@ import (
 	// "io/ioutil"
 	// "reflect"
 	"testing"
+	"bytes"
 )
 
 func checkOrder(order *types.Order, t *testing.T) {
@@ -16,37 +17,37 @@ func checkOrder(order *types.Order, t *testing.T) {
 		t.Errorf("Unexpected MakerAssetData: %#x", order.MakerAssetData[:])
 	}
 	if hex.EncodeToString(order.Maker[:]) != "0000000000000000000000000000000000000000" {
-		t.Errorf("Unexpected Maker")
+		t.Errorf("Unexpected Maker: %#x", order.Maker[:])
 	}
 	if hex.EncodeToString(order.Taker[:]) != "0000000000000000000000000000000000000000" {
-		t.Errorf("Unexpected Taker")
+		t.Errorf("Unexpected Taker: %#x", order.Taker[:])
 	}
 	if hex.EncodeToString(order.FeeRecipient[:]) != "0000000000000000000000000000000000000000" {
-		t.Errorf("Unexpected FeeRecipient")
+		t.Errorf("Unexpected FeeRecipient: %#x", order.FeeRecipient[:])
 	}
 	if hex.EncodeToString(order.TakerAssetData[:]) != "0000000000000000000000000000000000000000" {
 		t.Errorf("Unexpected TakerAssetData: %#x", order.TakerAssetData[:])
 	}
 	if hex.EncodeToString(order.MakerAssetAmount[:]) != "0000000000000000000000000000000000000000000000000000000000000000" {
-		t.Errorf("Unexpected MakerAssetAmount")
+		t.Errorf("Unexpected MakerAssetAmount: %#x", order.MakerAssetAmount[:])
 	}
 	if hex.EncodeToString(order.TakerAssetAmount[:]) != "0000000000000000000000000000000000000000000000000000000000000000" {
-		t.Errorf("Unexpected MakerAssetAmount")
+		t.Errorf("Unexpected MakerAssetAmount: %#x", order.TakerAssetAmount[:])
 	}
 	if hex.EncodeToString(order.MakerFee[:]) != "0000000000000000000000000000000000000000000000000000000000000000" {
-		t.Errorf("Unexpected MakerFee")
+		t.Errorf("Unexpected MakerFee: %#x", order.MakerFee[:])
 	}
 	if hex.EncodeToString(order.TakerFee[:]) != "0000000000000000000000000000000000000000000000000000000000000000" {
-		t.Errorf("Unexpected TakerFee")
+		t.Errorf("Unexpected TakerFee: %#x", order.TakerFee[:])
 	}
 	if hex.EncodeToString(order.ExpirationTimestampInSec[:]) != "0000000000000000000000000000000000000000000000000000000000000000" {
-		t.Errorf("Unexpected ExpirationTimestampInSec")
+		t.Errorf("Unexpected ExpirationTimestampInSec: %#x", order.ExpirationTimestampInSec[:])
 	}
 	if hex.EncodeToString(order.ExchangeAddress[:]) != "b69e673309512a9d726f87304c6984054f87a93b" {
-		t.Errorf("Unexpected ExchangeAddress")
+		t.Errorf("Unexpected ExchangeAddress: %#x", order.ExchangeAddress[:])
 	}
 	if hex.EncodeToString(order.Salt[:]) != "0000000000000000000000000000000000000000000000000000000000000000" {
-		t.Errorf("Unexpected Salt")
+		t.Errorf("Unexpected Salt: %#x", order.Salt[:])
 	}
 	// if order.Signature.V != byte(27) {
 	// 	t.Errorf("Unexpected sig.v %v", order.Signature.V)
@@ -79,6 +80,25 @@ func TestOrderHash(t *testing.T) {
 	}
 	copy(order.ExchangeAddress[:], exchangeAddressBytes)
 	checkOrder(order, t)
+}
+
+func TestOrderToFromBytes(t *testing.T) {
+	order := &types.Order{}
+	order.Initialize()
+	exchangeAddressBytes, err := types.HexStringToBytes("b69e673309512a9d726f87304c6984054f87a93b")
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	copy(order.ExchangeAddress[:], exchangeAddressBytes)
+	order2, err := types.OrderFromBytes(order.Bytes())
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	checkOrder(order2, t)
+	if !bytes.Equal(order.Hash(), order2.Hash()) {
+		t.Errorf("Unequal hashes: %#x != %#x", order.Hash(), order2.Hash())
+	}
+
 }
 
 //
