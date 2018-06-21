@@ -47,18 +47,6 @@ func (sig Signature) Verify(address *Address, hash []byte) bool {
 		return false
 	}
 	return false
-	// sigValue, _ := sig.Value()
-	// sigBytes := sigValue.([]byte)
-	//
-	// hashedBytes := append([]byte("\x19Ethereum Signed Message:\n32"), hash[:]...)
-	// signedBytes := crypto.Keccak256(hashedBytes)
-	// pub, err := crypto.Ecrecover(signedBytes, sigBytes)
-	// if err != nil {
-	// 	log.Println(err.Error())
-	// 	return false
-	// }
-	// recoverAddress := common.BytesToAddress(crypto.Keccak256(pub[1:])[12:])
-	// return reflect.DeepEqual(address[:], recoverAddress[:])
 }
 
 func (sig Signature) verifyEIP712(address *Address, hash []byte) bool {
