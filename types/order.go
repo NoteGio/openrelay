@@ -92,7 +92,7 @@ type Order struct {
 	Salt                      *Uint256
 	Signature                 Signature //`gorm:"type:bytea"`
 	TakerAssetAmountFilled    *Uint256
-	TakerAssetAmountCancelled *Uint256
+	Cancelled                 bool
 }
 
 func (order *Order) Initialize() {
@@ -112,21 +112,21 @@ func (order *Order) Initialize() {
 	order.ExpirationTimestampInSec = &Uint256{}
 	order.Salt = &Uint256{}
 	order.TakerAssetAmountFilled = &Uint256{}
-	order.TakerAssetAmountCancelled = &Uint256{}
+	order.Cancelled = false
 	order.Signature = Signature{}
 }
 
 // NewOrder takes string representations of values and converts them into an Order object
-func NewOrder(maker, taker, makerToken, takerToken, feeRecipient, exchangeAddress, senderAddress, makerTokenAmount, takerTokenAmount, makerFee, takerFee, expirationTimestampInSec, salt, sig, takerTokenAmountFilled, takerTokenAmountCancelled string) (*Order, error) {
+func NewOrder(maker, taker, makerToken, takerToken, feeRecipient, exchangeAddress, senderAddress, makerTokenAmount, takerTokenAmount, makerFee, takerFee, expirationTimestampInSec, salt, sig, takerTokenAmountFilled, cancelled string) (*Order, error) {
 	order := Order{}
-	if err := order.fromStrings(maker, taker, makerToken, takerToken, feeRecipient, exchangeAddress, senderAddress, makerTokenAmount, takerTokenAmount, makerFee, takerFee, expirationTimestampInSec, salt, sig, takerTokenAmountFilled, takerTokenAmountCancelled); err != nil {
+	if err := order.fromStrings(maker, taker, makerToken, takerToken, feeRecipient, exchangeAddress, senderAddress, makerTokenAmount, takerTokenAmount, makerFee, takerFee, expirationTimestampInSec, salt, sig, takerTokenAmountFilled, cancelled); err != nil {
 		return nil, err
 	}
 	return &order, nil
 }
 
 
-func (order *Order) fromStrings(maker, taker, makerToken, takerToken, feeRecipient, exchangeAddress, senderAddress, makerTokenAmount, takerTokenAmount, makerFee, takerFee, expirationTimestampInSec, salt, sig, takerTokenAmountFilled, takerTokenAmountCancelled string) error {
+func (order *Order) fromStrings(maker, taker, makerToken, takerToken, feeRecipient, exchangeAddress, senderAddress, makerTokenAmount, takerTokenAmount, makerFee, takerFee, expirationTimestampInSec, salt, sig, takerTokenAmountFilled, cancelled string) error {
 	order.Initialize()
 	makerBytes, err := HexStringToBytes(maker)
 	if err != nil {
@@ -188,10 +188,6 @@ func (order *Order) fromStrings(maker, taker, makerToken, takerToken, feeRecipie
 	if err != nil {
 		return err
 	}
-	takerTokenAmountCancelledBytes, err := intStringToBytes(takerTokenAmountCancelled)
-	if err != nil {
-		return err
-	}
 	copy(order.Maker[:], makerBytes)
 	copy(order.Taker[:], takerBytes)
 	copy(order.FeeRecipient[:], feeRecipientBytes)
@@ -209,7 +205,7 @@ func (order *Order) fromStrings(maker, taker, makerToken, takerToken, feeRecipie
 	copy(order.Salt[:], saltBytes)
 	copy(order.Signature[:], signatureBytes)
 	copy(order.TakerAssetAmountFilled[:], takerTokenAmountFilledBytes)
-	copy(order.TakerAssetAmountCancelled[:], takerTokenAmountCancelledBytes)
+	order.Cancelled = cancelled == "true"
 	return nil
 }
 
@@ -263,7 +259,7 @@ type jsonOrder struct {
 	Salt                      string  `json:"salt"`
 	Signature                 string  `json:"signature"`
 	TakerAssetAmountFilled    string  `json:"-"`
-	TakerAssetAmountCancelled string  `json:"-"`
+	Cancelled                 string  `json:"-"`
 }
 
 func (order *Order) UnmarshalJSON(b []byte) error {
@@ -274,8 +270,8 @@ func (order *Order) UnmarshalJSON(b []byte) error {
 	if jOrder.TakerAssetAmountFilled == "" {
 		jOrder.TakerAssetAmountFilled = "0"
 	}
-	if jOrder.TakerAssetAmountCancelled == "" {
-		jOrder.TakerAssetAmountCancelled = "0"
+	if jOrder.Cancelled == "" {
+		jOrder.Cancelled = "false"
 	}
 	return order.fromStrings(
 		jOrder.Maker,
@@ -293,7 +289,7 @@ func (order *Order) UnmarshalJSON(b []byte) error {
 		jOrder.Salt,
 		jOrder.Signature,
 		jOrder.TakerAssetAmountFilled,
-		jOrder.TakerAssetAmountCancelled,
+		jOrder.Cancelled,
 	)
 }
 
@@ -314,7 +310,11 @@ func (order *Order) MarshalJSON() ([]byte, error) {
 	jsonOrder.Salt = new(big.Int).SetBytes(order.Salt[:]).String()
 	jsonOrder.Signature = fmt.Sprintf("%#x", order.Signature)
 	jsonOrder.TakerAssetAmountFilled = new(big.Int).SetBytes(order.TakerAssetAmountFilled[:]).String()
-	jsonOrder.TakerAssetAmountCancelled = new(big.Int).SetBytes(order.TakerAssetAmountCancelled[:]).String()
+	if order.Cancelled {
+		jsonOrder.Cancelled = "true"
+	} else {
+		jsonOrder.Cancelled = "false"
+	}
 	return json.Marshal(jsonOrder)
 }
 
