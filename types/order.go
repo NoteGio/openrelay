@@ -64,7 +64,7 @@ func (data AssetData) ProxyId() (byte) {
 	return data[len(data) - 1]
 }
 
-func (data AssetData) AssetAddress() (*Address) {
+func (data AssetData) Address() (*Address) {
 	address := &Address{}
 	if proxyId := data.ProxyId(); proxyId == 1 || proxyId == 2 {
 		copy(address[:], data[:20])
@@ -117,32 +117,16 @@ func (order *Order) Initialize() {
 }
 
 // NewOrder takes string representations of values and converts them into an Order object
-func NewOrder(maker, taker, makerToken, takerToken, feeRecipient, exchangeAddress, makerTokenAmount, takerTokenAmount, makerFee, takerFee, expirationTimestampInSec, salt, sig, takerTokenAmountFilled, takerTokenAmountCancelled string) (*Order, error) {
+func NewOrder(maker, taker, makerToken, takerToken, feeRecipient, exchangeAddress, senderAddress, makerTokenAmount, takerTokenAmount, makerFee, takerFee, expirationTimestampInSec, salt, sig, takerTokenAmountFilled, takerTokenAmountCancelled string) (*Order, error) {
 	order := Order{}
-	if err := order.fromStrings(maker, taker, makerToken, takerToken, feeRecipient, exchangeAddress, makerTokenAmount, takerTokenAmount, makerFee, takerFee, expirationTimestampInSec, salt, sig, takerTokenAmountFilled, takerTokenAmountCancelled); err != nil {
+	if err := order.fromStrings(maker, taker, makerToken, takerToken, feeRecipient, exchangeAddress, senderAddress, makerTokenAmount, takerTokenAmount, makerFee, takerFee, expirationTimestampInSec, salt, sig, takerTokenAmountFilled, takerTokenAmountCancelled); err != nil {
 		return nil, err
 	}
 	return &order, nil
 }
 
 
-// jOrder.Maker,
-// jOrder.Taker,
-// jOrder.MakerAsset,
-// jOrder.TakerAsset,
-// jOrder.FeeRecipient,
-// jOrder.ExchangeAddress,
-// jOrder.MakerAssetAmount,
-// jOrder.TakerAssetAmount,
-// jOrder.MakerFee,
-// jOrder.TakerFee,
-// jOrder.ExpirationTimestampInSec,
-// jOrder.Salt,
-// jOrder.Signature,
-// jOrder.TakerAssetAmountFilled,
-// jOrder.TakerAssetAmountCancelled,
-
-func (order *Order) fromStrings(maker, taker, makerToken, takerToken, feeRecipient, exchangeAddress, makerTokenAmount, takerTokenAmount, makerFee, takerFee, expirationTimestampInSec, salt, sig, takerTokenAmountFilled, takerTokenAmountCancelled string) error {
+func (order *Order) fromStrings(maker, taker, makerToken, takerToken, feeRecipient, exchangeAddress, senderAddress, makerTokenAmount, takerTokenAmount, makerFee, takerFee, expirationTimestampInSec, salt, sig, takerTokenAmountFilled, takerTokenAmountCancelled string) error {
 	order.Initialize()
 	makerBytes, err := HexStringToBytes(maker)
 	if err != nil {
@@ -165,6 +149,10 @@ func (order *Order) fromStrings(maker, taker, makerToken, takerToken, feeRecipie
 		return err
 	}
 	exchangeAddressBytes, err := HexStringToBytes(exchangeAddress)
+	if err != nil {
+		return err
+	}
+	senderAddressBytes, err := HexStringToBytes(senderAddress)
 	if err != nil {
 		return err
 	}
@@ -208,8 +196,11 @@ func (order *Order) fromStrings(maker, taker, makerToken, takerToken, feeRecipie
 	copy(order.Taker[:], takerBytes)
 	copy(order.FeeRecipient[:], feeRecipientBytes)
 	copy(order.ExchangeAddress[:], exchangeAddressBytes)
+	copy(order.SenderAddress[:], senderAddressBytes)
 	copy(order.TakerAssetData[:], takerAssetDataBytes)
 	copy(order.MakerAssetData[:], makerAssetDataBytes)
+	order.TakerAssetAddress = order.TakerAssetData.Address()
+	order.MakerAssetAddress = order.MakerAssetData.Address()
 	copy(order.MakerAssetAmount[:], makerTokenAmountBytes)
 	copy(order.TakerAssetAmount[:], takerTokenAmountBytes)
 	copy(order.MakerFee[:], makerFeeBytes)
@@ -217,35 +208,12 @@ func (order *Order) fromStrings(maker, taker, makerToken, takerToken, feeRecipie
 	copy(order.ExpirationTimestampInSec[:], expirationTimestampInSecBytes)
 	copy(order.Salt[:], saltBytes)
 	copy(order.Signature[:], signatureBytes)
-	// order.Signature.V = byte(sigVInt)
-	// copy(order.Signature.S[:], sigSBytes)
-	// copy(order.Signature.R[:], sigRBytes)
-	// copy(order.Signature.Hash[:], order.Hash())
 	copy(order.TakerAssetAmountFilled[:], takerTokenAmountFilledBytes)
 	copy(order.TakerAssetAmountCancelled[:], takerTokenAmountCancelledBytes)
 	return nil
 }
 
 func (order *Order) Hash() []byte {
-
-// const expectedOrderHash = '0x367ad7730eb8b5feab8a9c9f47c6fcba77a2d4df125ee6a59cc26ac955710f7e';
-// const fakeExchangeContractAddress = '0xb69e673309512a9d726f87304c6984054f87a93b';
-// const order: Order = {
-// makerAddress: constants.NULL_ADDRESS,
-// takerAddress: constants.NULL_ADDRESS,
-// senderAddress: constants.NULL_ADDRESS,
-// feeRecipientAddress: constants.NULL_ADDRESS,
-// makerAssetData: constants.NULL_ADDRESS,
-// takerAssetData: constants.NULL_ADDRESS,
-// exchangeAddress: fakeExchangeContractAddress,
-// salt: new BigNumber(0),
-// makerFee: new BigNumber(0),
-// takerFee: new BigNumber(0),
-// makerAssetAmount: new BigNumber(0),
-// takerAssetAmount: new BigNumber(0),
-// expirationTimeSeconds: new BigNumber(0),
-// }
-
 	domainSchemaSha := sha3.NewKeccak256()
 	domainSchemaSha.Write([]byte("DomainSeparator(address contract)"))
 	orderSchemaSha := sha3.NewKeccak256()
@@ -279,21 +247,6 @@ func (order *Order) Hash() []byte {
 	return sha.Sum(nil)
 }
 
-// "makerAddress"
-// "takerAddress"
-// "feeRecipientAddress"
-// "senderAddress"
-// "makerAssetAmount"
-// "takerAssetAmount"
-// "makerFee"
-// "takerFee"
-// "expirationTimeSeconds"
-// "salt"
-// "makerAssetData"
-// "takerAssetData"
-// "exchangeAddress"
-// "signature"
-
 type jsonOrder struct {
 	Maker                     string  `json:"makerAddress"`
 	Taker                     string  `json:"takerAddress"`
@@ -324,23 +277,6 @@ func (order *Order) UnmarshalJSON(b []byte) error {
 	if jOrder.TakerAssetAmountCancelled == "" {
 		jOrder.TakerAssetAmountCancelled = "0"
 	}
-	// maker
-	// taker
-	// makerToken
-	// takerToken
-	// feeRecipient
-	// exchangeAddress
-	// makerTokenAmount
-	// takerTokenAmount
-	// makerFee
-	// takerFee
-	// expirationTimestampInSec
-	// salt
-	// sigV
-	// sigR
-	// sigS
-	// takerTokenAmountFilled
-	// takerTokenAmountCancelled
 	return order.fromStrings(
 		jOrder.Maker,
 		jOrder.Taker,
@@ -348,6 +284,7 @@ func (order *Order) UnmarshalJSON(b []byte) error {
 		jOrder.TakerAssetData,
 		jOrder.FeeRecipient,
 		jOrder.ExchangeAddress,
+		jOrder.SenderAddress,
 		jOrder.MakerAssetAmount,
 		jOrder.TakerAssetAmount,
 		jOrder.MakerFee,
@@ -368,6 +305,7 @@ func (order *Order) MarshalJSON() ([]byte, error) {
 	jsonOrder.TakerAssetData = fmt.Sprintf("%#x", order.TakerAssetData[:])
 	jsonOrder.FeeRecipient = fmt.Sprintf("%#x", order.FeeRecipient[:])
 	jsonOrder.ExchangeAddress = fmt.Sprintf("%#x", order.ExchangeAddress[:])
+	jsonOrder.SenderAddress = fmt.Sprintf("%#x", order.SenderAddress[:])
 	jsonOrder.MakerAssetAmount = new(big.Int).SetBytes(order.MakerAssetAmount[:]).String()
 	jsonOrder.TakerAssetAmount = new(big.Int).SetBytes(order.TakerAssetAmount[:]).String()
 	jsonOrder.MakerFee = new(big.Int).SetBytes(order.MakerFee[:]).String()
@@ -383,54 +321,13 @@ func (order *Order) MarshalJSON() ([]byte, error) {
 func (order *Order) Bytes() []byte {
 	data, _ := rlp.EncodeToBytes(order)
 	return data
-	// var output []byte
-	// copy(output[0:20], order.ExchangeAddress[:])             // 20
-	// copy(output[20:40], order.Maker[:])                      // 20
-	// copy(output[40:60], order.Taker[:])                      // 20
-	// copy(output[60:80], order.MakerAssetData[:])                 // 20
-	// copy(output[80:100], order.TakerAssetData[:])                // 20
-	// copy(output[100:120], order.FeeRecipient[:])             // 20
-	// copy(output[120:152], order.MakerAssetAmount[:])         // 32
-	// copy(output[152:184], order.TakerAssetAmount[:])         // 32
-	// copy(output[184:216], order.MakerFee[:])                 // 32
-	// copy(output[216:248], order.TakerFee[:])                 // 32
-	// copy(output[248:280], order.ExpirationTimestampInSec[:]) // 32
-	// copy(output[280:312], order.Salt[:])                     // 32
-	// // output[312] = order.Signature.V
-	// // copy(output[313:345], order.Signature.R[:])
-	// // copy(output[345:377], order.Signature.S[:])
-	// copy(output[377:409], order.TakerAssetAmountFilled[:])
-	// copy(output[409:441], order.TakerAssetAmountCancelled[:])
-	// return output
 }
 
 func (order *Order) FromBytes(data []byte) (error) {
 	return rlp.DecodeBytes(data, order)
-	// order.Initialize()
-	// copy(order.ExchangeAddress[:], data[0:20])
-	// copy(order.Maker[:], data[20:40])
-	// copy(order.Taker[:], data[40:60])
-	// copy(order.MakerAssetData[:], data[60:80])
-	// copy(order.TakerAssetData[:], data[80:100])
-	// copy(order.FeeRecipient[:], data[100:120])
-	// copy(order.MakerAssetAmount[:], data[120:152])
-	// copy(order.TakerAssetAmount[:], data[152:184])
-	// copy(order.MakerFee[:], data[184:216])
-	// copy(order.TakerFee[:], data[216:248])
-	// copy(order.ExpirationTimestampInSec[:], data[248:280])
-	// copy(order.Salt[:], data[280:312])
-	// // order.Signature = &Signature{}
-	// // order.Signature.V = data[312]
-	// // copy(order.Signature.R[:], data[313:345])
-	// // copy(order.Signature.S[:], data[345:377])
-	// // copy(order.Signature.Hash[:], order.Hash())
-	// copy(order.TakerAssetAmountFilled[:], data[377:409])
-	// copy(order.TakerAssetAmountCancelled[:], data[409:441])
 }
 
 func OrderFromBytes(data []byte) (*Order, error)  {
-	// TODO: Since orders are no longer strictly 441 bytes, and must be properly
-	// RLP encoded, this can fail now.
 	order := Order{}
 	return &order, order.FromBytes(data)
 }
