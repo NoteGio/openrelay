@@ -1,19 +1,15 @@
 {
-  "maker": "0x324454186bb728a3ea55750e0618ff1b18ce6cf8",
-  "makerTokenAddress": "0x1dad4783cf3fe3085c1426157ab175a6119a04ba",
-  "makerTokenAmount": "50000000000000000000",
+  "makerAddress": "0x627306090abaB3A6e1400e9345bC60c78a8BEf57",
+  "makerAssetData": "0x1dad4783cf3fe3085c1426157ab175a6119a04ba01",
+  "makerAssetAmount": "50000000000000000000",
   "makerFee": "0",
-  "taker": "",
-  "takerTokenAddress": "0x05d090b51c40b020eab3bfcb6a2dff130df22e9c",
-  "takerTokenAmount": "1000000000000000000",
+  "takerAddress": "",
+  "takerAssetAddress": "0x05d090b51c40b020eab3bfcb6a2dff130df22e9c01",
+  "takerAssetAmount": "1000000000000000000",
   "takerFee": "0",
-  "expirationUnixTimestampSec": "5797808836",
+  "expirationTimeSeconds": "5797808836",
   "feeRecipient": "0x0000000000000000000000000000000000000000",
   "salt": "11065671350908846865864045738088581419204014210814002044381812654087807531",
-  "ecSignature": {
-    "v": "27",
-    "r": "0x37adbc51c87a2f4c8c40c25fab5a73c65d078322f1db5739ee6fd49f18ce4463",
-    "s": "0x7382de9b4cf7ceaf602f221132c9ddf41b83fb9666839022703da852d4ed88af"
-  },
-  "exchangeContractAddress": "0x90fe2af704b34e0224bf2299c838e04d4dcf1364"
+  "exchangeAddress": "0x90fe2af704b34e0224bf2299c838e04d4dcf1364",
+  "signature": "0x007946631cf7c57518905507cef39bd26b0770c30f3cf0ed090a289c40c532eb160ce117e26abcb1ce438e0557a34b4b3a2d19c5cafa0b35bd6ffffb9e6823068403"
 }

@@ -203,6 +203,7 @@ func (order *Order) fromStrings(maker, taker, makerToken, takerToken, feeRecipie
 	copy(order.TakerFee[:], takerFeeBytes)
 	copy(order.ExpirationTimestampInSec[:], expirationTimestampInSecBytes)
 	copy(order.Salt[:], saltBytes)
+	order.Signature = append(order.Signature, signatureBytes[:]...)
 	copy(order.Signature[:], signatureBytes)
 	copy(order.TakerAssetAmountFilled[:], takerTokenAmountFilledBytes)
 	order.Cancelled = cancelled == "true"

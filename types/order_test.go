@@ -6,10 +6,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"github.com/notegio/openrelay/types"
-	// "io/ioutil"
+	"io/ioutil"
 	"reflect"
 	"testing"
 	"bytes"
+	// "log"
 )
 
 func checkOrder(order *types.Order, t *testing.T) {
@@ -156,5 +157,17 @@ func TestJsonMarshalSlice(t *testing.T) {
 	}
 	if string(data) != "[{\"makerAddress\":\"0x0000000000000000000000000000000000000000\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0x0000000000000000000000000000000000000000\",\"takerAssetData\":\"0x0000000000000000000000000000000000000000\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0xb69e673309512a9d726f87304c6984054f87a93b\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"0\",\"takerAssetAmount\":\"0\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"0\",\"salt\":\"0\",\"signature\":\"0x006bcc503876436ae6ebddecc16f95fdc74945ba85aa7debabdfa4a708a80b0272520d4f331a50396583db9a06bce884abc82219bfe180ef0093b0534786c996c203\"}]" {
 		t.Errorf("Got unexpected JSON value: %v", string(data))
+	}
+}
+
+func TestJsonUnmarshal(t *testing.T) {
+	newOrder := types.Order{}
+	if orderData, err := ioutil.ReadFile("../formatted_transaction.json"); err == nil {
+		if err := json.Unmarshal(orderData, &newOrder); err != nil {
+			t.Fatalf(err.Error())
+		}
+	}
+	if !newOrder.Signature.Verify(newOrder.Maker, newOrder.Hash()) {
+		t.Errorf("Failed to verify order with signature: %#x", newOrder.Signature)
 	}
 }
