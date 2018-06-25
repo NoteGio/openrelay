@@ -5,9 +5,10 @@ import (
 	"fmt"
 	dbModule "github.com/notegio/openrelay/db"
 	"github.com/notegio/openrelay/types"
-	"math/big"
+	// "math/big"
 	"reflect"
 	"testing"
+	// "log"
 )
 
 func TestIndexOrder(t *testing.T) {
@@ -25,8 +26,8 @@ func TestIndexOrder(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 	indexer := dbModule.NewIndexer(tx, dbModule.StatusOpen)
-	order := sampleOrder()
-	if !order.Signature.Verify(order.Maker) {
+	order := sampleOrder(t)
+	if !order.Signature.Verify(order.Maker, order.Hash()) {
 		t.Errorf("Failed to verify signature")
 	}
 	if err := indexer.Index(order); err != nil {
@@ -49,15 +50,15 @@ func TestFillIndex(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 	indexer := dbModule.NewIndexer(tx, dbModule.StatusOpen)
-	order := sampleOrder()
+	order := sampleOrder(t)
 	if err := indexer.Index(order); err != nil {
 		t.Errorf(err.Error())
 	}
-	takerTokenAmount := new(big.Int).SetBytes(order.TakerTokenAmount[:])
+	takerAssetAmount := order.TakerAssetAmount.Big()
 	fillString := fmt.Sprintf(
-		"{\"orderHash\": \"%#x\", \"filledTakerTokenAmount\": \"%v\"}",
+		"{\"orderHash\": \"%#x\", \"filledTakerAssetAmount\": \"%v\"}",
 		order.Hash(),
-		takerTokenAmount.String(),
+		takerAssetAmount.String(),
 	)
 	fillRecord := &dbModule.FillRecord{}
 	if err := json.Unmarshal([]byte(fillString), fillRecord); err != nil {
@@ -69,8 +70,8 @@ func TestFillIndex(t *testing.T) {
 	dbOrder := &dbModule.Order{}
 	dbOrder.Initialize()
 	tx.Model(&dbModule.Order{}).Where("order_hash = ?", order.Hash()).First(dbOrder)
-	if !reflect.DeepEqual(dbOrder.TakerTokenAmount, dbOrder.TakerTokenAmountFilled) {
-		t.Errorf("TakerTokenAmount should match TakerTokenAmountFilled, got %#x != %#x", dbOrder.TakerTokenAmount[:], dbOrder.TakerTokenAmountFilled[:])
+	if !reflect.DeepEqual(dbOrder.TakerAssetAmount, dbOrder.TakerAssetAmountFilled) {
+		t.Errorf("TakerAssetAmount should match TakerAssetAmountFilled, got %#x != %#x", dbOrder.TakerAssetAmount[:], dbOrder.TakerAssetAmountFilled[:])
 	}
 	if dbOrder.Status != dbModule.StatusFilled {
 		t.Errorf("Order status should be filled, got %v", dbOrder.Status)
@@ -92,15 +93,15 @@ func TestCheckUnfundedSufficient(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 	indexer := dbModule.NewIndexer(tx, dbModule.StatusUnfunded)
-	order := sampleOrder()
+	order := sampleOrder(t)
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *order
 	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	// Checking that the MakerAddress has enough of MakerToken, asserting that they have exactly MakerTokenAmount of the token
-	// This check ignores ZRX, by saying that the TakerToken is ZRX, rather than the MakerToken.
-	if err := indexer.RecordSpend(dbOrder.Maker, dbOrder.MakerToken, dbOrder.TakerToken, dbOrder.MakerTokenAmount); err != nil {
+	// Checking that the MakerAddress has enough of MakerAssetData.Address(), asserting that they have exactly MakerAssetAmount of the token
+	// This check ignores ZRX, by saying that the TakerAssetData is ZRX, rather than the MakerAssetData.
+	if err := indexer.RecordSpend(dbOrder.Maker, dbOrder.MakerAssetData.Address(), dbOrder.TakerAssetData.Address(), dbOrder.MakerAssetAmount); err != nil {
 		t.Errorf(err.Error())
 	}
 	dbOrders := []dbModule.Order{}
@@ -126,16 +127,16 @@ func TestCheckUnfundedNotFound(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 	indexer := dbModule.NewIndexer(tx, dbModule.StatusUnfunded)
-	order := sampleOrder()
+	order := sampleOrder(t)
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *order
 	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	// Checking that the Taker has enough of MakerToken, asserting that they have exactly MakerTokenAmount of the token
-	// This check ignores ZRX, by saying that the TakerToken is ZRX, rather than the MakerToken.
+	// Checking that the Taker has enough of MakerAssetData.Address(), asserting that they have exactly MakerAssetAmount of the token
+	// This check ignores ZRX, by saying that the TakerAssetData is ZRX, rather than the MakerAssetData.
 	// This should not change anything, because no orders will match
-	if err := indexer.RecordSpend(dbOrder.Taker, dbOrder.MakerToken, dbOrder.TakerToken, dbOrder.MakerTokenAmount); err != nil {
+	if err := indexer.RecordSpend(dbOrder.Taker, dbOrder.MakerAssetData.Address(), dbOrder.TakerAssetData.Address(), dbOrder.MakerAssetAmount); err != nil {
 		t.Errorf(err.Error())
 	}
 	dbOrders := []dbModule.Order{}
@@ -161,17 +162,17 @@ func TestCheckUnfundedInsufficient(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 	indexer := dbModule.NewIndexer(tx, dbModule.StatusUnfunded)
-	order := sampleOrder()
+	order := sampleOrder(t)
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *order
 	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	// Checking that the Taker has enough of MakerToken, asserting that they have exactly MakerTokenAmount of the token
-	// This check ignores ZRX, by saying that the TakerToken is ZRX, rather than the MakerToken.
+	// Checking that the Taker has enough of MakerAssetData.Address(), asserting that they have exactly MakerAssetAmount of the token
+	// This check ignores ZRX, by saying that the TakerAssetData is ZRX, rather than the MakerAssetData.
 	// This should not change anything, because no orders will match
 	zero := &types.Uint256{}
-	if err := indexer.RecordSpend(dbOrder.Maker, dbOrder.MakerToken, dbOrder.TakerToken, zero); err != nil {
+	if err := indexer.RecordSpend(dbOrder.Maker, dbOrder.MakerAssetData.Address(), dbOrder.TakerAssetData.Address(), zero); err != nil {
 		t.Errorf(err.Error())
 	}
 	dbOrders := []dbModule.Order{}

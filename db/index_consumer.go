@@ -23,9 +23,12 @@ func (consumer *IndexConsumer) Consume(msg channels.Delivery) {
 	consumer.s.Acquire()
 	go func(){
 		defer consumer.s.Release()
-		orderBytes := [441]byte{}
-		copy(orderBytes[:], []byte(msg.Payload()))
-		order := types.OrderFromBytes(orderBytes)
+		order, err := types.OrderFromBytes([]byte(msg.Payload()))
+		if err != nil {
+			log.Printf("Error parsing order: %v", err.Error())
+			msg.Reject()
+			return
+		}
 		if err := consumer.idx.Index(order); err == nil {
 			msg.Ack()
 		} else {

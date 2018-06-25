@@ -9,12 +9,12 @@ import (
 	"math/big"
 	"strings"
 	"bytes"
+	// "log"
 )
 
 type FillRecord struct {
 	OrderHash                 string `json:"orderHash"`
-	FilledTakerTokenAmount    string `json:"filledTakerTokenAmount"`
-	CancelledTakerTokenAmount string `json:"cancelledTakerTokenAmount"`
+	FilledTakerAssetAmount    string `json:"filledTakerAssetAmount"`
 }
 
 type Indexer struct {
@@ -36,27 +36,18 @@ func (indexer *Indexer) RecordFill(fillRecord *FillRecord) error {
 	if err != nil {
 		return err
 	}
-	if fillRecord.FilledTakerTokenAmount == "" {
-		fillRecord.FilledTakerTokenAmount = "0"
+	if fillRecord.FilledTakerAssetAmount == "" {
+		fillRecord.FilledTakerAssetAmount = "0"
 	}
-	if fillRecord.CancelledTakerTokenAmount == "" {
-		fillRecord.CancelledTakerTokenAmount = "0"
-	}
-	amountFilled, ok := new(big.Int).SetString(fillRecord.FilledTakerTokenAmount, 10)
+	amountFilled, ok := new(big.Int).SetString(fillRecord.FilledTakerAssetAmount, 10)
 	if !ok {
-		return fmt.Errorf("FilledTakerTokenAmount could not be parsed as intger: '%v'", fillRecord.FilledTakerTokenAmount)
-	}
-	amountCancelled, ok := new(big.Int).SetString(fillRecord.CancelledTakerTokenAmount, 10)
-	if !ok {
-		return fmt.Errorf("CancelledTakerTokenAmount could not be parsed as intger: '%v'", fillRecord.CancelledTakerTokenAmount)
+		return fmt.Errorf("FilledTakerAssetAmount could not be parsed as intger: '%v'", fillRecord.FilledTakerAssetAmount)
 	}
 	dbOrder := &Order{}
 	dbOrder.Initialize()
 	indexer.db.Model(&Order{}).Where("order_hash = ?", hashBytes).First(dbOrder)
-	totalFilled := new(big.Int).SetBytes(dbOrder.TakerTokenAmountFilled[:])
-	totalCancelled := new(big.Int).SetBytes(dbOrder.TakerTokenAmountCancelled[:])
-	copy(dbOrder.TakerTokenAmountFilled[:], abi.U256(totalFilled.Add(totalFilled, amountFilled)))
-	copy(dbOrder.TakerTokenAmountCancelled[:], abi.U256(totalCancelled.Add(totalCancelled, amountCancelled)))
+	totalFilled := dbOrder.TakerAssetAmountFilled.Big()
+	copy(dbOrder.TakerAssetAmountFilled[:], abi.U256(totalFilled.Add(totalFilled, amountFilled)))
 	return dbOrder.Save(indexer.db, dbOrder.Status).Error
 }
 
@@ -68,7 +59,7 @@ func (indexer *Indexer) RecordSpend(makerAddress, tokenAddress, zrxAddress *type
 	// against the write node if the check passes. It's more work over-all, but
 	// if the write node is a major bottleneck, it could probably take a good
 	// bit of pressure off.
-	query := indexer.db.Model(&Order{}).Where("status = ? AND maker_token = ? AND maker = ? AND ? < maker_token_remaining", StatusOpen, tokenAddress, makerAddress, balance)
+	query := indexer.db.Model(&Order{}).Where("status = ? AND maker_asset_address = ? AND maker = ? AND ? < maker_asset_remaining", StatusOpen, tokenAddress, makerAddress, balance)
 	if(bytes.Equal(tokenAddress[:], zrxAddress[:])) {
 		query = query.Or("maker = ? AND ? < maker_fee_remaining", makerAddress, balance)
 	}

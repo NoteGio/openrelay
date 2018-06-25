@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/notegio/openrelay/channels"
 	dbModule "github.com/notegio/openrelay/db"
-	"math/big"
 	"reflect"
 	"testing"
 	"time"
@@ -25,18 +24,18 @@ func TestFillConsumer(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 	indexer := dbModule.NewIndexer(tx, dbModule.StatusOpen)
-	order := sampleOrder()
-	if !order.Signature.Verify(order.Maker) {
+	order := sampleOrder(t)
+	if !order.Signature.Verify(order.Maker, order.Hash()) {
 		t.Errorf("Failed to verify signature")
 	}
 	if err := indexer.Index(order); err != nil {
 		t.Errorf(err.Error())
 	}
-	takerTokenAmount := new(big.Int).SetBytes(order.TakerTokenAmount[:])
+	takerAssetAmount := order.TakerAssetAmount.Big()
 	fillString := fmt.Sprintf(
-		"{\"orderHash\": \"%#x\", \"filledTakerTokenAmount\": \"%v\"}",
+		"{\"orderHash\": \"%#x\", \"filledTakerAssetAmount\": \"%v\"}",
 		order.Hash(),
-		takerTokenAmount.String(),
+		takerAssetAmount.String(),
 	)
 	publisher, channel := channels.MockChannel()
 	consumer := dbModule.NewRecordFillConsumer(tx, 1)
@@ -51,8 +50,8 @@ func TestFillConsumer(t *testing.T) {
 	if err := tx.Model(&dbModule.Order{}).Where("order_hash = ?", order.Hash()).First(dbOrder).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	if !reflect.DeepEqual(dbOrder.TakerTokenAmount, dbOrder.TakerTokenAmountFilled) {
-		t.Errorf("TakerTokenAmount should match TakerTokenAmountFilled, got %#x != %#x", dbOrder.TakerTokenAmount[:], dbOrder.TakerTokenAmountFilled[:])
+	if !reflect.DeepEqual(dbOrder.TakerAssetAmount, dbOrder.TakerAssetAmountFilled) {
+		t.Errorf("TakerAssetAmount should match TakerAssetAmountFilled, got %#x != %#x", dbOrder.TakerAssetAmount[:], dbOrder.TakerAssetAmountFilled[:])
 	}
 	if dbOrder.Status != dbModule.StatusFilled {
 		t.Errorf("Order status should be filled, got %v", dbOrder.Status)

@@ -11,18 +11,16 @@ import (
 	"reflect"
 	"testing"
 	"bytes"
+	"io/ioutil"
 )
 
-func getTestOrderBytes() [441]byte {
-	testOrderBytes, _ := hex.DecodeString("90fe2af704b34e0224bf2299c838e04d4dcf1364324454186bb728a3ea55750e0618ff1b18ce6cf800000000000000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000159938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b1b37adbc51c87a2f4c8c40c25fab5a73c65d078322f1db5739ee6fd49f18ce44637382de9b4cf7ceaf602f221132c9ddf41b83fb9666839022703da852d4ed88af")
-	var testOrderByteArray [441]byte
-	copy(testOrderByteArray[:], testOrderBytes[:])
-	return testOrderByteArray
-}
-
-func sampleOrder() *types.Order {
+func sampleOrder(t *testing.T) *types.Order {
 	order := &types.Order{}
-	order.FromBytes(getTestOrderBytes())
+	if orderData, err := ioutil.ReadFile("../formatted_transaction.json"); err == nil {
+		if err := json.Unmarshal(orderData, order); err != nil {
+			t.Fatalf(err.Error())
+		}
+	}
 	return order
 }
 
@@ -51,7 +49,7 @@ func TestSaveOrder(t *testing.T) {
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	order := sampleOrder()
+	order := sampleOrder(t)
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *order
 	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
@@ -94,7 +92,7 @@ func TestQueryOrder(t *testing.T) {
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	order := sampleOrder()
+	order := sampleOrder(t)
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *order
 	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
@@ -121,13 +119,12 @@ func TestQueryOrder(t *testing.T) {
 	if dbOrder.FeeRate != 0 {
 		t.Errorf("Expected FeeRate '0' got '%v'", dbOrder.FeeRate)
 	}
-	fmt.Printf("Filled: %#x", dbOrder.TakerTokenAmountFilled)
-	fmt.Printf("Cancelled: %#x", dbOrder.TakerTokenAmountCancelled)
-	if !bytes.Equal(dbOrder.MakerTokenRemaining[:], dbOrder.MakerTokenAmount[:]) {
-		t.Errorf("Unexpected MakerTokenRemaining, expected %#x got : %#x", dbOrder.MakerTokenAmount, dbOrder.MakerTokenRemaining)
+	fmt.Printf("Filled: %#x", dbOrder.TakerAssetAmountFilled)
+	if !bytes.Equal(dbOrder.MakerAssetRemaining[:], dbOrder.MakerAssetAmount[:]) {
+		t.Errorf("Unexpected MakerAssetRemaining, expected %#x got : %#x", dbOrder.MakerAssetAmount, dbOrder.MakerAssetRemaining)
 	}
 	if !bytes.Equal(dbOrder.MakerFeeRemaining[:], dbOrder.MakerFee[:]) {
-		t.Errorf("Unexpected MakerTokenRemaining, expected %#x got : %#x", dbOrder.MakerFee, dbOrder.MakerTokenRemaining)
+		t.Errorf("Unexpected MakerAssetRemaining, expected %#x got : %#x", dbOrder.MakerFee, dbOrder.MakerAssetRemaining)
 	}
 }
 
@@ -136,11 +133,11 @@ func checkPairs(t *testing.T, tokenPairs []dbModule.Pair, sOrder *types.Order) {
 		t.Errorf("Expected 1 value, got %v", len(tokenPairs))
 		return
 	}
-	if !reflect.DeepEqual(tokenPairs[0].TokenA, sOrder.TakerToken) {
-		t.Errorf("Expected %#x, got %#x", sOrder.TakerToken[:], tokenPairs[0].TokenA[:])
+	if !reflect.DeepEqual(tokenPairs[0].TokenA, sOrder.TakerAssetData.Address()) {
+		t.Errorf("Expected %#x, got %#x", sOrder.TakerAssetData.Address(), tokenPairs[0].TokenA[:])
 	}
-	if !reflect.DeepEqual(tokenPairs[0].TokenB, sOrder.MakerToken) {
-		t.Errorf("Expected %#x, got %#x", sOrder.MakerToken[:], tokenPairs[0].TokenB[:])
+	if !reflect.DeepEqual(tokenPairs[0].TokenB, sOrder.MakerAssetData.Address()) {
+		t.Errorf("Expected %#x, got %#x", sOrder.MakerAssetData.Address(), tokenPairs[0].TokenB[:])
 	}
 }
 
@@ -158,7 +155,7 @@ func TestQueryPairs(t *testing.T) {
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	sOrder := sampleOrder()
+	sOrder := sampleOrder(t)
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *sOrder
 	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
@@ -185,13 +182,13 @@ func TestQueryPairsTokenAFilter(t *testing.T) {
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	sOrder := sampleOrder()
+	sOrder := sampleOrder(t)
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *sOrder
 	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	tokenPairs, err := dbModule.GetTokenAPairs(tx, sOrder.TakerToken, 0, 10)
+	tokenPairs, err := dbModule.GetTokenAPairs(tx, sOrder.TakerAssetData.Address(), 0, 10)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -212,13 +209,13 @@ func TestQueryPairsTokenABFilter(t *testing.T) {
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	sOrder := sampleOrder()
+	sOrder := sampleOrder(t)
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *sOrder
 	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	tokenPairs, err := dbModule.GetTokenABPairs(tx, sOrder.TakerToken, sOrder.MakerToken)
+	tokenPairs, err := dbModule.GetTokenABPairs(tx, sOrder.TakerAssetData.Address(), sOrder.MakerAssetData.Address())
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -239,7 +236,7 @@ func TestQueryPairsTokenEmptyFilter(t *testing.T) {
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	sOrder := sampleOrder()
+	sOrder := sampleOrder(t)
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *sOrder
 	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
@@ -250,14 +247,14 @@ func TestQueryPairsTokenEmptyFilter(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 	if len(tokenPairs) != 0 {
-		t.Errorf("Expected 0 values, got %v", len(tokenPairs))
+		t.Errorf("Expected 0 values, got %v", tokenPairs)
 		return
 	}
 }
 
 func TestMarshalPairs(t *testing.T) {
-	sOrder := sampleOrder()
-	pair := &dbModule.Pair{sOrder.MakerToken, sOrder.TakerToken}
+	sOrder := sampleOrder(t)
+	pair := &dbModule.Pair{sOrder.MakerAssetData.Address(), sOrder.TakerAssetData.Address()}
 	pairJSON, _ := json.Marshal(pair)
 	if string(pairJSON) != "{\"tokenA\":{\"address\":\"0x1dad4783cf3fe3085c1426157ab175a6119a04ba\",\"minAmount\":\"1\",\"maxAmount\":\"115792089237316195423570985008687907853269984665640564039457584007913129639935\",\"precision\":5},\"tokenB\":{\"address\":\"0x05d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"minAmount\":\"1\",\"maxAmount\":\"115792089237316195423570985008687907853269984665640564039457584007913129639935\",\"precision\":5}}" {
 		t.Errorf("Unexpected response, got '%v'", string(pairJSON))

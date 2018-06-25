@@ -11,9 +11,10 @@ import (
 )
 
 const (
-	StatusOpen     = int64(0)
-	StatusFilled   = int64(1)
-	StatusUnfunded = int64(2)
+	StatusOpen      = int64(0)
+	StatusFilled    = int64(1)
+	StatusUnfunded  = int64(2)
+	StatusCancelled = int64(3)
 )
 
 type Order struct {
@@ -24,32 +25,32 @@ type Order struct {
 	Status    int64   `gorm:"index"`
 	Price     float64 `gorm:"index:price"`
 	FeeRate   float64 `gorm:"index:price"`
-	MakerTokenRemaining *types.Uint256
+	MakerAssetRemaining *types.Uint256
 	MakerFeeRemaining *types.Uint256
 }
 
-type (order *Order) TableName() string {
+func (order *Order) TableName() string {
 	return "orderv2"
 }
 
 // Save records the order in the database, defaulting to the specified status.
 // Status should either be db.StatusOpen, or db.StatusUnfunded. If the order
-// is filled based on order.TakerTokenAmountFilled + order.TakerTokenAmountCancelled
+// is filled based on order.TakerAssetAmountFilled + order.TakerAssetAmountCancelled
 // the status will be recorded as db.StatusFilled regardless of the specified status.
 func (order *Order) Save(db *gorm.DB, status int64) *gorm.DB {
-	copy(order.Signature.Hash[:], order.Hash())
-	if !order.Signature.Verify(order.Maker) {
+	if !order.Signature.Verify(order.Maker, order.Hash()) {
 		scope := db.New()
 		scope.AddError(errors.New("Failed to verify signature"))
 		return scope
 	}
 	order.OrderHash = order.Hash()
 	log.Printf("Attempting to save order %#x", order.Hash())
+	if order.Cancelled {
+		order.Status = StatusCancelled
+	}
 
-	remainingAmount := new(big.Int)
-	thresholdAmount := new(big.Int)
-	remainingAmount.SetBytes(order.TakerTokenAmount[:])
-	thresholdAmount.SetBytes(order.TakerTokenAmount[:])
+	remainingAmount := order.TakerAssetAmount.Big()
+	thresholdAmount := order.TakerAssetAmount.Big()
 	// If the order is larger than 100 base units, we want to remove it from the
 	// orderbook when it's 99% filled. For fewer than 100 base units, integer
 	// arithmetic makes this not work the way we want it to.
@@ -57,22 +58,19 @@ func (order *Order) Save(db *gorm.DB, status int64) *gorm.DB {
 		thresholdAmount.Mul(thresholdAmount, big.NewInt(99))
 		thresholdAmount.Div(thresholdAmount, big.NewInt(100))
 	}
-	remainingAmount.Sub(remainingAmount, order.TakerTokenAmountFilled.Big())
-	remainingAmount.Sub(remainingAmount, order.TakerTokenAmountCancelled.Big())
-	thresholdAmount.Sub(thresholdAmount, order.TakerTokenAmountFilled.Big())
-	thresholdAmount.Sub(thresholdAmount, order.TakerTokenAmountCancelled.Big())
+	remainingAmount.Sub(remainingAmount, order.TakerAssetAmountFilled.Big())
+	thresholdAmount.Sub(thresholdAmount, order.TakerAssetAmountFilled.Big())
 
-	// makerRemainingInt = (MakerTokenAmount * RemainingAmount) / TakerTokenAmount
-	makerRemainingInt := new(big.Int).Div(new(big.Int).Mul(order.MakerTokenAmount.Big(), remainingAmount), order.TakerTokenAmount.Big())
+	// makerRemainingInt = (MakerAssetAmount * RemainingAmount) / TakerAssetAmount
+	makerRemainingInt := new(big.Int).Div(new(big.Int).Mul(order.MakerAssetAmount.Big(), remainingAmount), order.TakerAssetAmount.Big())
 	makerRemaining := &types.Uint256{}
 	copy(makerRemaining[:], abi.U256(makerRemainingInt))
-	makerFeeRemainingInt := new(big.Int).Div(new(big.Int).Mul(order.MakerFee.Big(), remainingAmount), order.TakerTokenAmount.Big())
+	makerFeeRemainingInt := new(big.Int).Div(new(big.Int).Mul(order.MakerFee.Big(), remainingAmount), order.TakerAssetAmount.Big())
 	makerFeeRemaining := &types.Uint256{}
 	copy(makerFeeRemaining[:], abi.U256(makerFeeRemainingInt))
 	updates := map[string]interface{}{
-		"taker_token_amount_filled":    order.TakerTokenAmountFilled,
-		"taker_token_amount_cancelled": order.TakerTokenAmountCancelled,
-		"maker_token_remaining":        makerRemaining,
+		"taker_asset_amount_filled":    order.TakerAssetAmountFilled,
+		"maker_asset_remaining":        makerRemaining,
 		"maker_fee_remaining":          makerFeeRemaining,
 		"status":                       status,
 	}
@@ -87,14 +85,14 @@ func (order *Order) Save(db *gorm.DB, status int64) *gorm.DB {
 		return updateScope
 	}
 
-	takerTokenAmount := new(big.Float).SetInt(order.TakerTokenAmount.Big())
-	makerTokenAmount := new(big.Float).SetInt(order.MakerTokenAmount.Big())
+	takerTokenAmount := new(big.Float).SetInt(order.TakerAssetAmount.Big())
+	makerTokenAmount := new(big.Float).SetInt(order.MakerAssetAmount.Big())
 	takerFeeAmount := new(big.Float).SetInt(order.TakerFee.Big())
 
 	order.Price, _ = new(big.Float).Quo(takerTokenAmount, makerTokenAmount).Float64()
 	order.FeeRate, _ = new(big.Float).Quo(takerFeeAmount, takerTokenAmount).Float64()
 	order.Status = status
-	order.MakerTokenRemaining = makerRemaining
+	order.MakerAssetRemaining = makerRemaining
 	order.MakerFeeRemaining = makerFeeRemaining
 	return db.Create(order)
 }

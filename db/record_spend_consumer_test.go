@@ -21,7 +21,7 @@ func TestSpendConsumer(t *testing.T) {
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	order := sampleOrder()
+	order := sampleOrder(t)
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *order
 	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
@@ -29,10 +29,10 @@ func TestSpendConsumer(t *testing.T) {
 	}
 	fillString := fmt.Sprintf(
 		"{\"tokenAddress\": \"%v\",\"spenderAddress\": \"%v\",\"zrxToken\": \"%v\",\"balance\": \"%v\"}",
-		order.MakerToken,
+		order.MakerAssetData.Address(),
 		order.Maker,
-		order.TakerToken,
-		order.MakerTokenAmount,
+		order.TakerAssetData.Address(),
+		order.MakerAssetAmount,
 	)
 	publisher, channel := channels.MockChannel()
 	consumer := dbModule.NewRecordSpendConsumer(tx, 1)
@@ -68,7 +68,7 @@ func TestSpendConsumerMakerZRX(t *testing.T) {
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	order := sampleOrder()
+	order := sampleOrder(t)
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *order
 	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
@@ -76,10 +76,10 @@ func TestSpendConsumerMakerZRX(t *testing.T) {
 	}
 	fillString := fmt.Sprintf(
 		"{\"tokenAddress\": \"%v\",\"spenderAddress\": \"%v\",\"zrxToken\": \"%v\",\"balance\": \"%v\"}",
-		order.TakerToken,
+		order.TakerAssetData.Address(),
 		order.Maker,
-		order.TakerToken,
-		order.MakerTokenAmount,
+		order.TakerAssetData.Address(),
+		order.MakerAssetAmount,
 	)
 	tx.LogMode(true)
 	defer tx.LogMode(false)
@@ -116,7 +116,7 @@ func TestSpendConsumerInsufficient(t *testing.T) {
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	order := sampleOrder()
+	order := sampleOrder(t)
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *order
 	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
@@ -124,9 +124,9 @@ func TestSpendConsumerInsufficient(t *testing.T) {
 	}
 	fillString := fmt.Sprintf(
 		"{\"tokenAddress\": \"%v\",\"spenderAddress\": \"%v\",\"zrxToken\": \"%v\",\"balance\": \"0\"}",
-		order.MakerToken,
+		order.MakerAssetData.Address(),
 		order.Maker,
-		order.TakerToken,
+		order.TakerAssetData.Address(),
 	)
 	publisher, channel := channels.MockChannel()
 	consumer := dbModule.NewRecordSpendConsumer(tx, 1)
