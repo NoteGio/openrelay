@@ -193,6 +193,8 @@ func (order *Order) fromStrings(maker, taker, makerToken, takerToken, feeRecipie
 	copy(order.FeeRecipient[:], feeRecipientBytes)
 	copy(order.ExchangeAddress[:], exchangeAddressBytes)
 	copy(order.SenderAddress[:], senderAddressBytes)
+	order.TakerAssetData = make(AssetData, len(takerAssetDataBytes))
+	order.MakerAssetData = make(AssetData, len(makerAssetDataBytes))
 	copy(order.TakerAssetData[:], takerAssetDataBytes)
 	copy(order.MakerAssetData[:], makerAssetDataBytes)
 	order.TakerAssetAddress = order.TakerAssetData.Address()

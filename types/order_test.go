@@ -167,6 +167,46 @@ func TestJsonUnmarshal(t *testing.T) {
 			t.Fatalf(err.Error())
 		}
 	}
+	if hex.EncodeToString(newOrder.MakerAssetData[:]) != "1dad4783cf3fe3085c1426157ab175a6119a04ba01" {
+		t.Errorf("Unexpected MakerAssetData: %#x", newOrder.MakerAssetData[:])
+	}
+	if hex.EncodeToString(newOrder.Maker[:]) != "627306090abab3a6e1400e9345bc60c78a8bef57" {
+		t.Errorf("Unexpected Maker: %#x", newOrder.Maker[:])
+	}
+	if hex.EncodeToString(newOrder.Taker[:]) != "0000000000000000000000000000000000000000" {
+		t.Errorf("Unexpected Taker: %#x", newOrder.Taker[:])
+	}
+	if hex.EncodeToString(newOrder.FeeRecipient[:]) != "0000000000000000000000000000000000000000" {
+		t.Errorf("Unexpected FeeRecipient: %#x", newOrder.FeeRecipient[:])
+	}
+	if hex.EncodeToString(newOrder.TakerAssetData[:]) != "05d090b51c40b020eab3bfcb6a2dff130df22e9c01" {
+		t.Errorf("Unexpected TakerAssetData: %#x", newOrder.TakerAssetData[:])
+	}
+	if hex.EncodeToString(newOrder.MakerAssetAmount[:]) != "000000000000000000000000000000000000000000000002b5e3af16b1880000" {
+		t.Errorf("Unexpected MakerAssetAmount: %#x", newOrder.MakerAssetAmount[:])
+	}
+	if hex.EncodeToString(newOrder.TakerAssetAmount[:]) != "0000000000000000000000000000000000000000000000000de0b6b3a7640000" {
+		t.Errorf("Unexpected MakerAssetAmount: %#x", newOrder.TakerAssetAmount[:])
+	}
+	if hex.EncodeToString(newOrder.MakerFee[:]) != "0000000000000000000000000000000000000000000000000000000000000000" {
+		t.Errorf("Unexpected MakerFee: %#x", newOrder.MakerFee[:])
+	}
+	if hex.EncodeToString(newOrder.TakerFee[:]) != "0000000000000000000000000000000000000000000000000000000000000000" {
+		t.Errorf("Unexpected TakerFee: %#x", newOrder.TakerFee[:])
+	}
+	if hex.EncodeToString(newOrder.ExpirationTimestampInSec[:]) != "0000000000000000000000000000000000000000000000000000000159938ac4" {
+		t.Errorf("Unexpected ExpirationTimestampInSec: %#x", newOrder.ExpirationTimestampInSec[:])
+	}
+	if hex.EncodeToString(newOrder.ExchangeAddress[:]) != "90fe2af704b34e0224bf2299c838e04d4dcf1364" {
+		t.Errorf("Unexpected ExchangeAddress: %#x", newOrder.ExchangeAddress[:])
+	}
+	if hex.EncodeToString(newOrder.Salt[:]) != "000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b" {
+		t.Errorf("Unexpected Salt: %#x", newOrder.Salt[:])
+	}
+	if hex.EncodeToString(newOrder.Hash()) != "693c35d2cca7d6011b62ecb01aef6763241cec2b2686fa7f3281843b1aeb1c6b" {
+		t.Errorf("Hashes not equal %x", newOrder.Hash())
+	}
+
 	if !newOrder.Signature.Verify(newOrder.Maker, newOrder.Hash()) {
 		t.Errorf("Failed to verify order with signature: %#x", newOrder.Signature)
 	}

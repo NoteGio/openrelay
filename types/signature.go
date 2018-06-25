@@ -32,6 +32,9 @@ func (sig Signature) Type() (byte) {
 }
 
 func (sig Signature) Verify(address *Address, hash []byte) bool {
+	if len(sig[:]) < 1 {
+		return false
+	}
 	switch sigType := sig.Type(); sigType {
 	case SigTypeEIP712:
 		return sig.verifyEIP712(address, hash)
@@ -71,9 +74,11 @@ func (sig Signature) verifyEthSign(address *Address, hash []byte) bool {
 		log.Printf("Invalid length: %v", len(sig[:]))
 		return false
 	}
-	v := sig[0]
-	r := sig[1:33]
-	s := sig[33:65]
+	cleanSig := make([]byte, len(sig))
+	copy(cleanSig[:], sig[:])
+	v := cleanSig[0]
+	r := cleanSig[1:33]
+	s := cleanSig[33:65]
 	hashedBytes := append([]byte("\x19Ethereum Signed Message:\n32"), hash[:]...)
 	signedBytes := crypto.Keccak256(hashedBytes)
 	pub, err := crypto.Ecrecover(signedBytes, append(append(r, s...), v))
