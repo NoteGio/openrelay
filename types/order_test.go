@@ -206,6 +206,7 @@ func TestJsonUnmarshal(t *testing.T) {
 	if hex.EncodeToString(newOrder.Hash()) != "693c35d2cca7d6011b62ecb01aef6763241cec2b2686fa7f3281843b1aeb1c6b" {
 		t.Errorf("Hashes not equal %x", newOrder.Hash())
 	}
+	// log.Printf("%#x", newOrder.Bytes())
 
 	if !newOrder.Signature.Verify(newOrder.Maker, newOrder.Hash()) {
 		t.Errorf("Failed to verify order with signature: %#x", newOrder.Signature)

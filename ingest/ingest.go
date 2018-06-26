@@ -80,16 +80,9 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 		}
 		order := types.Order{}
 		if contentType == "application/octet-stream" {
-			var data [441]byte
+			var data [1024]byte
 			length, err := r.Body.Read(data[:])
-			if length != 377 {
-				returnError(w, IngestError{
-					100,
-					"Orders should be exactly 377 bytes",
-					nil,
-				}, 400)
-				return
-			} else if err != nil && err != io.EOF {
+			if err != nil && err != io.EOF {
 				log.Printf(err.Error())
 				returnError(w, IngestError{
 					100,
@@ -98,7 +91,15 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 				}, 500)
 				return
 			}
-			order.FromBytes(data)
+			if err := order.FromBytes(data[:length]); err != nil {
+				log.Printf("Error parsing order: %v", err.Error())
+				returnError(w, IngestError{
+					100,
+					"Error parsing order",
+					nil,
+				}, 500)
+				return
+			}
 		} else if contentType == "application/json" {
 			var data [1024]byte
 			jsonLength, err := r.Body.Read(data[:])
@@ -141,7 +142,7 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 			}, 400)
 			return
 		}
-		if !order.Signature.Verify(order.Maker) {
+		if !order.Signature.Verify(order.Maker, order.Hash()) {
 			returnError(w, IngestError{
 				100,
 				"Validation Failed",
@@ -186,6 +187,7 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 		go func() {
 			feeRecipient, err := affiliates.Get(order.FeeRecipient)
 			if err != nil {
+				log.Printf("Error retrieving fee recipient: %v", err.Error())
 				affiliateChan <- nil
 			} else {
 				affiliateChan <- feeRecipient
