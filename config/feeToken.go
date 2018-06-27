@@ -52,12 +52,14 @@ func (feeToken *rpcFeeToken) Get(order *types.Order) (*types.Address, error) {
 		log.Printf("Error intializing exchange contract '%v': '%v'", hex.EncodeToString(order.ExchangeAddress[:]), err.Error())
 		return feeTokenAddress, err
 	}
-	feeTokenGethAddress, err := exchange.ZRX_TOKEN_CONTRACT(nil)
+	feeTokenAssetData, err := exchange.ZRX_ASSET_DATA(nil)
 	if err != nil {
-		log.Printf("Error getting fee token address for exhange %#x", order.ExchangeAddress)
+		log.Printf("Error getting fee token address for exchange %#x", order.ExchangeAddress)
 		return nil, err
 	}
-	copy(feeTokenAddress[:], feeTokenGethAddress[:])
+	feeTokenAsset := types.AssetData{}
+	copy(feeTokenAsset[:], feeTokenAssetData)
+	feeTokenAddress = feeTokenAsset.Address()
 	feeToken.exchangeTokenMap[*order.ExchangeAddress] = feeTokenAddress
 	return feeTokenAddress, nil
 }

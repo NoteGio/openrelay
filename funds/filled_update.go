@@ -15,7 +15,7 @@ import (
 )
 
 type FilledLookup interface {
-	GetCancelled(order *types.Order) (*types.Uint256, error)
+	GetCancelled(order *types.Order) (bool, error)
 	GetAmountFilled(order *types.Order) (*types.Uint256, error)
 }
 
@@ -37,14 +37,12 @@ func (filled *rpcFilledLookup) GetCancelled(order *types.Order) (bool, error) {
 	}
 	hash := [32]byte{}
 	copy(hash[:], order.Hash())
-	isCancelled, err := exchange.Cancelled(nil, hash)
+	isCancelled, err = exchange.Cancelled(nil, hash)
 	if err != nil {
 		orderBytes := order.Bytes()
 		log.Printf("Error getting cancelled amount for order '%v': '%v'", hex.EncodeToString(orderBytes[:]), err.Error())
 		return isCancelled, err
 	}
-	cancelledSlice := common.LeftPadBytes(amount.Bytes(), 32)
-	copy(isCancelled[:], cancelledSlice)
 	return isCancelled, nil
 }
 
@@ -85,19 +83,16 @@ func NewRPCFilledLookup(rpcURL string, fillBloom *fillbloom.FillBloom) (FilledLo
 }
 
 type MockFilledLookup struct {
-	cancelled *big.Int
+	cancelled bool
 	filled    *big.Int
 	err       error
 }
 
-func (filled *MockFilledLookup) GetCancelled(order *types.Order) (*types.Uint256, error) {
-	result := &types.Uint256{}
+func (filled *MockFilledLookup) GetCancelled(order *types.Order) (bool, error) {
 	if filled.err != nil {
-		return result, filled.err
+		return false, filled.err
 	}
-	filledSlice := common.LeftPadBytes(filled.cancelled.Bytes(), 32)
-	copy(result[:], filledSlice)
-	return result, nil
+	return filled.cancelled, nil
 }
 func (filled *MockFilledLookup) GetAmountFilled(order *types.Order) (*types.Uint256, error) {
 	result := &types.Uint256{}
@@ -109,10 +104,8 @@ func (filled *MockFilledLookup) GetAmountFilled(order *types.Order) (*types.Uint
 	return result, nil
 }
 
-func NewMockFilledLookup(cancelled, filled string, err error) FilledLookup {
-	cancelledInt := new(big.Int)
-	cancelledInt.SetString(cancelled, 10)
+func NewMockFilledLookup(cancelled bool, filled string, err error) FilledLookup {
 	filledInt := new(big.Int)
 	filledInt.SetString(filled, 10)
-	return &MockFilledLookup{cancelledInt, filledInt, err}
+	return &MockFilledLookup{cancelled, filledInt, err}
 }

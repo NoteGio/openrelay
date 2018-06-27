@@ -88,35 +88,31 @@ func (funds *orderValidator) ValidateOrder(order *types.Order) (bool, error) {
 	feeChan := make(chan boolOrErr)
 	makerAllowanceChan := make(chan boolOrErr)
 	feeAllowanceChan := make(chan boolOrErr)
-	unavailableAmount := new(big.Int)
-	cancelledAmount := new(big.Int)
-	cancelledAmount.SetBytes(order.TakerTokenAmountCancelled[:])
-	unavailableAmount.SetBytes(order.TakerTokenAmountFilled[:])
-	unavailableAmount.Add(unavailableAmount, cancelledAmount)
+	unavailableAmount := order.TakerAssetAmountFilled.Big()
 	go funds.checkBalance(
-		order.MakerToken,
+		order.MakerAssetData.Address(),
 		order.Maker,
-		getRemainingAmount(unavailableAmount.Bytes(), order.TakerTokenAmount[:], order.MakerTokenAmount[:]),
+		getRemainingAmount(unavailableAmount.Bytes(), order.TakerAssetAmount[:], order.MakerAssetAmount[:]),
 		makerChan,
 	)
 	go funds.checkBalance(
 		feeToken,
 		order.Maker,
-		getRemainingAmount(unavailableAmount.Bytes(), order.TakerTokenAmount[:], order.MakerFee[:]),
+		getRemainingAmount(unavailableAmount.Bytes(), order.TakerAssetAmount[:], order.MakerFee[:]),
 		feeChan,
 	)
 	go funds.checkAllowance(
-		order.MakerToken,
+		order.MakerAssetData.Address(),
 		order.Maker,
 		proxyAddress,
-		getRemainingAmount(unavailableAmount.Bytes(), order.TakerTokenAmount[:], order.MakerTokenAmount[:]),
+		getRemainingAmount(unavailableAmount.Bytes(), order.TakerAssetAmount[:], order.MakerAssetAmount[:]),
 		makerAllowanceChan,
 	)
 	go funds.checkAllowance(
 		feeToken,
 		order.Maker,
 		proxyAddress,
-		getRemainingAmount(unavailableAmount.Bytes(), order.TakerTokenAmount[:], order.MakerFee[:]),
+		getRemainingAmount(unavailableAmount.Bytes(), order.TakerAssetAmount[:], order.MakerFee[:]),
 		feeAllowanceChan,
 	)
 	result := true

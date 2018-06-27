@@ -1,11 +1,10 @@
 package funds
 
 import (
-	"encoding/hex"
-	"errors"
 	"github.com/notegio/openrelay/types"
 	"github.com/notegio/openrelay/channels"
 	"math/big"
+	"fmt"
 )
 
 type mockBalanceChecker struct {
@@ -17,9 +16,9 @@ func (funds *mockBalanceChecker) GetBalance(tokenAddrBytes, userAddrBytes *types
 		if balance, ok := tokenMap[*userAddrBytes]; ok {
 			return balance, nil
 		}
-		return nil, errors.New("(GetBalance) User address not found " + hex.EncodeToString(userAddrBytes[:]))
+		return nil, fmt.Errorf("(GetBalance) User address not found: '%#x'", userAddrBytes[:])
 	}
-	return nil, errors.New("(GetBalance) Token not found " + hex.EncodeToString(tokenAddrBytes[:]))
+	return nil, fmt.Errorf("(GetBalance) Token not found: '%#x'", tokenAddrBytes[:])
 }
 
 func (funds *mockBalanceChecker) GetAllowance(tokenAddrBytes, userAddrBytes, senderAddress *types.Address) (*big.Int, error) {
@@ -30,9 +29,9 @@ func (funds *mockBalanceChecker) GetAllowance(tokenAddrBytes, userAddrBytes, sen
 		if balance, ok := tokenMap[*userAddrBytes]; ok {
 			return balance, nil
 		}
-		return nil, errors.New("(GetAllowance) User address not found " + hex.EncodeToString(userAddrBytes[:]))
+		return nil, fmt.Errorf("(GetBalance) User address not found: '%#x'", userAddrBytes[:])
 	}
-	return nil, errors.New("(GetAllowance) Token not found " + hex.EncodeToString(tokenAddrBytes[:]))
+	return nil, fmt.Errorf("(GetBalance) Token not found: '%#x'", tokenAddrBytes[:])
 }
 
 func (funds *mockBalanceChecker) Consume(msg channels.Delivery) {

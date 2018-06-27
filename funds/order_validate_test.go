@@ -1,7 +1,6 @@
 package funds_test
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	gethCommon "github.com/ethereum/go-ethereum/common"
@@ -12,6 +11,7 @@ import (
 	"math/big"
 	"reflect"
 	"testing"
+	// "log"
 )
 
 func hexToAddress(addressHex string) (*types.Address, error) {
@@ -50,28 +50,30 @@ func createMockBalanceChecker(tokenAddressHex, userAddressHex string, tokenAmoun
 }
 
 func TestOrderValidate(t *testing.T) {
-	balanceChecker := createMockBalanceChecker("1dad4783cf3fe3085c1426157ab175a6119a04ba", "324454186bb728a3ea55750e0618ff1b18ce6cf8", "0", "0", t)
+	balanceChecker := createMockBalanceChecker("1dad4783cf3fe3085c1426157ab175a6119a04ba", "627306090abab3a6e1400e9345bc60c78a8bef57", "0", "0", t)
 	feeTokenAddress, _ := hexToAddress("e41d2489571d322189246dafa5ebde1f4699f498")
 	tokenProxyAddress, _ := hexToAddress("d4fd252d7d2c9479a8d616f510eac6243b5dddf9")
 	validator := funds.NewOrderValidator(balanceChecker, config.StaticFeeToken(feeTokenAddress), config.StaticTokenProxy(tokenProxyAddress))
-	testOrderBytes, _ := hex.DecodeString("90fe2af704b34e0224bf2299c838e04d4dcf1364324454186bb728a3ea55750e0618ff1b18ce6cf800000000000000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000159938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b1b021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f1")
-	var testOrderByteArray [441]byte
-	copy(testOrderByteArray[:], testOrderBytes[:])
-	newOrder := types.OrderFromBytes(testOrderByteArray)
+	testOrderBytes := getTestOrderBytes()
+	newOrder, err := types.OrderFromBytes(testOrderBytes)
+	if err != nil {
+		t.Errorf("Error parsing order: %v", err.Error())
+	}
 	if result, _ := validator.ValidateOrder(newOrder); result {
 		t.Errorf("Expected insufficient funds")
 	}
 }
 
 func TestOrderValidateSufficient(t *testing.T) {
-	balanceChecker := createMockBalanceChecker("1dad4783cf3fe3085c1426157ab175a6119a04ba", "324454186bb728a3ea55750e0618ff1b18ce6cf8", "50000000000000000000", "0", t)
+	balanceChecker := createMockBalanceChecker("1dad4783cf3fe3085c1426157ab175a6119a04ba", "627306090abab3a6e1400e9345bc60c78a8bef57", "50000000000000000000", "0", t)
 	feeTokenAddress, _ := hexToAddress("e41d2489571d322189246dafa5ebde1f4699f498")
 	tokenProxyAddress, _ := hexToAddress("d4fd252d7d2c9479a8d616f510eac6243b5dddf9")
 	validator := funds.NewOrderValidator(balanceChecker, config.StaticFeeToken(feeTokenAddress), config.StaticTokenProxy(tokenProxyAddress))
-	testOrderBytes, _ := hex.DecodeString("90fe2af704b34e0224bf2299c838e04d4dcf1364324454186bb728a3ea55750e0618ff1b18ce6cf800000000000000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000159938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b1b021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f1")
-	var testOrderByteArray [441]byte
-	copy(testOrderByteArray[:], testOrderBytes[:])
-	newOrder := types.OrderFromBytes(testOrderByteArray)
+	testOrderBytes := getTestOrderBytes()
+	newOrder, err := types.OrderFromBytes(testOrderBytes)
+	if err != nil {
+		t.Errorf("Error parsing order: %v", err.Error())
+	}
 
 	if result, _ := validator.ValidateOrder(newOrder); !result {
 		t.Errorf("Expected sufficient funds")
@@ -79,19 +81,20 @@ func TestOrderValidateSufficient(t *testing.T) {
 }
 
 func TestOrderValidateSpent(t *testing.T) {
-	// 25000000000000000000 is half of the makerTokenAmount for the sample order
-	balanceChecker := createMockBalanceChecker("1dad4783cf3fe3085c1426157ab175a6119a04ba", "324454186bb728a3ea55750e0618ff1b18ce6cf8", "25000000000000000000", "0", t)
+	// 25000000000000000000 is half of the makerAssetAmount for the sample order
+	balanceChecker := createMockBalanceChecker("1dad4783cf3fe3085c1426157ab175a6119a04ba", "627306090abab3a6e1400e9345bc60c78a8bef57", "25000000000000000000", "0", t)
 	feeTokenAddress, _ := hexToAddress("e41d2489571d322189246dafa5ebde1f4699f498")
 	tokenProxyAddress, _ := hexToAddress("d4fd252d7d2c9479a8d616f510eac6243b5dddf9")
 	validator := funds.NewOrderValidator(balanceChecker, config.StaticFeeToken(feeTokenAddress), config.StaticTokenProxy(tokenProxyAddress))
-	testOrderBytes, _ := hex.DecodeString("90fe2af704b34e0224bf2299c838e04d4dcf1364324454186bb728a3ea55750e0618ff1b18ce6cf800000000000000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000159938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b1b021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f1")
-	var testOrderByteArray [441]byte
-	copy(testOrderByteArray[:], testOrderBytes[:])
-	newOrder := types.OrderFromBytes(testOrderByteArray)
+	testOrderBytes := getTestOrderBytes()
+	newOrder, err := types.OrderFromBytes(testOrderBytes)
+	if err != nil {
+		t.Errorf("Error parsing order: %v", err.Error())
+	}
 	filledInt := new(big.Int)
 	// Half the taker token amount for the order
 	filledInt.SetString("500000000000000000", 10)
-	copy(newOrder.TakerTokenAmountFilled[:], gethCommon.LeftPadBytes(filledInt.Bytes(), 32))
+	copy(newOrder.TakerAssetAmountFilled[:], gethCommon.LeftPadBytes(filledInt.Bytes(), 32))
 
 	if result, _ := validator.ValidateOrder(newOrder); !result {
 		t.Errorf("Expected sufficient funds")
@@ -111,14 +114,15 @@ func TestErrorPanic(t *testing.T) {
 	tokenProxyAddress, _ := hexToAddress("d4fd252d7d2c9479a8d616f510eac6243b5dddf9")
 	validator := funds.NewOrderValidator(balanceChecker, config.StaticFeeToken(feeTokenAddress), config.StaticTokenProxy(tokenProxyAddress))
 
-	testOrderBytes, _ := hex.DecodeString("90fe2af704b34e0224bf2299c838e04d4dcf1364324454186bb728a3ea55750e0618ff1b18ce6cf800000000000000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000159938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b1b021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f1")
-	var testOrderByteArray [441]byte
-	copy(testOrderByteArray[:], testOrderBytes[:])
-	newOrder := types.OrderFromBytes(testOrderByteArray)
+	testOrderBytes := getTestOrderBytes()
+	newOrder, err := types.OrderFromBytes(testOrderBytes)
+	if err != nil {
+		t.Errorf("Error parsing order: %v", err.Error())
+	}
 	filledInt := new(big.Int)
 	// Half the taker token amount for the order
 	filledInt.SetString("500000000000000000", 10)
-	copy(newOrder.TakerTokenAmountFilled[:], gethCommon.LeftPadBytes(filledInt.Bytes(), 32))
+	copy(newOrder.TakerAssetAmountFilled[:], gethCommon.LeftPadBytes(filledInt.Bytes(), 32))
 
 	validator.ValidateOrder(newOrder)
 }
@@ -130,14 +134,15 @@ func TestErrorNoContract(t *testing.T) {
 	tokenProxyAddress, _ := hexToAddress("d4fd252d7d2c9479a8d616f510eac6243b5dddf9")
 	validator := funds.NewOrderValidator(balanceChecker, config.StaticFeeToken(feeTokenAddress), config.StaticTokenProxy(tokenProxyAddress))
 
-	testOrderBytes, _ := hex.DecodeString("90fe2af704b34e0224bf2299c838e04d4dcf1364324454186bb728a3ea55750e0618ff1b18ce6cf800000000000000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000159938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b1b021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f1")
-	var testOrderByteArray [441]byte
-	copy(testOrderByteArray[:], testOrderBytes[:])
-	newOrder := types.OrderFromBytes(testOrderByteArray)
+	testOrderBytes := getTestOrderBytes()
+	newOrder, err := types.OrderFromBytes(testOrderBytes)
+	if err != nil {
+		t.Errorf("Error parsing order: %v", err.Error())
+	}
 	filledInt := new(big.Int)
 	// Half the taker token amount for the order
 	filledInt.SetString("500000000000000000", 10)
-	copy(newOrder.TakerTokenAmountFilled[:], gethCommon.LeftPadBytes(filledInt.Bytes(), 32))
+	copy(newOrder.TakerAssetAmountFilled[:], gethCommon.LeftPadBytes(filledInt.Bytes(), 32))
 
 	validator.ValidateOrder(newOrder)
 }

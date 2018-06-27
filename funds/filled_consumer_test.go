@@ -7,18 +7,16 @@ import (
 	"testing"
 )
 
-func getTestOrderBytes() [441]byte {
-	testOrderBytes, _ := hex.DecodeString("90fe2af704b34e0224bf2299c838e04d4dcf1364324454186bb728a3ea55750e0618ff1b18ce6cf800000000000000000000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba05d090b51c40b020eab3bfcb6a2dff130df22e9c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000002b5e3af16b18800000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000159938ac4000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b1b021fe6dba378a347ea5c581adcd0e0e454e9245703d197075f5d037d0935ac2e12ac107cb04be663f542394832bbcb348deda8b5aa393a97a4cc3139501007f1")
-	var testOrderByteArray [441]byte
-	copy(testOrderByteArray[:], testOrderBytes[:])
-	return testOrderByteArray
+func getTestOrderBytes() []byte {
+	testOrderBytes, _ := hex.DecodeString("f9020994627306090abab3a6e1400e9345bc60c78a8bef57940000000000000000000000000000000000000000941dad4783cf3fe3085c1426157ab175a6119a04ba9405d090b51c40b020eab3bfcb6a2dff130df22e9ca4f47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04baa4f47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c9400000000000000000000000000000000000000009490fe2af704b34e0224bf2299c838e04d4dcf1364940000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000002b5e3af16b1880000a00000000000000000000000000000000000000000000000000de0b6b3a7640000a00000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000159938ac4a0000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222bb8420134f27415dc0177bc4016d48c3ec7eb19ee31124bcf4ca2eb3aba767c24e4712043bf8e49d1e28c6efa5a5e8a6824886700f356a403e0e66c75621e56b184b47b03a0000000000000000000000000000000000000000000000000000000000000000080")
+	return testOrderBytes
 }
 
 func TestFilledConsumer(t *testing.T) {
 	sourcePublisher, consumerChannel := channels.MockChannel()
 	changePublisher, changeChan := channels.MockPublisher()
 	allPublisher, allChan := channels.MockPublisher()
-	lookup := funds.NewMockFilledLookup("0", "0", nil)
+	lookup := funds.NewMockFilledLookup(false, "0", nil)
 	consumer := funds.NewFillConsumer(allPublisher, changePublisher, lookup, 1)
 	consumerChannel.AddConsumer(&consumer)
 	orderBytes := getTestOrderBytes()
@@ -45,7 +43,36 @@ func TestFilledConsumerChange(t *testing.T) {
 	sourcePublisher, consumerChannel := channels.MockChannel()
 	changePublisher, changeChan := channels.MockPublisher()
 	allPublisher, allChan := channels.MockPublisher()
-	lookup := funds.NewMockFilledLookup("1", "1", nil)
+	lookup := funds.NewMockFilledLookup(false, "2", nil)
+	consumer := funds.NewFillConsumer(allPublisher, changePublisher, lookup, 1)
+	consumerChannel.AddConsumer(&consumer)
+	orderBytes := getTestOrderBytes()
+	consumerChannel.StartConsuming()
+	sourcePublisher.Publish(string(orderBytes[:]))
+	updatedPayload := <-allChan
+	if updatedPayload.Payload() == string(orderBytes[:]) {
+		t.Errorf("Expected change in processing")
+	}
+	select {
+	case changedPayload, ok := <-changeChan:
+		if ok {
+			if changedPayload.Payload() == string(orderBytes[:]) {
+				t.Errorf("Expected change in processing")
+			}
+		} else {
+			t.Errorf("Change chan was closed")
+		}
+	default:
+		t.Errorf("Change chan should have had value")
+	}
+
+	consumerChannel.StopConsuming()
+}
+func TestFilledConsumerCancelChange(t *testing.T) {
+	sourcePublisher, consumerChannel := channels.MockChannel()
+	changePublisher, changeChan := channels.MockPublisher()
+	allPublisher, allChan := channels.MockPublisher()
+	lookup := funds.NewMockFilledLookup(true, "0", nil)
 	consumer := funds.NewFillConsumer(allPublisher, changePublisher, lookup, 1)
 	consumerChannel.AddConsumer(&consumer)
 	orderBytes := getTestOrderBytes()

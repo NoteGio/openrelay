@@ -46,7 +46,7 @@ func (tokenProxy *rpcTokenProxy) Get(order *types.Order) (*types.Address, error)
 		log.Printf("Error intializing exchange contract '%v': '%v'", hex.EncodeToString(order.ExchangeAddress[:]), err.Error())
 		return tokenProxyAddress, err
 	}
-	tokenProxyGethAddress, err := exchange.TOKEN_TRANSFER_PROXY_CONTRACT(nil)
+	tokenProxyGethAddress, err := exchange.GetAssetProxy(nil, order.MakerAssetData.ProxyId())
 	if err != nil {
 		log.Printf("Error getting token proxy address for exhange %#x", order.ExchangeAddress)
 		return nil, err

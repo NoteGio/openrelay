@@ -16,7 +16,18 @@ func doLookup(order *types.Order, oldValue *types.Uint256, lookupFn func(*types.
 		value = oldValue
 	}
 	valChan <- value
+	log.Printf("%v - %v", value, oldValue)
 	changeChan <- !reflect.DeepEqual(value, oldValue)
+}
+
+func doLookupBoolean(order *types.Order, oldValue bool, lookupFn func(*types.Order) (bool, error), valChan chan bool, changeChan chan bool) {
+	value, err := lookupFn(order)
+	if err != nil {
+		log.Printf(err.Error())
+		value = oldValue
+	}
+	valChan <- value
+	changeChan <- value != oldValue
 }
 
 
@@ -31,22 +42,23 @@ func (consumer *FillConsumer) Consume(msg channels.Delivery) {
 	go func() {
 		consumer.s.Acquire()
 		defer consumer.s.Release()
-		orderBytes := [441]byte{}
-		copy(orderBytes[:], []byte(msg.Payload()))
-		order := types.OrderFromBytes(orderBytes)
-		cancelledChan := make(chan *types.Uint256)
+		order, err := types.OrderFromBytes([]byte(msg.Payload()))
+		if err != nil {
+			log.Printf("Error parsing order: %#x", msg.Payload())
+			msg.Reject()
+		}
+		cancelledChan := make(chan bool)
 		filledChan := make(chan *types.Uint256)
 		changes := make(chan bool, 2)
-		go doLookup(order, order.TakerTokenAmountCancelled, consumer.lookup.GetAmountCancelled, cancelledChan, changes)
-		go doLookup(order, order.TakerTokenAmountFilled, consumer.lookup.GetAmountFilled, filledChan, changes)
-		order.TakerTokenAmountCancelled = <-cancelledChan
-		order.TakerTokenAmountFilled = <-filledChan
-		orderBytes = order.Bytes()
-		payload := string(orderBytes[:])
-		consumer.allPublisher.Publish(payload)
+		go doLookupBoolean(order, order.Cancelled, consumer.lookup.GetCancelled, cancelledChan, changes)
+		go doLookup(order, order.TakerAssetAmountFilled, consumer.lookup.GetAmountFilled, filledChan, changes)
+		order.Cancelled = <-cancelledChan
+		order.TakerAssetAmountFilled = <-filledChan
+		payload := string(order.Bytes())
 		if (<-changes || <-changes) && consumer.changePublisher != nil {
 			consumer.changePublisher.Publish(payload)
 		}
+		consumer.allPublisher.Publish(payload)
 		msg.Ack()
 	}()
 }
