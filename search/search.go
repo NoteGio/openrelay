@@ -120,12 +120,22 @@ func SearchHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 			returnError(w, err, 400)
 			return
 		}
-		query, err = applyFilter(query, "makerTokenAddress", "maker_token", queryObject)
+		query, err = applyFilter(query, "makerAssetAddress", "maker_asset_address", queryObject)
 		if err != nil {
 			returnError(w, err, 400)
 			return
 		}
-		query, err = applyFilter(query, "takerTokenAddress", "taker_token", queryObject)
+		query, err = applyFilter(query, "takerAssetAddress", "taker_asset_address", queryObject)
+		if err != nil {
+			returnError(w, err, 400)
+			return
+		}
+		query, err = applyFilter(query, "makerAssetData", "maker_asset_data", queryObject)
+		if err != nil {
+			returnError(w, err, 400)
+			return
+		}
+		query, err = applyFilter(query, "takerAssetData", "taker_asset_data", queryObject)
 		if err != nil {
 			returnError(w, err, 400)
 			return
@@ -145,7 +155,12 @@ func SearchHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 			returnError(w, err, 400)
 			return
 		}
-		query, err = applyOrFilter(query, "tokenAddress", "maker_token", "taker_token", queryObject)
+		query, err = applyOrFilter(query, "assetAddress", "maker_asset_address", "taker_asset_address", queryObject)
+		if err != nil {
+			returnError(w, err, 400)
+			return
+		}
+		query, err = applyOrFilter(query, "assetData", "maker_address", "taker_address", queryObject)
 		if err != nil {
 			returnError(w, err, 400)
 			return
@@ -167,7 +182,7 @@ func SearchHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 			returnError(w, query.Error, 400)
 			return
 		}
-		if queryObject.Get("makerTokenAddress") != "" && queryObject.Get("takerTokenAddress") != "" {
+		if queryObject.Get("makerAssetAddress") != "" && queryObject.Get("takerAssetAddress") != "" {
 			query := query.Order("price asc, fee_rate asc")
 			if query.Error != nil {
 				returnError(w, query.Error, 500)
