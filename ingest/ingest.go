@@ -130,7 +130,7 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 			return
 		}
 		// At this point we've errored out, or we have an Order object
-		if order.MakerAssetData.SupportedType() {
+		if !order.MakerAssetData.SupportedType() {
 			returnError(w, IngestError{
 				100,
 				"Validation Failed",
@@ -142,7 +142,7 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 			}, 400)
 			return
 		}
-		if order.TakerAssetData.SupportedType() {
+		if !order.TakerAssetData.SupportedType() {
 			returnError(w, IngestError{
 				100,
 				"Validation Failed",

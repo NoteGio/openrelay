@@ -2,6 +2,7 @@ package types
 
 import (
 	"bytes"
+	// "log"
 )
 
 type AssetData []byte

@@ -10,7 +10,7 @@ import (
 	"reflect"
 	"testing"
 	"bytes"
-	// "log"
+	"log"
 )
 
 func checkOrder(order *types.Order, t *testing.T) {
@@ -212,7 +212,7 @@ func TestJsonUnmarshal(t *testing.T) {
 	if hex.EncodeToString(newOrder.Hash()) != "73eff0f95a1f6c56e9d9c1c714340307b81a0591e4c63e1e0917722198f5cd6d" {
 		t.Errorf("Hashes not equal %x", newOrder.Hash())
 	}
-	// log.Printf("%#x", newOrder.Bytes())
+	log.Printf("%#x", newOrder.Bytes())
 
 	if !newOrder.Signature.Verify(newOrder.Maker, newOrder.Hash()) {
 		t.Errorf("Failed to verify order with signature: %#x", newOrder.Signature)
