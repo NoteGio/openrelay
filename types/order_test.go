@@ -167,8 +167,11 @@ func TestJsonUnmarshal(t *testing.T) {
 			t.Fatalf(err.Error())
 		}
 	}
-	if hex.EncodeToString(newOrder.MakerAssetData[:]) != "1dad4783cf3fe3085c1426157ab175a6119a04ba01" {
+	if hex.EncodeToString(newOrder.MakerAssetData[:]) != "f47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba" {
 		t.Errorf("Unexpected MakerAssetData: %#x", newOrder.MakerAssetData[:])
+	}
+	if address := newOrder.MakerAssetData.Address(); hex.EncodeToString(address[:]) != "1dad4783cf3fe3085c1426157ab175a6119a04ba" {
+		t.Errorf("Unexpected MakerAssetData.Address: %#x", address)
 	}
 	if hex.EncodeToString(newOrder.Maker[:]) != "627306090abab3a6e1400e9345bc60c78a8bef57" {
 		t.Errorf("Unexpected Maker: %#x", newOrder.Maker[:])
@@ -179,8 +182,11 @@ func TestJsonUnmarshal(t *testing.T) {
 	if hex.EncodeToString(newOrder.FeeRecipient[:]) != "0000000000000000000000000000000000000000" {
 		t.Errorf("Unexpected FeeRecipient: %#x", newOrder.FeeRecipient[:])
 	}
-	if hex.EncodeToString(newOrder.TakerAssetData[:]) != "05d090b51c40b020eab3bfcb6a2dff130df22e9c01" {
+	if hex.EncodeToString(newOrder.TakerAssetData[:]) != "f47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c" {
 		t.Errorf("Unexpected TakerAssetData: %#x", newOrder.TakerAssetData[:])
+	}
+	if address := newOrder.TakerAssetData.Address(); hex.EncodeToString(address[:]) != "05d090b51c40b020eab3bfcb6a2dff130df22e9c" {
+		t.Errorf("Unexpected TakerAssetData.Address: %#x", address)
 	}
 	if hex.EncodeToString(newOrder.MakerAssetAmount[:]) != "000000000000000000000000000000000000000000000002b5e3af16b1880000" {
 		t.Errorf("Unexpected MakerAssetAmount: %#x", newOrder.MakerAssetAmount[:])
@@ -203,7 +209,7 @@ func TestJsonUnmarshal(t *testing.T) {
 	if hex.EncodeToString(newOrder.Salt[:]) != "000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b" {
 		t.Errorf("Unexpected Salt: %#x", newOrder.Salt[:])
 	}
-	if hex.EncodeToString(newOrder.Hash()) != "693c35d2cca7d6011b62ecb01aef6763241cec2b2686fa7f3281843b1aeb1c6b" {
+	if hex.EncodeToString(newOrder.Hash()) != "73eff0f95a1f6c56e9d9c1c714340307b81a0591e4c63e1e0917722198f5cd6d" {
 		t.Errorf("Hashes not equal %x", newOrder.Hash())
 	}
 	// log.Printf("%#x", newOrder.Bytes())

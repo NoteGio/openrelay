@@ -3,8 +3,7 @@ package types
 import (
 	"encoding/json"
 	// "encoding/hex"
-	"database/sql/driver"
-	"errors"
+
 	"fmt"
 	"github.com/ethereum/go-ethereum/crypto/sha3"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -13,65 +12,6 @@ import (
 	// "strconv"
 	// "log"
 )
-
-type Address [20]byte
-
-func (addr *Address) Value() (driver.Value, error) {
-	return addr[:], nil
-}
-
-func (addr *Address) Scan(src interface{}) error {
-	switch v := src.(type) {
-	case []byte:
-		copy(addr[:], v)
-		return nil
-	default:
-		return errors.New("Address scanner src should be []byte")
-	}
-}
-
-func (addr *Address) String() string {
-	return fmt.Sprintf("%#x", addr[:])
-}
-
-type Uint256 [32]byte
-
-func (data *Uint256) Value() (driver.Value, error) {
-	return data[:], nil
-}
-
-func (data *Uint256) Scan(src interface{}) error {
-	switch v := src.(type) {
-	case []byte:
-		copy(data[:], v)
-		return nil
-	default:
-		return errors.New("Uint256 scanner src should be []byte")
-	}
-}
-
-func (data *Uint256) String() (string) {
-	return data.Big().String()
-}
-
-func (data *Uint256) Big() (*big.Int) {
-	return new(big.Int).SetBytes(data[:])
-}
-
-type AssetData []byte
-
-func (data AssetData) ProxyId() (byte) {
-	return data[len(data) - 1]
-}
-
-func (data AssetData) Address() (*Address) {
-	address := &Address{}
-	if proxyId := data.ProxyId(); proxyId == 1 || proxyId == 2 {
-		copy(address[:], data[:20])
-	}
-	return address
-}
-
 
 // Order represents an 0x order object
 type Order struct {

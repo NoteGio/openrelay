@@ -15,7 +15,7 @@ import (
 )
 
 type FilledLookup interface {
-	GetAmountCancelled(order *types.Order) (*types.Uint256, error)
+	GetCancelled(order *types.Order) (*types.Uint256, error)
 	GetAmountFilled(order *types.Order) (*types.Uint256, error)
 }
 
@@ -24,28 +24,28 @@ type rpcFilledLookup struct {
 	fillBloom *fillbloom.FillBloom
 }
 
-func (filled *rpcFilledLookup) GetAmountCancelled(order *types.Order) (*types.Uint256, error) {
-	cancelledAmount := &types.Uint256{}
+func (filled *rpcFilledLookup) GetCancelled(order *types.Order) (bool, error) {
+	isCancelled := false
 	if filled.fillBloom != nil && filled.fillBloom.Initialized && !filled.fillBloom.Test(order.Hash()) {
 		log.Printf("Bloom filter missing order: %#x", order.Hash())
-		return cancelledAmount, nil
+		return isCancelled, nil
 	}
 	exchange, err := exchangecontract.NewExchange(orCommon.ToGethAddress(order.ExchangeAddress), filled.conn)
 	if err != nil {
 		log.Printf("Error intializing exchange contract '%v': '%v'", hex.EncodeToString(order.ExchangeAddress[:]), err.Error())
-		return cancelledAmount, err
+		return isCancelled, err
 	}
 	hash := [32]byte{}
 	copy(hash[:], order.Hash())
-	amount, err := exchange.Cancelled(nil, hash)
+	isCancelled, err := exchange.Cancelled(nil, hash)
 	if err != nil {
 		orderBytes := order.Bytes()
 		log.Printf("Error getting cancelled amount for order '%v': '%v'", hex.EncodeToString(orderBytes[:]), err.Error())
-		return cancelledAmount, err
+		return isCancelled, err
 	}
 	cancelledSlice := common.LeftPadBytes(amount.Bytes(), 32)
-	copy(cancelledAmount[:], cancelledSlice)
-	return cancelledAmount, nil
+	copy(isCancelled[:], cancelledSlice)
+	return isCancelled, nil
 }
 
 func (filled *rpcFilledLookup) GetAmountFilled(order *types.Order) (*types.Uint256, error) {
@@ -90,7 +90,7 @@ type MockFilledLookup struct {
 	err       error
 }
 
-func (filled *MockFilledLookup) GetAmountCancelled(order *types.Order) (*types.Uint256, error) {
+func (filled *MockFilledLookup) GetCancelled(order *types.Order) (*types.Uint256, error) {
 	result := &types.Uint256{}
 	if filled.err != nil {
 		return result, filled.err
