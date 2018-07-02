@@ -29,5 +29,5 @@ func (data AssetData) IsType(proxyId [4]byte) (bool) {
 }
 
 func (data AssetData) SupportedType() (bool) {
-	return data.IsType(ERC20ProxyID) || data.IsType(ERC721ProxyID)
+	return data.IsType(ERC20ProxyID) //|| data.IsType(ERC721ProxyID)
 }
