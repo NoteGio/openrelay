@@ -11,6 +11,7 @@ import (
 	// "github.com/notegio/openrelay/funds"
 	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/db"
+	"github.com/notegio/openrelay/types"
 	"github.com/notegio/openrelay/exchangecontract"
 	"github.com/notegio/openrelay/monitor/blocks"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -88,15 +89,18 @@ func NewRPCAllowanceBlockConsumer(rpcURL string, exchangeAddress string, publish
 		log.Printf("Error intializing exchange contract '%v': '%v'", exchangeAddress, err.Error())
 		return nil, err
 	}
-	feeTokenAddress, err := exchange.ZRX_TOKEN_CONTRACT(nil)
+	feeTokenAssetData, err := exchange.ZRX_ASSET_DATA(nil)
 	if err != nil {
-		log.Printf("error getting feeTokenAddress")
+		log.Printf("Error getting fee token address for exchange %v", exchangeAddress)
 		return nil, err
 	}
-	tokenProxyAddress, err := exchange.TOKEN_TRANSFER_PROXY_CONTRACT(nil)
+	feeTokenAsset := types.AssetData{}
+	copy(feeTokenAsset[:], feeTokenAssetData)
+	feeTokenAddress := feeTokenAsset.Address()
+	tokenProxyAddress, err := exchange.GetAssetProxy(nil, types.ERC20ProxyID)
 	if err != nil {
 		log.Printf("error getting tokenProxyAddress")
 		return nil, err
 	}
-	return NewAllowanceBlockConsumer(tokenProxyAddress.Big(), feeTokenAddress.Hex(), client, publisher), nil
+	return NewAllowanceBlockConsumer(tokenProxyAddress.Big(), feeTokenAddress.String(), client, publisher), nil
 }
