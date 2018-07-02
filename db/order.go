@@ -46,7 +46,7 @@ func (order *Order) Save(db *gorm.DB, status int64) *gorm.DB {
 	order.OrderHash = order.Hash()
 	log.Printf("Attempting to save order %#x", order.Hash())
 	if order.Cancelled {
-		order.Status = StatusCancelled
+		status = StatusCancelled
 	}
 
 	remainingAmount := order.TakerAssetAmount.Big()

@@ -15,6 +15,7 @@ import (
 type FillRecord struct {
 	OrderHash                 string `json:"orderHash"`
 	FilledTakerAssetAmount    string `json:"filledTakerAssetAmount"`
+	Cancel                    bool   `json:"cancel"`
 }
 
 type Indexer struct {
@@ -48,6 +49,7 @@ func (indexer *Indexer) RecordFill(fillRecord *FillRecord) error {
 	indexer.db.Model(&Order{}).Where("order_hash = ?", hashBytes).First(dbOrder)
 	totalFilled := dbOrder.TakerAssetAmountFilled.Big()
 	copy(dbOrder.TakerAssetAmountFilled[:], abi.U256(totalFilled.Add(totalFilled, amountFilled)))
+	dbOrder.Cancelled = dbOrder.Cancelled || fillRecord.Cancel
 	return dbOrder.Save(indexer.db, dbOrder.Status).Error
 }
 

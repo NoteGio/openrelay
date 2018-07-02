@@ -19,8 +19,8 @@ import (
 
 type fillBlockConsumer struct {
 	exchangeAddress   *big.Int
-	fillTopic         *big.Int // 0x0d0b9391970d9a25552f37d436d2aae2925e2bfe1b2a923754bada030c498cb3
-	cancelTopic       *big.Int // 0x67d66f160bc93d925d05dae1794c90d2d6d6688b29b84ff069398a9b04587131
+	fillTopic         *big.Int // 0x0bcc4c97732e47d9946f229edb95f5b6323f601300e4690de719993f3c371129
+	cancelTopic       *big.Int // 0xdc47b3613d9fe400085f6dbdc99453462279057e6207385042827ed6b1a62cf7
 	logFilter         ethereum.LogFilterer
 	publisher         channels.Publisher
 	fillBloom         *fillbloom.FillBloom
@@ -63,22 +63,20 @@ func (consumer *fillBlockConsumer) Consume(delivery channels.Delivery) {
 			var fr *db.FillRecord
 			if new(big.Int).SetBytes(fillLog.Topics[0][:]).Cmp(consumer.fillTopic) == 0 {
 				takerTokenFilled := big.NewInt(0)
-				takerTokenFilled.SetBytes(fillLog.Data[32*4:32*5])
-				orderHash := fillLog.Data[32*7:32*8]
+				takerTokenFilled.SetBytes(fillLog.Data[32*3:32*4])
+				orderHash := fillLog.Topics[3][:]
 				fr = &db.FillRecord{
 					OrderHash: fmt.Sprintf("%#x", orderHash),
-					FilledTakerTokenAmount: takerTokenFilled.Text(10),
-					CancelledTakerTokenAmount: "0",
+					FilledTakerAssetAmount: takerTokenFilled.Text(10),
+					Cancel: false,
 				}
 				consumer.fillBloom.Add(orderHash)
 			} else {
-				takerTokenCancelled := big.NewInt(0)
-				takerTokenCancelled.SetBytes(fillLog.Data[32*3:32*4])
-				orderHash := fillLog.Data[32*4:32*5]
+				orderHash := fillLog.Topics[3][:]
 				fr = &db.FillRecord{
 					OrderHash: fmt.Sprintf("%#x", orderHash),
-					FilledTakerTokenAmount: "0",
-					CancelledTakerTokenAmount: takerTokenCancelled.Text(10),
+					FilledTakerAssetAmount: "0",
+					Cancel: true,
 				}
 				consumer.fillBloom.Add(orderHash)
 			}
@@ -100,9 +98,9 @@ func (consumer *fillBlockConsumer) Consume(delivery channels.Delivery) {
 
 func NewFillBlockConsumer(exchangeAddress *big.Int, lf ethereum.LogFilterer, publisher channels.Publisher, fb *fillbloom.FillBloom) (channels.Consumer) {
 	fillTopic := &big.Int{}
-	fillTopic.SetString("0d0b9391970d9a25552f37d436d2aae2925e2bfe1b2a923754bada030c498cb3", 16)
+	fillTopic.SetString("0bcc4c97732e47d9946f229edb95f5b6323f601300e4690de719993f3c371129", 16)
 	cancelTopic := &big.Int{}
-	cancelTopic.SetString("67d66f160bc93d925d05dae1794c90d2d6d6688b29b84ff069398a9b04587131", 16)
+	cancelTopic.SetString("dc47b3613d9fe400085f6dbdc99453462279057e6207385042827ed6b1a62cf7", 16)
 	return &fillBlockConsumer{exchangeAddress, fillTopic, cancelTopic, lf, publisher, fb}
 }
 
