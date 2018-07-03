@@ -98,19 +98,35 @@ $(BASE)/tmp/postgres.containerid:
 	mkdir -p $(BASE)/tmp
 	docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=secret postgres > $(BASE)/tmp/postgres.containerid
 
-gotest: $(BASE)/tmp/redis.containerid $(BASE)/tmp/postgres.containerid
+dockerstart: $(BASE)/tmp/redis.containerid $(BASE)/tmp/postgres.containerid
+
+gotest: dockerstart test-funds test-channels test-accounts test-affiliates test-types test-ingest test-blocksmonitor test-allowancemonitor test-fillmonitor test-spendmonitor test-splitter test-search test-db
+
+test-funds:
 	cd "$(BASE)/funds" && go test
+test-channels:
 	cd "$(BASE)/channels" &&  REDIS_URL=localhost:6379 go test
+test-accounts:
 	cd "$(BASE)/accounts" &&  REDIS_URL=localhost:6379 go test
+test-affiliates:
 	cd "$(BASE)/affiliates" &&  REDIS_URL=localhost:6379 go test
+test-types:
 	cd "$(BASE)/types" && go test
+test-ingest:
 	cd "$(BASE)/ingest" && go test
+test-blocksmonitor:
 	cd "$(BASE)/monitor/blocks" && go test
+test-allowancemonitor:
 	cd "$(BASE)/monitor/allowance" && go test
+test-fillmonitor:
 	cd "$(BASE)/monitor/fill" && go test
+test-spendmonitor:
 	cd "$(BASE)/monitor/spend" && go test
+test-splitter:
 	cd "$(BASE)/splitter" && go test
+test-search:
 	cd "$(BASE)/search" && POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
+test-db:
 	cd "$(BASE)/db" &&  POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
 
 docker-cfg/ca-certificates.crt:
