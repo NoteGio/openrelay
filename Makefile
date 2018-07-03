@@ -115,7 +115,7 @@ gotest: $(BASE)/tmp/redis.containerid $(BASE)/tmp/postgres.containerid
 docker-cfg/ca-certificates.crt:
 	cp /etc/ssl/certs/ca-certificates.crt docker-cfg/ca-certificates.crt
 
-test: $(BASE)/tmp/redis.containerid gotest dockerstop
+test: $(BASE) $(BASE)/tmp/redis.containerid gotest dockerstop
 test_no_docker: mock gotest
 mock: $(BASE)
 	mkdir -p $(BASE)/tmp

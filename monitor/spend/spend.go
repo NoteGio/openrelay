@@ -134,12 +134,15 @@ func NewRPCSpendBlockConsumer(rpcURL string, exchangeAddress string, publisher c
 		log.Printf("Error intializing exchange contract '%v': '%v'", exchangeAddress, err.Error())
 		return nil, err
 	}
-	feeTokenAddress, err := exchange.ZRX_TOKEN_CONTRACT(nil)
+	feeTokenAssetData, err := exchange.ZRX_ASSET_DATA(nil)
 	if err != nil {
-		log.Printf("error getting feeTokenAddress")
+		log.Printf("Error getting fee token address for exchange %v", exchangeAddress)
 		return nil, err
 	}
-	tokenProxyAddress, err := exchange.TOKEN_TRANSFER_PROXY_CONTRACT(nil)
+	feeTokenAsset := types.AssetData{}
+	copy(feeTokenAsset[:], feeTokenAssetData)
+	feeTokenAddress := feeTokenAsset.Address()
+	tokenProxyAddress, err := exchange.GetAssetProxy(nil, types.ERC20ProxyID)
 	if err != nil {
 		log.Printf("error getting tokenProxyAddress")
 		return nil, err
@@ -151,5 +154,5 @@ func NewRPCSpendBlockConsumer(rpcURL string, exchangeAddress string, publisher c
 		log.Printf("Error getting balance checker")
 		return nil, err
 	}
-	return NewSpendBlockConsumer(tokenProxyAddressOr, feeTokenAddress.Hex(), client, publisher, balanceChecker), nil
+	return NewSpendBlockConsumer(tokenProxyAddressOr, feeTokenAddress.String(), client, publisher, balanceChecker), nil
 }
