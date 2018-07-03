@@ -47,11 +47,11 @@ func main() {
 			log.Fatalf(err.Error())
 		}
 	}
-	newOrder.TakerTokenAmountFilled, err = filledLookup.GetAmountFilled(&newOrder)
+	newOrder.TakerAssetAmountFilled, err = filledLookup.GetAmountFilled(&newOrder)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
-	newOrder.TakerTokenAmountCancelled, err = filledLookup.GetAmountCancelled(&newOrder)
+	newOrder.Cancelled, err = filledLookup.GetCancelled(&newOrder)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}

@@ -20,11 +20,12 @@ type FundFilter struct {
 }
 
 func (filter *FundFilter) Filter(delivery channels.Delivery) bool {
-	msg := []byte(delivery.Payload())
-	orderBytes := [441]byte{}
-	copy(orderBytes[:], msg[:])
-	order := types.OrderFromBytes(orderBytes)
-	if !order.Signature.Verify(order.Maker) {
+	order, err := types.OrderFromBytes([]byte(delivery.Payload()))
+	if err != nil {
+		log.Printf("Invalid order format: %#x", delivery.Payload())
+		return false;
+	}
+	if !order.Signature.Verify(order.Maker, order.Hash()) {
 		log.Printf("Invalid order signature");
 		return false;
 	}
