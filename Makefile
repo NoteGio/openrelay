@@ -102,31 +102,31 @@ dockerstart: $(BASE)/tmp/redis.containerid $(BASE)/tmp/postgres.containerid
 
 gotest: dockerstart test-funds test-channels test-accounts test-affiliates test-types test-ingest test-blocksmonitor test-allowancemonitor test-fillmonitor test-spendmonitor test-splitter test-search test-db
 
-test-funds:
+test-funds: $(BASE)
 	cd "$(BASE)/funds" && go test
-test-channels:
+test-channels: $(BASE)
 	cd "$(BASE)/channels" &&  REDIS_URL=localhost:6379 go test
-test-accounts:
+test-accounts: $(BASE)
 	cd "$(BASE)/accounts" &&  REDIS_URL=localhost:6379 go test
-test-affiliates:
+test-affiliates: $(BASE)
 	cd "$(BASE)/affiliates" &&  REDIS_URL=localhost:6379 go test
-test-types:
+test-types: $(BASE)
 	cd "$(BASE)/types" && go test
-test-ingest:
+test-ingest: $(BASE)
 	cd "$(BASE)/ingest" && go test
-test-blocksmonitor:
+test-blocksmonitor: $(BASE)
 	cd "$(BASE)/monitor/blocks" && go test
-test-allowancemonitor:
+test-allowancemonitor: $(BASE)
 	cd "$(BASE)/monitor/allowance" && go test
-test-fillmonitor:
+test-fillmonitor: $(BASE)
 	cd "$(BASE)/monitor/fill" && go test
-test-spendmonitor:
+test-spendmonitor: $(BASE)
 	cd "$(BASE)/monitor/spend" && go test
-test-splitter:
+test-splitter: $(BASE)
 	cd "$(BASE)/splitter" && go test
-test-search:
+test-search: $(BASE)
 	cd "$(BASE)/search" && POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
-test-db:
+test-db: $(BASE)
 	cd "$(BASE)/db" &&  POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
 
 docker-cfg/ca-certificates.crt:

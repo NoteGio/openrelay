@@ -68,6 +68,15 @@ func (indexer *Indexer) RecordSpend(makerAddress, tokenAddress, zrxAddress *type
 	return query.Update("status", indexer.status).Error
 }
 
+func (indexer *Indexer) RecordCancellation(cancellation *Cancellation) error {
+	if err := cancellation.Save(indexer.db).Error; err != nil {
+		return err
+	}
+	return indexer.db.Model(&Order{}).Where(
+		"status = ? AND maker = ? AND sender = ? AND salt < ?", StatusOpen, cancellation.Maker, cancellation.Sender, cancellation.Epoch,
+	).Update("status", indexer.status).Error
+}
+
 func NewIndexer(db *gorm.DB, status int64) *Indexer {
 	return &Indexer{db, status}
 }
