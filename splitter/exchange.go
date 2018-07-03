@@ -4,6 +4,7 @@ import (
 	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/types"
 	"github.com/notegio/openrelay/common"
+	"log"
 )
 
 // AddressSplitterConsumer relays orders to different channels based on the
@@ -25,9 +26,12 @@ func (consumer *AddressSplitterConsumer) Consume(delivery channels.Delivery) {
 			delivery.Ack()
 			return
 		}
-		orderBytes := [441]byte{}
-		copy(orderBytes[:], []byte(payload))
-		order := types.OrderFromBytes(orderBytes)
+		order, err := types.OrderFromBytes([]byte(payload))
+		if err != nil {
+			log.Printf("Error parsing order: %v", err.Error())
+			delivery.Reject()
+			return
+		}
 		publisher, ok := consumer.exchanges[*order.ExchangeAddress]
 		if !ok {
 			publisher = consumer.defaultPublisher
