@@ -257,7 +257,7 @@ services:
       context: ./
       dockerfile: Dockerfile.simplerelay
     image: "openrelay/simplerelay:${TAG:-latest}"
-    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://ordersfilled=>queue://pgordersfilled=>topic://ordersfilled", "queue://newblocks=>queue://allowanceblocks=>queue://spendblocks=>topic://newblocks=>queue://fillblocks"]
+    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://ordersfilled=>queue://pgordersfilled=>topic://ordersfilled", "queue://newblocks=>queue://allowanceblocks=>queue://spendblocks=>topic://newblocks=>queue://fillblocks=>queue://canceluptoblocks"]
     depends_on:
       - redis
     deploy:
@@ -336,13 +336,27 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
+  canceluptomonitor:
+    build:
+      context: ./
+      dockerfile: Dockerfile.canceluptomonitor
+    image: "openrelay/canceluptomonitor:${TAG:-latest}"
+    command: ["/canceluptomonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://canceluptoblocks", "queue://recordcancel", "0x48bacb9266a570d521063ef5dd96e61686dbe788"]
+    depends_on:
+      - redis
+      - ethnode
+    restart: on-failure
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
 
   queuemonitor:
     build:
       context: ./
       dockerfile: Dockerfile.queuemonitor
     image: "openrelay/queuemonitor:${TAG:-latest}"
-    command: ["/queuemonitor", "${REDIS_HOST:-redis:6379}", "1", "newblocks-ropsten", "ordersfilled", "pgordersfilled", "newblocks", "released-ropsten", "fundcheck-ropsten", "allowanceblocks", "recheck-ropsten", "fillupdate-ropsten", "indexer", "preindexer", "spendblocks-ropsten", "recordspend", "ordersfilled-ropsten", "delay2-ropsten", "released", "fundcheck", "allowanceblocks-ropsten", "recheck2-ropsten", "fillupdate", "fillblocks-ropsten", "spendblocks", "recheck2", "delay1", "delay2", "ingest", "fillblocks", "pgindexer", "delay1-ropsten", "multisigblocks", "recheck"]
+    command: ["/queuemonitor", "${REDIS_HOST:-redis:6379}", "1", "newblocks-ropsten", "ordersfilled", "pgordersfilled", "newblocks", "released-ropsten", "fundcheck-ropsten", "allowanceblocks", "recheck-ropsten", "fillupdate-ropsten", "indexer", "preindexer", "spendblocks-ropsten", "recordspend", "ordersfilled-ropsten", "delay2-ropsten", "released", "fundcheck", "allowanceblocks-ropsten", "recheck2-ropsten", "fillupdate", "fillblocks-ropsten", "spendblocks", "recheck2", "delay1", "delay2", "ingest", "fillblocks", "pgindexer", "delay1-ropsten", "multisigblocks", "recheck", "canceluptoblocks", "recordcancel"]
     depends_on:
       - redis
     restart: on-failure

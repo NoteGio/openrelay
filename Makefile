@@ -61,6 +61,9 @@ bin/blockmonitor: $(BASE) cmd/blockmonitor/main.go
 bin/allowancemonitor: $(BASE) cmd/allowancemonitor/main.go
 	cd "$(BASE)" && $(GOSTATIC) -o bin/allowancemonitor cmd/allowancemonitor/main.go
 
+bin/canceluptomonitor: $(BASE) cmd/canceluptomonitor/main.go
+	cd "$(BASE)" && $(GOSTATIC) -o bin/canceluptomonitor cmd/canceluptomonitor/main.go
+
 bin/spendmonitor: $(BASE) cmd/spendmonitor/main.go
 	cd "$(BASE)" && $(GOSTATIC) -o bin/spendmonitor cmd/spendmonitor/main.go
 
@@ -85,7 +88,7 @@ bin/searchapi: $(BASE) cmd/searchapi/main.go
 bin/queuemonitor: $(BASE) cmd/queuemonitor/main.go
 	cd "$(BASE)" && CGO_ENABLED=0 $(GOSTATIC) -o bin/queuemonitor cmd/queuemonitor/main.go
 
-bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate bin/indexer bin/fillindexer bin/automigrate bin/searchapi bin/exchangesplitter bin/blockmonitor bin/allowancemonitor bin/spendmonitor bin/fillmonitor bin/multisigmonitor bin/spendrecorder bin/queuemonitor
+bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate bin/indexer bin/fillindexer bin/automigrate bin/searchapi bin/exchangesplitter bin/blockmonitor bin/allowancemonitor bin/spendmonitor bin/fillmonitor bin/multisigmonitor bin/spendrecorder bin/queuemonitor bin/canceluptomonitor
 
 truffleCompile:
 	cd js ; node_modules/.bin/truffle compile
@@ -118,6 +121,8 @@ test-blocksmonitor: $(BASE)
 	cd "$(BASE)/monitor/blocks" && go test
 test-allowancemonitor: $(BASE)
 	cd "$(BASE)/monitor/allowance" && go test
+test-canceluptomonitor: $(BASE)
+	cd "$(BASE)/monitor/cancelupto" && go test
 test-fillmonitor: $(BASE)
 	cd "$(BASE)/monitor/fill" && go test
 test-spendmonitor: $(BASE)
