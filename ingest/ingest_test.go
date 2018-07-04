@@ -211,7 +211,7 @@ func TestBadSignature(t *testing.T) {
 		t.Errorf("Got unexpected content type %v", contentType)
 	}
 	body := recorder.Body.String()
-	if body != "{\"code\":100,\"reason\":\"Validation Failed\",\"validationErrors\":[{\"field\":\"ecSignature\",\"code\":1005,\"reason\":\"Signature validation failed\"}]}" {
+	if body != "{\"code\":100,\"reason\":\"Validation Failed\",\"validationErrors\":[{\"field\":\"signature\",\"code\":1005,\"reason\":\"Signature validation failed\"}]}" {
 		t.Errorf("Got unexpected body: '%v' - %v", body, len(body))
 	}
 	if len(publisher.messages) != 0 {

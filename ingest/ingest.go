@@ -166,12 +166,24 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 			}, 400)
 			return
 		}
+		if !order.Signature.Supported() {
+			returnError(w, IngestError{
+				100,
+				"Validation Failed",
+				[]ValidationError{ValidationError{
+					"signature",
+					1005,
+					"Unsupported signature type",
+				}},
+			}, 400)
+			return
+		}
 		if !order.Signature.Verify(order.Maker, order.Hash()) {
 			returnError(w, IngestError{
 				100,
 				"Validation Failed",
 				[]ValidationError{ValidationError{
-					"ecSignature",
+					"signature",
 					1005,
 					"Signature validation failed",
 				}},

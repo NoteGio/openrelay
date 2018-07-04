@@ -49,7 +49,19 @@ func (sig Signature) Verify(address *Address, hash []byte) bool {
 	default:
 		return false
 	}
-	return false
+}
+
+func (sig Signature) Supported() bool {
+	switch sigType := sig.Type(); sigType {
+	case SigTypeEIP712:
+		return true
+	case SigTypeEthSign:
+		return true
+	case SigTypeTrezor:
+		return true
+	default:
+		return false
+	}
 }
 
 func (sig Signature) verifyEIP712(address *Address, hash []byte) bool {
