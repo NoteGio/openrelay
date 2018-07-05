@@ -27,7 +27,7 @@ func TestFeeRecipientAndMakerProvided(t *testing.T) {
 		t.Errorf("Body: '%v'", recorder.Body.String())
 	}
 	body := recorder.Body.String()
-	if body != "{\"makerFee\":\"0\",\"takerFee\":\"0\",\"feeRecipient\":\"0x0000000000000000000000000000000000000000\",\"takerToSpecify\":\"0x0000000000000000000000000000000000000000\"}" {
+	if body != "{\"makerFee\":\"0\",\"takerFee\":\"0\",\"feeRecipient\":\"0x0000000000000000000000000000000000000000\",\"sender\":\"0x0000000000000000000000000000000000000000\",\"takerToSpecify\":\"0x0000000000000000000000000000000000000000\"}" {
 		t.Errorf("Unexpected body: '%v'", body)
 	}
 }
@@ -47,7 +47,7 @@ func TestFeeRecipientAndMakerDefault(t *testing.T) {
 		t.Errorf("Body: '%v'", recorder.Body.String())
 	}
 	body := recorder.Body.String()
-	if body != "{\"makerFee\":\"0\",\"takerFee\":\"0\",\"feeRecipient\":\"0x0000000000000000000000000000000000000000\",\"takerToSpecify\":\"0x0000000000000000000000000000000000000000\"}" {
+	if body != "{\"makerFee\":\"0\",\"takerFee\":\"0\",\"feeRecipient\":\"0x0000000000000000000000000000000000000000\",\"sender\":\"0x0000000000000000000000000000000000000000\",\"takerToSpecify\":\"0x0000000000000000000000000000000000000000\"}" {
 		t.Errorf("Unexpected body: '%v'", body)
 	}
 }

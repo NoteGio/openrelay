@@ -210,6 +210,13 @@ func SearchHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 		response, contentType, err := FormatResponse(orders, acceptHeader)
 		if err == nil {
 			w.WriteHeader(200)
+
+
+			url := *r.URL
+			queryObject.Set("page", strconv.Itoa(pageInt + 1))
+			url.RawQuery = queryObject.Encode()
+
+			w.Header().Set("Link", fmt.Sprintf("<%v>; rel=\"next\"", (&url).RequestURI()))
 			w.Header().Set("Content-Type", contentType)
 			w.Write(response)
 		} else {

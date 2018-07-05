@@ -1,7 +1,6 @@
 package ingest
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	accountsModule "github.com/notegio/openrelay/accounts"
 	affiliatesModule "github.com/notegio/openrelay/affiliates"
@@ -11,6 +10,7 @@ import (
 	"log"
 	"math/big"
 	"net/http"
+	"fmt"
 )
 
 // FeeInputPayload only considers maker and feeRecipient when calculating fees.
@@ -18,12 +18,15 @@ import (
 type FeeInputPayload struct {
 	Maker        string `json:"maker"`
 	FeeRecipient string `json:"feeRecipient"`
+	Taker        string `json:"taker"`
+	Sender       string `json:"sender"`
 }
 
 type FeeResponse struct {
 	MakerFee       string `json:"makerFee"`
 	TakerFee       string `json:"takerFee"`
 	FeeRecipient   string `json:"feeRecipient"`
+	Sender         string `json:"sender"`
 	TakerToSpecify string `json:"takerToSpecify"`
 }
 
@@ -121,11 +124,20 @@ func FeeHandler(publisher channels.Publisher, accounts accountsModule.AccountSer
 		// fee. Thus, the minimum fee required is feeRecipient.Fee() -
 		// maker.Discount()
 		minFee.Sub(feeRecipient.Fee(), account.Discount())
+		takerToSpecify := fmt.Sprintf("%#x", emptyBytes[:])
+		senderToSpecify := fmt.Sprintf("%#x", emptyBytes[:])
+		if feeInput.Taker != "" {
+			takerToSpecify = feeInput.Taker
+		}
+		if feeInput.Sender != "" {
+			senderToSpecify = feeInput.Sender
+		}
 		feeResponse := &FeeResponse{
 			minFee.Text(10),
 			"0",
-			"0x" + hex.EncodeToString(feeRecipientAddress[:]),
-			"0x" + hex.EncodeToString(emptyBytes[:]),
+			fmt.Sprintf("%#x", feeRecipientAddress[:]),
+			senderToSpecify,
+			takerToSpecify,
 		}
 		w.WriteHeader(200)
 		w.Header().Set("Content-Type", "application/json")

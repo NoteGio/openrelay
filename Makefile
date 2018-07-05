@@ -101,7 +101,7 @@ $(BASE)/tmp/postgres.containerid:
 	mkdir -p $(BASE)/tmp
 	docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=secret postgres > $(BASE)/tmp/postgres.containerid
 
-dockerstart: $(BASE)/tmp/redis.containerid $(BASE)/tmp/postgres.containerid
+dockerstart: $(BASE) $(BASE)/tmp/redis.containerid $(BASE)/tmp/postgres.containerid
 
 gotest: dockerstart test-funds test-channels test-accounts test-affiliates test-types test-ingest test-blocksmonitor test-allowancemonitor test-fillmonitor test-spendmonitor test-splitter test-search test-db
 
