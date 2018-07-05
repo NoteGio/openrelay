@@ -12,6 +12,6 @@ FROM scratch
 
 COPY --from=corebuild /go/src/github.com/notegio/openrelay/bin/fillupdate /fillupdate
 
-COPY docker-cfg/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=corebuild /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 
 CMD ["/fillupdate"]
