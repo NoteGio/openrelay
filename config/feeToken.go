@@ -57,8 +57,8 @@ func (feeToken *rpcFeeToken) Get(order *types.Order) (*types.Address, error) {
 		log.Printf("Error getting fee token address for exchange %#x", order.ExchangeAddress)
 		return nil, err
 	}
-	feeTokenAsset := types.AssetData{}
-	copy(feeTokenAsset[:], feeTokenAssetData)
+	feeTokenAsset := make(types.AssetData, len(feeTokenAssetData))
+	copy(feeTokenAsset[:], feeTokenAssetData[:])
 	feeTokenAddress = feeTokenAsset.Address()
 	feeToken.exchangeTokenMap[*order.ExchangeAddress] = feeTokenAddress
 	return feeTokenAddress, nil

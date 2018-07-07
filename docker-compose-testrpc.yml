@@ -231,7 +231,7 @@ services:
       INDEX_PASSWORD: password
       SEARCH_PASSWORD: password
       SPENDRECORDER_PASSWORD: password
-    command: ["/automigrate", "postgres://postgres@postgres", "env://POSTGRES_PASSWORD", "indexer;env://INDEX_PASSWORD;orders.SELECT,orders.INSERT,orders.UPDATE", "spendrecorder;env://SPENDRECORDER_PASSWORD;orders.SELECT,orders.INSERT,orders.UPDATE", "search;env://SEARCH_PASSWORD;orders.SELECT"]
+    command: ["/automigrate", "postgres://postgres@postgres", "env://POSTGRES_PASSWORD", "indexer;env://INDEX_PASSWORD;orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE", "spendrecorder;env://SPENDRECORDER_PASSWORD;orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE", "search;env://SEARCH_PASSWORD;orderv2.SELECT"]
     depends_on:
       - postgres
     restart: on-failure

@@ -139,8 +139,8 @@ func NewRPCSpendBlockConsumer(rpcURL string, exchangeAddress string, publisher c
 		log.Printf("Error getting fee token address for exchange %v", exchangeAddress)
 		return nil, err
 	}
-	feeTokenAsset := types.AssetData{}
-	copy(feeTokenAsset[:], feeTokenAssetData)
+	feeTokenAsset := make(types.AssetData, len(feeTokenAssetData))
+	copy(feeTokenAsset[:], feeTokenAssetData[:])
 	feeTokenAddress := feeTokenAsset.Address()
 	tokenProxyAddress, err := exchange.GetAssetProxy(nil, types.ERC20ProxyID)
 	if err != nil {
