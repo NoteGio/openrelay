@@ -15,7 +15,10 @@ func main() {
 		log.Fatalf("Could not open database connection: %v", err.Error())
 	}
 	if err := db.AutoMigrate(&dbModule.Order{}).Error; err != nil {
-		log.Fatalf("Error migrating database: %v", err.Error())
+		log.Fatalf("Error migrating order table: %v", err.Error())
+	}
+	if err := db.AutoMigrate(&dbModule.Cancellation{}).Error; err != nil {
+		log.Fatalf("Error migrating cancellation table: %v", err.Error())
 	}
 	if err := db.Model(&dbModule.Order{}).AddIndex("idx_order_maker_asset_taker_asset", "maker_asset_address", "taker_asset_address").Error; err != nil {
 		log.Fatalf("Error adding token pair index: %v", err.Error())

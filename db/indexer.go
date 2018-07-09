@@ -73,7 +73,7 @@ func (indexer *Indexer) RecordCancellation(cancellation *Cancellation) error {
 		return err
 	}
 	return indexer.db.Model(&Order{}).Where(
-		"status = ? AND maker = ? AND sender = ? AND salt < ?", StatusOpen, cancellation.Maker, cancellation.Sender, cancellation.Epoch,
+		"status = ? AND maker = ? AND sender_address = ? AND salt < ?", StatusOpen, cancellation.Maker, cancellation.Sender, cancellation.Epoch,
 	).Update("status", indexer.status).Error
 }
 

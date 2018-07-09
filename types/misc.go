@@ -1,10 +1,13 @@
 package types
 
 import (
+	"encoding/hex"
 	"math/big"
 	"database/sql/driver"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"errors"
 	"fmt"
+	"bytes"
 )
 
 type Address [20]byte
@@ -25,6 +28,15 @@ func (addr *Address) Scan(src interface{}) error {
 
 func (addr *Address) String() string {
 	return fmt.Sprintf("%#x", addr[:])
+}
+
+func (addr *Address) UnmarshalJSON(data []byte) error {
+	length, err := hex.Decode(addr[:], bytes.TrimPrefix(bytes.Trim(data, "\""), []byte("0x")))
+	if err != nil { return err }
+	if length != 20 {
+		return errors.New("Invalid address length")
+	}
+	return nil
 }
 
 type Uint256 [32]byte
@@ -49,4 +61,12 @@ func (data *Uint256) String() (string) {
 
 func (data *Uint256) Big() (*big.Int) {
 	return new(big.Int).SetBytes(data[:])
+}
+
+func (data *Uint256) UnmarshalJSON(jsonData []byte) error {
+	numberBytes := bytes.Trim(jsonData, "\"")
+	numberBig, ok := new(big.Int).SetString(string(numberBytes), 10)
+	if !ok { return fmt.Errorf("Failed to convert number to integer: %v", string(jsonData)) }
+	copy(data[:], abi.U256(numberBig))
+	return nil
 }
