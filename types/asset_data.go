@@ -1,7 +1,10 @@
 package types
 
 import (
+	// "encoding/hex"
 	"bytes"
+	"fmt"
+	// "strings"
 	// "log"
 )
 
@@ -30,4 +33,8 @@ func (data AssetData) IsType(proxyId [4]byte) (bool) {
 
 func (data AssetData) SupportedType() (bool) {
 	return data.IsType(ERC20ProxyID) //|| data.IsType(ERC721ProxyID)
+}
+
+func (data AssetData) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("\"%#x\"", data[:])), nil
 }

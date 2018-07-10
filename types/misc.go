@@ -39,6 +39,12 @@ func (addr *Address) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+
+func (data *Address) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("\"%v\"", data)), nil
+}
+
+
 type Uint256 [32]byte
 
 func (data *Uint256) Value() (driver.Value, error) {
@@ -69,4 +75,8 @@ func (data *Uint256) UnmarshalJSON(jsonData []byte) error {
 	if !ok { return fmt.Errorf("Failed to convert number to integer: %v", string(jsonData)) }
 	copy(data[:], abi.U256(numberBig))
 	return nil
+}
+
+func (data *Uint256) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("\"%v\"", data)), nil
 }
