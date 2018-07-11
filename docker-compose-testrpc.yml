@@ -23,7 +23,7 @@ services:
       context: ./
       dockerfile: Dockerfile.testrpc
     ports:
-      - "8545"
+      - "18545:8545"
     deploy:
       replicas: 1
       restart_policy:
@@ -48,7 +48,7 @@ services:
       context: ./
       dockerfile: Dockerfile.exchangesplitter
     image: "openrelay/exchangesplitter:${TAG:-latest}"
-    command: ["/exchangesplitter", "${REDIS_HOST:-redis:6379}", "queue://ingest", "queue://fillupdate", "0x1dad4783cf3fe3085c1426157ab175a6119a04ba=queue://fillupdate-othernet"]
+    command: ["/exchangesplitter", "${REDIS_HOST:-redis:6379}", "queue://ingest", "queue://canceluptocheck", "0x1dad4783cf3fe3085c1426157ab175a6119a04ba=queue://canceluptocheck-othernet"]
     depends_on:
       - redis
     deploy:
@@ -60,7 +60,7 @@ services:
       context: ./
       dockerfile: Dockerfile.fillupdate
     image: "openrelay/fillupdate:${TAG:-latest}"
-    command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "topic://ordersfilled", "file:///bloom/data/testdata", "queue://fillupdate=>queue://fundcheck", "queue://recheck=>queue://recheck2"]
+    command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "topic://ordersfilled", "file:///bloom/data/testdata", "queue://fillupdate=>queue://fundcheck", "queue://fillrecheck=>queue://fundrecheck"]
     volumes:
       - bloomdata:/bloom/data
     depends_on:
@@ -75,7 +75,7 @@ services:
       context: ./
       dockerfile: Dockerfile.fundcheckrelay
     image: "openrelay/fundcheckrelay:${TAG:-latest}"
-    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://fundcheck=>queue://delay1=>topic://instant-broadcast", "queue://recheck2=>queue://pgindexer", "--invalidation=topic://newblocks"]
+    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://fundcheck=>queue://delay1=>topic://instant-broadcast", "queue://fundrecheck=>queue://pgindexer", "--invalidation=topic://newblocks"]
     depends_on:
       - redis
       - ethnode
@@ -89,7 +89,7 @@ services:
       context: ./
       dockerfile: Dockerfile.delayrelay
     image: "openrelay/delayrelay:${TAG:-latest}"
-    command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "topic://delay1trigger,queue://delay1=>queue://delay2", "topic://newblocks,queue://delay2=>queue://recheck=>topic://released-broadcast;topic://delay1trigger"]
+    command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "topic://delay1trigger,queue://delay1=>queue://delay2", "topic://newblocks,queue://delay2=>queue://cancelrecheck=>topic://released-broadcast;topic://delay1trigger"]
     depends_on:
       - redis
     deploy:
@@ -231,7 +231,10 @@ services:
       INDEX_PASSWORD: password
       SEARCH_PASSWORD: password
       SPENDRECORDER_PASSWORD: password
-    command: ["/automigrate", "postgres://postgres@postgres", "env://POSTGRES_PASSWORD", "indexer;env://INDEX_PASSWORD;orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE", "spendrecorder;env://SPENDRECORDER_PASSWORD;orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE", "search;env://SEARCH_PASSWORD;orderv2.SELECT"]
+      CANCEL_FILTER_PASSWORD: password
+      CANCEL_INDEX_PASSWORD: password
+    # TODO: PROD config needs to reflect new roles
+    command: ["/automigrate", "postgres://postgres@postgres", "env://POSTGRES_PASSWORD", "indexer;env://INDEX_PASSWORD;orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE", "spendrecorder;env://SPENDRECORDER_PASSWORD;orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE", "search;env://SEARCH_PASSWORD;orderv2.SELECT", "cancelfilter;env://CANCEL_FILTER_PASSWORD;cancellations.SELECT", "cancelindexer;env://CANCEL_INDEX_PASSWORD;cancellations.SELECT,cancellations.INSERT,cancellations.UPDATE,orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE"]
     depends_on:
       - postgres
     restart: on-failure
@@ -350,13 +353,40 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
+  canceluptofilter:
+    build:
+      context: ./
+      dockerfile: Dockerfile.canceluptofilter
+    image: "openrelay/canceluptofilter:${TAG:-latest}"
+    command: ["/canceluptofilter", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "postgres://cancelfilter@postgres", "env://POSTGRES_PASSWORD", "queue://canceluptocheck=>queue://fillupdate", "queue://cancelrecheck=>queue://fillrecheck"]
+    environment:
+      POSTGRES_PASSWORD: password
+    depends_on:
+      - redis
+      - ethnode
+      - postgres
+    restart: on-failure
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  canceluptoindexer:
+    build:
+      context: ./
+      dockerfile: Dockerfile.canceluptoindexer
+    image: "openrelay/canceluptoindexer:${TAG:-latest}"
+    command: ["/canceluptoindexer", "redis:6379", "queue://recordcancel", "postgres://cancelindexer@postgres", "env://POSTGRES_PASSWORD"]
+    environment:
+      POSTGRES_PASSWORD: password
+    restart: on-failure
 
   queuemonitor:
     build:
       context: ./
       dockerfile: Dockerfile.queuemonitor
     image: "openrelay/queuemonitor:${TAG:-latest}"
-    command: ["/queuemonitor", "${REDIS_HOST:-redis:6379}", "1", "newblocks-ropsten", "ordersfilled", "pgordersfilled", "newblocks", "released-ropsten", "fundcheck-ropsten", "allowanceblocks", "recheck-ropsten", "fillupdate-ropsten", "indexer", "preindexer", "spendblocks-ropsten", "recordspend", "ordersfilled-ropsten", "delay2-ropsten", "released", "fundcheck", "allowanceblocks-ropsten", "recheck2-ropsten", "fillupdate", "fillblocks-ropsten", "spendblocks", "recheck2", "delay1", "delay2", "ingest", "fillblocks", "pgindexer", "delay1-ropsten", "multisigblocks", "recheck", "canceluptoblocks", "recordcancel"]
+    command: ["/queuemonitor", "${REDIS_HOST:-redis:6379}", "1", "newblocks-ropsten", "ordersfilled", "pgordersfilled", "newblocks", "released-ropsten", "fundcheck-ropsten", "allowanceblocks", "recheck-ropsten", "fillupdate-ropsten", "indexer", "preindexer", "spendblocks-ropsten", "recordspend", "ordersfilled-ropsten", "delay2-ropsten", "released", "fundcheck", "allowanceblocks-ropsten", "recheck2-ropsten", "fillupdate", "fillblocks-ropsten", "spendblocks", "recheck2", "delay1", "delay2", "ingest", "fillblocks", "pgindexer", "delay1-ropsten", "multisigblocks", "recheck", "canceluptoblocks", "recordcancel", "canceluptocheck"]
     depends_on:
       - redis
     restart: on-failure

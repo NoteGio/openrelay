@@ -1,0 +1,17 @@
+FROM golang:1.8 as corebuild
+
+RUN mkdir -p /go/src/github.com/notegio/openrelay
+
+WORKDIR /go/src/github.com/notegio/openrelay
+
+COPY . .
+
+RUN make clean bin
+
+FROM scratch
+
+COPY --from=corebuild /go/src/github.com/notegio/openrelay/bin/canceluptofilter /canceluptofilter
+
+COPY --from=corebuild /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+
+CMD ["/canceluptofilter"]

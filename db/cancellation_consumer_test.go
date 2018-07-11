@@ -35,7 +35,7 @@ func TestCancellationConsumer(t *testing.T) {
 	}
 	fillString := "{\"Maker\": \"0x627306090abab3a6e1400e9345bc60c78a8bef57\", \"Sender\": \"0x0000000000000000000000000000000000000000\", \"Epoch\": \"11065671350908846865864045738088581419204014210814002044381812654087807532\"}"
 	publisher, channel := channels.MockChannel()
-	consumer := dbModule.NewCancellationConsumer(tx, 1)
+	consumer := dbModule.NewRecordCancellationConsumer(tx, 1)
 	channel.AddConsumer(consumer)
 	channel.StartConsuming()
 	defer channel.StopConsuming()

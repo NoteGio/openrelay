@@ -24,6 +24,9 @@ func (lookup *dbCancellationLookup) GetCancelled(order *types.Order) (bool, erro
 	}
 	cancellation := &dbModule.Cancellation{}
 	if err := lookup.db.Model(&dbModule.Cancellation{}).Where("maker = ? AND sender = ?", order.Maker, order.SenderAddress).First(cancellation).Error; err != nil {
+		if err.Error() == "record not found" {
+			return false, nil
+		}
 		return true, err
 	}
 	if cancellation.Epoch == nil {

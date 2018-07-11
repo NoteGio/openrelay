@@ -64,6 +64,12 @@ bin/allowancemonitor: $(BASE) cmd/allowancemonitor/main.go
 bin/canceluptomonitor: $(BASE) cmd/canceluptomonitor/main.go
 	cd "$(BASE)" && $(GOSTATIC) -o bin/canceluptomonitor cmd/canceluptomonitor/main.go
 
+bin/canceluptofilter: $(BASE) cmd/canceluptofilter/main.go
+	cd "$(BASE)" && $(GOSTATIC) -o bin/canceluptofilter cmd/canceluptofilter/main.go
+
+bin/canceluptoindexer: $(BASE) cmd/canceluptoindexer/main.go
+	cd "$(BASE)" && $(GOSTATIC) -o bin/canceluptoindexer cmd/canceluptoindexer/main.go
+
 bin/spendmonitor: $(BASE) cmd/spendmonitor/main.go
 	cd "$(BASE)" && $(GOSTATIC) -o bin/spendmonitor cmd/spendmonitor/main.go
 
@@ -88,7 +94,7 @@ bin/searchapi: $(BASE) cmd/searchapi/main.go
 bin/queuemonitor: $(BASE) cmd/queuemonitor/main.go
 	cd "$(BASE)" && CGO_ENABLED=0 $(GOSTATIC) -o bin/queuemonitor cmd/queuemonitor/main.go
 
-bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate bin/indexer bin/fillindexer bin/automigrate bin/searchapi bin/exchangesplitter bin/blockmonitor bin/allowancemonitor bin/spendmonitor bin/fillmonitor bin/multisigmonitor bin/spendrecorder bin/queuemonitor bin/canceluptomonitor
+bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate bin/indexer bin/fillindexer bin/automigrate bin/searchapi bin/exchangesplitter bin/blockmonitor bin/allowancemonitor bin/spendmonitor bin/fillmonitor bin/multisigmonitor bin/spendrecorder bin/queuemonitor bin/canceluptomonitor bin/canceluptofilter bin/canceluptoindexer
 
 truffleCompile:
 	cd js ; node_modules/.bin/truffle compile

@@ -28,10 +28,11 @@ func (consumer *CancellationConsumer) Consume(msg channels.Delivery) {
 		oldCancelled := order.Cancelled
 		order.Cancelled, err = consumer.lookup.GetCancelled(order)
 		if err != nil {
-			log.Printf("Error gettin cancelled status: %v", err.Error())
+			log.Printf("Error getting cancelled status: %v", err.Error())
 			msg.Reject()
 			return
 		}
+		log.Printf("Order %#x cancelled: %v", order.Hash(), order.Cancelled)
 		payload := string(order.Bytes())
 		if oldCancelled != order.Cancelled && consumer.changePublisher != nil {
 			consumer.changePublisher.Publish(payload)

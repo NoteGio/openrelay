@@ -34,6 +34,6 @@ func (consumer *CancellationConsumer) Consume(msg channels.Delivery) {
 	}()
 }
 
-func NewCancellationConsumer(db *gorm.DB, concurrency int) *CancellationConsumer {
+func NewRecordCancellationConsumer(db *gorm.DB, concurrency int) *CancellationConsumer {
 	return &CancellationConsumer{NewIndexer(db, StatusCancelled), make(common.Semaphore, concurrency)}
 }
