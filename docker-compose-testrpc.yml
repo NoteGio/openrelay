@@ -1,5 +1,10 @@
 version: "3"
 services:
+  corebuild:
+    image: corebuild
+    build:
+      context: ./
+      dockerfile: Dockerfile.composebase
   redis:
     image: redis:alpine
     ports:
@@ -39,6 +44,7 @@ services:
     command: ["/ingest", "${REDIS_HOST:-redis:6379}", "C22d5b2951DB72B44CFb8089bb8CD374A3c354eA", "queue://ingest"]
     depends_on:
       - redis
+      - corebuild
     deploy:
       replicas: 1
       restart_policy:
@@ -51,6 +57,7 @@ services:
     command: ["/exchangesplitter", "${REDIS_HOST:-redis:6379}", "queue://ingest", "queue://canceluptocheck", "0x1dad4783cf3fe3085c1426157ab175a6119a04ba=queue://canceluptocheck-othernet"]
     depends_on:
       - redis
+      - corebuild
     deploy:
       replicas: 1
       restart_policy:
@@ -66,6 +73,7 @@ services:
     depends_on:
       - redis
       - ethnode
+      - corebuild
     deploy:
       replicas: 1
       restart_policy:
@@ -79,6 +87,7 @@ services:
     depends_on:
       - redis
       - ethnode
+      - corebuild
     deploy:
       replicas: 1
       restart_policy:
@@ -92,6 +101,7 @@ services:
     command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "topic://delay1trigger,queue://delay1=>queue://delay2", "topic://newblocks,queue://delay2=>queue://cancelrecheck=>topic://released-broadcast;topic://delay1trigger"]
     depends_on:
       - redis
+      - corebuild
     deploy:
       replicas: 1
       restart_policy:
@@ -119,6 +129,7 @@ services:
     depends_on:
       - redis
       - ethnode
+      - corebuild
     restart: on-failure
     deploy:
       replicas: 1
@@ -133,6 +144,7 @@ services:
     depends_on:
       - redis
       - ethnode
+      - corebuild
     restart: on-failure
     deploy:
       replicas: 1
@@ -145,6 +157,10 @@ services:
       dockerfile: Dockerfile.pgfillindexer
     image: "openrelay/pgfillindexer:${TAG:-latest}"
     command: ["/fillindexer", "redis:6379", "queue://pgordersfilled", "postgres://postgres@postgres", "env://POSTGRES_PASSWORD"]
+    depends_on:
+      - redis
+      - postgres
+      - corebuild
     environment:
       POSTGRES_PASSWORD: secret
     restart: on-failure
@@ -193,6 +209,7 @@ services:
     command: ["/initialize", "${REDIS_HOST:-redis:6379}", "${ZRX_FEE:-500000000000000000}", "${RELAY_ADDRESS:-C22d5b2951DB72B44CFb8089bb8CD374A3c354eA}"]
     depends_on:
       - redis
+      - corebuild
   contractinit:
     build:
       context: ./
@@ -202,6 +219,7 @@ services:
       ETHEREUM_URL: "http://ethnode:8545"
     depends_on:
       - redis
+      - corebuild
   entrypoint:
     build:
       context: ./
@@ -220,6 +238,7 @@ services:
     depends_on:
       - postgres
       - redis
+      - corebuild
     restart: on-failure
   pgautomigrate:
     build:
@@ -237,6 +256,7 @@ services:
     command: ["/automigrate", "postgres://postgres@postgres", "env://POSTGRES_PASSWORD", "indexer;env://INDEX_PASSWORD;orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE", "spendrecorder;env://SPENDRECORDER_PASSWORD;orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE", "search;env://SEARCH_PASSWORD;orderv2.SELECT", "cancelfilter;env://CANCEL_FILTER_PASSWORD;cancellations.SELECT", "cancelindexer;env://CANCEL_INDEX_PASSWORD;cancellations.SELECT,cancellations.INSERT,cancellations.UPDATE,orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE"]
     depends_on:
       - postgres
+      - corebuild
     restart: on-failure
   pgapi:
     build:
@@ -250,6 +270,7 @@ services:
       POSTGRES_PASSWORD: password
     depends_on:
       - redis
+      - corebuild
     deploy:
       replicas: 1
       restart_policy:
@@ -263,6 +284,7 @@ services:
     command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://ordersfilled=>queue://pgordersfilled=>topic://ordersfilled", "queue://newblocks=>queue://allowanceblocks=>queue://spendblocks=>topic://newblocks=>queue://fillblocks=>queue://canceluptoblocks"]
     depends_on:
       - redis
+      - corebuild
     deploy:
       replicas: 1
       restart_policy:
@@ -278,6 +300,7 @@ services:
     depends_on:
       - redis
       - ethnode
+      - corebuild
     restart: on-failure
     deploy:
       replicas: 1
@@ -304,6 +327,7 @@ services:
     depends_on:
       - redis
       - ethnode
+      - corebuild
     restart: on-failure
     deploy:
       replicas: 1
@@ -318,6 +342,7 @@ services:
     depends_on:
       - redis
       - ethnode
+      - corebuild
     restart: on-failure
     deploy:
       replicas: 1
@@ -334,6 +359,7 @@ services:
     depends_on:
       - redis
       - ethnode
+      - corebuild
     restart: on-failure
     deploy:
       replicas: 1
@@ -348,6 +374,7 @@ services:
     depends_on:
       - redis
       - ethnode
+      - corebuild
     restart: on-failure
     deploy:
       replicas: 1
@@ -365,6 +392,7 @@ services:
       - redis
       - ethnode
       - postgres
+      - corebuild
     restart: on-failure
     deploy:
       replicas: 1
@@ -389,6 +417,7 @@ services:
     command: ["/queuemonitor", "${REDIS_HOST:-redis:6379}", "1", "newblocks-ropsten", "ordersfilled", "pgordersfilled", "newblocks", "released-ropsten", "fundcheck-ropsten", "allowanceblocks", "recheck-ropsten", "fillupdate-ropsten", "indexer", "preindexer", "spendblocks-ropsten", "recordspend", "ordersfilled-ropsten", "delay2-ropsten", "released", "fundcheck", "allowanceblocks-ropsten", "recheck2-ropsten", "fillupdate", "fillblocks-ropsten", "spendblocks", "recheck2", "delay1", "delay2", "ingest", "fillblocks", "pgindexer", "delay1-ropsten", "multisigblocks", "recheck", "canceluptoblocks", "recordcancel", "canceluptocheck"]
     depends_on:
       - redis
+      - corebuild
     restart: on-failure
     deploy:
       replicas: 1
