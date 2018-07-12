@@ -16,14 +16,10 @@ import (
 
 func main() {
 	redisURL := os.Args[1]
-	rpcURL := os.Args[2]
-	db, err := dbModule.GetDB(os.Args[3], os.Args[4])
+	db, err := dbModule.GetDB(os.Args[2], os.Args[3])
 	if err != nil { log.Fatalf("Error opening database: %v", err.Error()) }
 	if redisURL == "" {
 		log.Fatalf("Please specify redis URL")
-	}
-	if rpcURL == "" {
-		log.Fatalf("Please specify RPC URL")
 	}
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: redisURL,
@@ -34,7 +30,7 @@ func main() {
 		concurrency = 5
 	}
 	consumerChannels := []channels.ConsumerChannel{}
-	for _, channelString := range os.Args[5:] {
+	for _, channelString := range os.Args[4:] {
 		consumerChannel, allPublisher, changePublisher, err := cmdutils.ParseChannels(channelString, redisClient)
 		if err != nil { log.Fatalf(err.Error()) }
 		fillConsumer := funds.NewCancellationConsumer(allPublisher, changePublisher, lookup, concurrency)

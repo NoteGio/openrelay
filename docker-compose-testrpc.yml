@@ -385,7 +385,7 @@ services:
       context: ./
       dockerfile: Dockerfile.canceluptofilter
     image: "openrelay/canceluptofilter:${TAG:-latest}"
-    command: ["/canceluptofilter", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "postgres://cancelfilter@postgres", "env://POSTGRES_PASSWORD", "queue://canceluptocheck=>queue://fillupdate", "queue://cancelrecheck=>queue://fillrecheck"]
+    command: ["/canceluptofilter", "${REDIS_HOST:-redis:6379}", "postgres://cancelfilter@postgres", "env://POSTGRES_PASSWORD", "queue://canceluptocheck=>queue://fillupdate", "queue://cancelrecheck=>queue://fillrecheck"]
     environment:
       POSTGRES_PASSWORD: password
     depends_on:
