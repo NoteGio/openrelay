@@ -56,6 +56,7 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 	knownExchanges := []string{
 		"b65619b82c4d385de0c5b4005452c2fdee0f86d1",
 		"48bacb9266a570d521063ef5dd96e61686dbe788",
+		"90fe2af704b34e0224bf2299c838e04d4dcf1364",
 	}
 	for _, addrString := range knownExchanges {
 		addr, _ := hex.DecodeString(addrString)
