@@ -11,7 +11,8 @@ module.exports = function(done){
                 if(error){
                     reject(error);
                 } else {
-                    resolve(result);
+                    var blockObj = { "hash": result['hash'], "number": result['number'], "bloom": result['logsBloom'] };
+                    resolve(blockObj);
                 }
             })
         });

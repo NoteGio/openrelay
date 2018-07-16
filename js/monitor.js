@@ -68,16 +68,14 @@ module.exports = function(redisClient, notificationChannel, filterCreator, web3,
                     })
                 }, 5000);
                 channel.QueueMessage( await promiseTest(data).then((blockData) => {
-                            var blockObj = { "hash": blockData['hash'], "number": blockData['number'], "bloom": blockData['logsBloom'] };
-                            return JSON.stringify(blockObj, null, 2);
-                        }).catch((error) => {
-                            console.log("Failed to get block data " + error);
-                        }));
+                        return JSON.stringify(blockData);
+                    }).catch((error) => {
+                        console.log("Failed to get block data " + error);
+                    }));
             } else {
                 web3.eth.getBlockNumber((err, currentBlock) => {
                     var payload = await promiseTest(data).then((blockData) => {
-                            var blockObj = { "hash": blockData['hash'], "number": blockData['number'], "bloom": blockData['logsBloom'] };
-                            return JSON.stringify(blockObj, null, 2);
+                            return JSON.stringify(blockData);
                         }).catch((error) => {
                             console.log("Failed to get block data " + error);
                         });
