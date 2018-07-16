@@ -67,24 +67,24 @@ module.exports = function(redisClient, notificationChannel, filterCreator, web3,
                         lastBlockNumber = currentBlock;
                     })
                 }, 5000);
-                channel.QueueMessage( await promiseTest(data).then((blockData) => {
-                        return JSON.stringify(blockData);
-                    }).catch((error) => {
-                        console.log("Failed to get block data " + error);
-                    }));
+                transform(data).then((blockData) => {
+                    channel.QueueMessage(JSON.stringify(blockData));
+                }).catch((error) => {
+                    console.log("Failed to get block data " + error);
+                })
             } else {
                 web3.eth.getBlockNumber((err, currentBlock) => {
-                    var payload = await promiseTest(data).then((blockData) => {
-                            return JSON.stringify(blockData);
-                        }).catch((error) => {
-                            console.log("Failed to get block data " + error);
-                        });
+                    var payload = transform(data).then((blockData) => {
+                        channel.Publish(JSON.stringify(blockData));
+                        if(lastBlockNumber != currentBlock && currentBlock != null) {
+                            redisClient.set(blockKey, currentBlock);
+                            lastBlockNumber = currentBlock;
+                        }
+                    }).catch((error) => {
+                        console.log("Failed to get block data " + error);
+                    });
                     console.log(`Block ${currentBlock} - published '${payload}'`);
-                    channel.Publish(payload);
-                    if(lastBlockNumber != currentBlock && currentBlock != null) {
-                        redisClient.set(blockKey, currentBlock);
-                        lastBlockNumber = currentBlock;
-                    }
+
                 });
             }
 
