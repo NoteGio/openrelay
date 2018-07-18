@@ -61,6 +61,9 @@ bin/blockmonitor: $(BASE) cmd/blockmonitor/main.go
 bin/allowancemonitor: $(BASE) cmd/allowancemonitor/main.go
 	cd "$(BASE)" && $(GOSTATIC) -o bin/allowancemonitor cmd/allowancemonitor/main.go
 
+bin/affiliatemonitor: $(BASE) cmd/affiliatemonitor/main.go
+	cd "$(BASE)" && $(GOSTATIC) -o bin/affiliatemonitor cmd/affiliatemonitor/main.go
+
 bin/spendmonitor: $(BASE) cmd/spendmonitor/main.go
 	cd "$(BASE)" && $(GOSTATIC) -o bin/spendmonitor cmd/spendmonitor/main.go
 
@@ -85,7 +88,7 @@ bin/searchapi: $(BASE) cmd/searchapi/main.go
 bin/queuemonitor: $(BASE) cmd/queuemonitor/main.go
 	cd "$(BASE)" && CGO_ENABLED=0 $(GOSTATIC) -o bin/queuemonitor cmd/queuemonitor/main.go
 
-bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate bin/indexer bin/fillindexer bin/automigrate bin/searchapi bin/exchangesplitter bin/blockmonitor bin/allowancemonitor bin/spendmonitor bin/fillmonitor bin/multisigmonitor bin/spendrecorder bin/queuemonitor
+bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate bin/indexer bin/fillindexer bin/automigrate bin/searchapi bin/exchangesplitter bin/blockmonitor bin/allowancemonitor bin/spendmonitor bin/fillmonitor bin/multisigmonitor bin/spendrecorder bin/queuemonitor bin/affiliatemonitor
 
 truffleCompile:
 	cd js ; node_modules/.bin/truffle compile
@@ -109,6 +112,7 @@ gotest: $(BASE)/tmp/redis.containerid $(BASE)/tmp/postgres.containerid
 	cd "$(BASE)/monitor/allowance" && go test
 	cd "$(BASE)/monitor/fill" && go test
 	cd "$(BASE)/monitor/spend" && go test
+	cd "$(BASE)/monitor/affiliate" && go test
 	cd "$(BASE)/search" && POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
 	cd "$(BASE)/db" &&  POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
 
