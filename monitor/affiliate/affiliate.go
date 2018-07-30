@@ -28,7 +28,7 @@ func (consumer *affiliateBlockConsumer) Consume(delivery channels.Delivery) {
 		log.Printf("Error parsing payload: %v\n", err.Error())
 	}
 	affiliateTopic := &big.Int{}
-	affiliateTopic.SetString("7d749bde5f784fee88b0252e238a232cb0554e7c2c4f34ee5e785529217ac145", 16)
+	affiliateTopic.SetString("60dad0d232381238c031553102e3a2d779bda5a9507ec806820542b3da2801eb", 16)
 	if block.Bloom.Test(consumer.affiliateSignupAddress) && block.Bloom.Test(affiliateTopic) {
 		query := ethereum.FilterQuery{
 			FromBlock: block.Number,
