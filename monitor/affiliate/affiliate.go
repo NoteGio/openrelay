@@ -36,15 +36,15 @@ func (consumer *affiliateBlockConsumer) Consume(delivery channels.Delivery) {
 			Addresses: []common.Address{common.BigToAddress(consumer.affiliateSignupAddress)},
 			Topics: [][]common.Hash{
 				[]common.Hash{common.BigToHash(affiliateTopic)},
-				nil,
-				nil,
 			},
 		}
+		log.Printf("Block %v - %#x bloom filter indicates affiliate logs", block.Number, block.Hash)
 		logs, err := consumer.logFilter.FilterLogs(context.Background(), query)
 		if err != nil {
 			delivery.Return()
 			log.Fatalf("Failed to filter logs on block %v - aborting: %v", block.Number, err.Error())
 		}
+		log.Printf("Found %v affiliate logs", len(logs))
 		for _, affiliateLog := range logs {
 			affiliate := affiliates.NewAffiliate(nil, 100)
 			affiliateAddress := &types.Address{}
