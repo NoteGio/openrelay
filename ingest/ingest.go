@@ -179,6 +179,30 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 			}, 400)
 			return
 		}
+		if big.NewInt(0).Cmp(order.TakerTokenAmount.Big()) == 0 {
+			returnError(w, IngestError{
+				100,
+				"Validation Failed",
+				[]ValidationError{ValidationError{
+					"TakerTokenAmount",
+					1004,
+					"takerTokenAmount must be > 0",
+				}},
+			}, 400)
+			return
+		}
+		if big.NewInt(0).Cmp(order.MakerTokenAmount.Big()) == 0 {
+			returnError(w, IngestError{
+				100,
+				"Validation Failed",
+				[]ValidationError{ValidationError{
+					"MakerTokenAmount",
+					1004,
+					"makerTokenAmount must be > 0",
+				}},
+			}, 400)
+			return
+		}
 		// Now that we have a complete order, request the account from redis
 		// asynchronously since this may have some latency
 		makerChan := make(chan accountsModule.Account)
