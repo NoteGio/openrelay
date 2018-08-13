@@ -51,6 +51,10 @@ func (consumer *allowanceBlockConsumer) Consume(delivery channels.Delivery) {
 		}
 		log.Printf("Found %v approval logs", len(logs))
 		for _, approvalLog := range logs {
+			if len(approvalLog.Topics) < 2 || len(approvalLog.Data) != 32 {
+				log.Printf("Unexpected log data. Skipping.")
+				continue
+			}
 			balance := big.NewInt(0)
 			balance.SetBytes(approvalLog.Data)
 			sr := &db.SpendRecord{
