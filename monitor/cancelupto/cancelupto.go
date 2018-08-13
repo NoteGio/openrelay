@@ -46,6 +46,10 @@ func (consumer *cancelBlockConsumer) Consume(delivery channels.Delivery) {
 		}
 		log.Printf("Found %v cancellation logs", len(logs))
 		for _, cancelLog := range logs {
+			if len(cancelLog.Topics) < 3 || len(cancelLog.Data) != 32 {
+				log.Printf("Unexpected log data. Skipping.")
+				continue
+			}
 			cancellation := &db.Cancellation{&types.Address{}, &types.Address{}, &types.Uint256{}}
 			copy(cancellation.Maker[:], cancelLog.Topics[1][12:])
 			copy(cancellation.Sender[:], cancelLog.Topics[2][12:])
