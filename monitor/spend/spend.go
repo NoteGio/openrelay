@@ -55,6 +55,10 @@ func (consumer *spendBlockConsumer) Consume(delivery channels.Delivery) {
 		log.Printf("Found %v spend logs", len(logs))
 		tradedTokens := make(map[string]struct{})
 		for _, spendLog := range logs {
+			if len(spendLog.Topics) < 2 {
+				log.Printf("Unexpected log data. Skipping.")
+				continue
+			}
 			senderAddress := &types.Address{}
 			tokenAddress := &types.Address{}
 			copy(senderAddress[:], spendLog.Topics[1][12:])

@@ -60,6 +60,10 @@ func (consumer *fillBlockConsumer) Consume(delivery channels.Delivery) {
 		}
 		log.Printf("Found %v fill logs", len(logs))
 		for _, fillLog := range logs {
+			if len(fillLog.Data) < 256 {
+				log.Printf("Unexpected log data. Skipping.")
+				continue
+			}
 			var fr *db.FillRecord
 			if new(big.Int).SetBytes(fillLog.Topics[0][:]).Cmp(consumer.fillTopic) == 0 {
 				takerTokenFilled := big.NewInt(0)
