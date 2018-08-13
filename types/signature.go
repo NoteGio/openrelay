@@ -72,7 +72,10 @@ func (sig Signature) verifyEIP712(address *Address, hash []byte) bool {
 	v := sig[0]
 	r := sig[1:33]
 	s := sig[33:65]
-	pub, err := crypto.Ecrecover(hash, append(append(r, s...), v))
+	if v < 27 {
+		return false
+	}
+	pub, err := crypto.Ecrecover(hash, append(append(r, s...), v - 27))
 	if err != nil {
 		log.Println(err.Error())
 		return false
@@ -91,9 +94,12 @@ func (sig Signature) verifyEthSign(address *Address, hash []byte) bool {
 	v := cleanSig[0]
 	r := cleanSig[1:33]
 	s := cleanSig[33:65]
+	if v < 27 {
+		return false
+	}
 	hashedBytes := append([]byte("\x19Ethereum Signed Message:\n32"), hash[:]...)
 	signedBytes := crypto.Keccak256(hashedBytes)
-	pub, err := crypto.Ecrecover(signedBytes, append(append(r, s...), v))
+	pub, err := crypto.Ecrecover(signedBytes, append(append(r, s...), v - 27))
 	if err != nil {
 		log.Println(err.Error())
 		return false
@@ -130,7 +136,10 @@ func (sig Signature) verifyTrezor(address *Address, hash []byte) bool {
 	v := sig[0]
 	r := sig[1:33]
 	s := sig[33:65]
-	pub, err := crypto.Ecrecover(signedBytes, append(append(r, s...), v))
+	if v < 27 {
+		return false
+	}
+	pub, err := crypto.Ecrecover(signedBytes, append(append(r, s...), v - 27))
 	if err != nil {
 		log.Println(err.Error())
 		return false

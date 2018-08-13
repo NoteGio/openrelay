@@ -21,7 +21,7 @@ func TestVerifyEthSig(t *testing.T) {
 	copy(order.ExchangeAddress[:], exchangeAddressBytes)
 	signature := types.Signature{}
 	// Signature generated with ganache CLI given order hash
-	sigBytes, err := types.HexStringToBytes("006bcc503876436ae6ebddecc16f95fdc74945ba85aa7debabdfa4a708a80b0272520d4f331a50396583db9a06bce884abc82219bfe180ef0093b0534786c996c2")
+	sigBytes, err := types.HexStringToBytes("1b6bcc503876436ae6ebddecc16f95fdc74945ba85aa7debabdfa4a708a80b0272520d4f331a50396583db9a06bce884abc82219bfe180ef0093b0534786c996c2")
 	if err != nil { t.Errorf(err.Error()) }
 	signature = append(signature, sigBytes...)
 	// Default account for ganache CLI
@@ -43,7 +43,7 @@ func TestVerifyEIP712Sig(t *testing.T) {
 	copy(order.ExchangeAddress[:], exchangeAddressBytes)
 	signature := types.Signature{}
 	// Signature generated with metamask
-	sigBytes, err := types.HexStringToBytes("0138b836c68c21074797b0247652ef56bfe75f8e095544b60e19faaac2ee5592cb59f2988c1a37f3acbe6cfd41fecc71130c364a45cf34bb895addb8f0afea47d9")
+	sigBytes, err := types.HexStringToBytes("1c38b836c68c21074797b0247652ef56bfe75f8e095544b60e19faaac2ee5592cb59f2988c1a37f3acbe6cfd41fecc71130c364a45cf34bb895addb8f0afea47d9")
 	if err != nil { t.Errorf(err.Error()) }
 	signature = append(signature, sigBytes...)
 	// log.Printf("%#x", signature[:])
