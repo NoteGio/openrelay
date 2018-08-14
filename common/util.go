@@ -44,6 +44,13 @@ func HexToAddress(addressHex string) (*types.Address, error) {
 	return address, nil
 }
 
+func AddressToERC20AssetData(address *types.Address) (types.AssetData) {
+	assetData := make(types.AssetData, 36)
+	copy(assetData[0:4], types.ERC20ProxyID[:])
+	copy(assetData[16:], address[:])
+	return assetData
+}
+
 // GetSecret retrieves a secret from various supported secret stores
 func GetSecret(uri string) string {
 	if strings.HasPrefix(uri, "file://") {

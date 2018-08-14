@@ -92,7 +92,7 @@ func (tokenProxy *redisTokenProxy) Set(value *types.Address) error {
 	return tokenProxy.redisClient.Set("tokenProxy::address", hex.EncodeToString(value[:]), 0).Err()
 }
 
-func NewRpcTokenProxy(rpcURL string) (FeeToken, error) {
+func NewRpcTokenProxy(rpcURL string) (TokenProxy, error) {
 	conn, err := ethclient.Dial(rpcURL)
 	if err != nil {
 		return nil, err
