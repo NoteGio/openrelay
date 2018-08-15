@@ -235,6 +235,7 @@ jobs:
       - attach_workspace:
           at: bin
           # TODO: Configure CircleCi credentials in circleci
+      - setup_remote_docker
       - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
       - run:
           name: Install Docker Compose
