@@ -222,6 +222,34 @@ jobs:
           at: bin
       - run: make mock
       - run: make gotest
+  docker_build_deploy:
+    docker:
+      # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
+      - image: circleci/golang:1.8
+        #  TODO: Add the following environment variables if you wish to upload to AWS
+        #  -  AWS_ACCESS_KEY_ID
+        #  -  AWS_SECRET_ACCESS_KEY
+        #  -  AWS_DEFAULT_REGION
+    steps:
+      - checkout
+      - attach_workspace:
+          at: bin
+          # TODO: Configure CircleCi credentials in circleci
+      - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+      - run:
+          name: Install Docker Compose
+          command: |
+            curl -L https://github.com/docker/compose/releases/download/1.19.0/docker-compose-`uname -s`-`uname -m` > ~/docker-compose
+            chmod +x ~/docker-compose
+            sudo mv ~/docker-compose /usr/local/bin/docker-compose
+      - run: docker build -t corebuild:latest Dockerfile.cibase
+      # TODO: Make sure to change this when you update the default docker-compose file
+      - run: docker-compose -f docker-compose-testrpc.yml up  -d --no-build
+      # TODO: Docker does not support '/' and other characters. This is a dirty workaround for the '/' naming convention being used currently
+      - run: TAG=$(echo "$CIRCLE_BRANCH" | sed 's^/^-^g') docker-compose -f docker-compose-testrpc.yml push
+      - run: TAG=$CIRCLE_SHA1 docker-compose -f docker-compose-testrpc.yml push
+      - run: TAG=$(echo "$CIRCLE_BRANCH" | sed 's^/^-^g')_$CIRCLE_SHA1 docker-compose -f docker-compose-testrpc.yml push
+      - run: [[ CIRCLE_BRANCH = 'master' ]] && TAG=latest docker-compose -f docker-compose-testrpc.yml push || true
 workflows:
   version: 2
   build_and_test:
@@ -244,8 +272,10 @@ workflows:
       - golang_build_allowancemonitor
       - golang_build_delayrelay
       - golang_build_canceluptomonitor
-      - golang_test:
+      - golang_test
+      - docker_build_deploy:
           requires:
+            - golang_test
             - golang_build_delayrelay
             - golang_build_fundcheckrelay
             - golang_build_getbalance
@@ -260,3 +290,12 @@ workflows:
             - golang_build_automigrate
             - golang_build_searchapi
             - golang_build_blockmonitor
+            - golang_build_allowancemonitor
+            - golang_build_delayrelay
+            - golang_build_canceluptomonitor
+          filters:
+            branches:
+              only:
+                - master
+                - support/0xv1
+                - 0xv2-support
