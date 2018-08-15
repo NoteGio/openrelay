@@ -8,11 +8,11 @@ import (
 	"math/big"
 )
 
-type rpcBalanceChecker struct {
+type rpcERC20BalanceChecker struct {
 	conn bind.ContractBackend
 }
 
-func (funds *rpcBalanceChecker) GetBalance(tokenAsset types.AssetData, userAddrBytes *types.Address) (*big.Int, error) {
+func (funds *rpcERC20BalanceChecker) GetBalance(tokenAsset types.AssetData, userAddrBytes *types.Address) (*big.Int, error) {
 	token, err := tokenModule.NewToken(orCommon.ToGethAddress(tokenAsset.Address()), funds.conn)
 	if err != nil {
 		return nil, err
@@ -20,7 +20,7 @@ func (funds *rpcBalanceChecker) GetBalance(tokenAsset types.AssetData, userAddrB
 	return token.BalanceOf(nil, orCommon.ToGethAddress(userAddrBytes))
 }
 
-func (funds *rpcBalanceChecker) GetAllowance(tokenAsset types.AssetData, ownerAddress, spenderAddress *types.Address) (*big.Int, error) {
+func (funds *rpcERC20BalanceChecker) GetAllowance(tokenAsset types.AssetData, ownerAddress, spenderAddress *types.Address) (*big.Int, error) {
 	token, err := tokenModule.NewToken(orCommon.ToGethAddress(tokenAsset.Address()), funds.conn)
 	if err != nil {
 		return nil, err
@@ -30,5 +30,5 @@ func (funds *rpcBalanceChecker) GetAllowance(tokenAsset types.AssetData, ownerAd
 
 
 func NewRpcERC20BalanceChecker(conn bind.ContractBackend) (BalanceChecker) {
-	return &rpcBalanceChecker{conn}
+	return &rpcERC20BalanceChecker{conn}
 }
