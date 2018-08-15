@@ -173,6 +173,16 @@ jobs:
           root: bin
           paths:
             - spendmonitor
+  golang_build_spendrecorder:
+    docker:
+      - image: circleci/golang:1.8
+    steps:
+      - checkout
+      - run: make bin/spendrecorder
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - spendrecorder
   golang_build_fillmonitor:
     docker:
       - image: circleci/golang:1.8
@@ -203,6 +213,36 @@ jobs:
           root: bin
           paths:
             - canceluptomonitor
+  golang_build_canceluptofilter:
+    docker:
+      - image: circleci/golang:1.8
+    steps:
+      - checkout
+      - run: make bin/canceluptofilter
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - canceluptofilter
+  golang_build_canceluptoindexer:
+    docker:
+      - image: circleci/golang:1.8
+    steps:
+      - checkout
+      - run: make bin/canceluptoindexer
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - canceluptoindexer
+  golang_build_queuemonitor:
+    docker:
+      - image: circleci/golang:1.8
+    steps:
+      - checkout
+      - run: make bin/queuemonitor
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - queuemonitor
   golang_test:
     docker:
       # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
@@ -243,9 +283,9 @@ jobs:
             curl -L https://github.com/docker/compose/releases/download/1.19.0/docker-compose-`uname -s`-`uname -m` > ~/docker-compose
             chmod +x ~/docker-compose
             sudo mv ~/docker-compose /usr/local/bin/docker-compose
-      - run: docker build -t corebuild:latest Dockerfile.cibase
+      - run: docker build -t corebuild:latest -f Dockerfile.cibase .
       # TODO: Make sure to change this when you update the default docker-compose file
-      - run: docker-compose -f docker-compose-testrpc.yml up  -d --no-build
+      - run: docker-compose -f docker-compose-testrpc.yml up  -d
       # TODO: Docker does not support '/' and other characters. This is a dirty workaround for the '/' naming convention being used currently
       - run: TAG=$(echo "$CIRCLE_BRANCH" | sed 's^/^-^g') docker-compose -f docker-compose-testrpc.yml push
       - run: TAG=$CIRCLE_SHA1 docker-compose -f docker-compose-testrpc.yml push
@@ -272,8 +312,14 @@ workflows:
       - golang_build_searchapi
       - golang_build_blockmonitor
       - golang_build_allowancemonitor
-      - golang_build_delayrelay
+      - golang_build_spendmonitor
+      - golang_build_spendrecorder
+      - golang_build_fillmonitor
+      - golang_build_multisigmonitor
       - golang_build_canceluptomonitor
+      - golang_build_canceluptofilter
+      - golang_build_canceluptoindexer
+      - golang_build_queuemonitor
       - golang_test
       - docker_build_deploy:
           requires:
@@ -293,8 +339,14 @@ workflows:
             - golang_build_searchapi
             - golang_build_blockmonitor
             - golang_build_allowancemonitor
-            - golang_build_delayrelay
+            - golang_build_spendmonitor
+            - golang_build_spendrecorder
+            - golang_build_fillmonitor
+            - golang_build_multisigmonitor
             - golang_build_canceluptomonitor
+            - golang_build_canceluptofilter
+            - golang_build_canceluptoindexer
+            - golang_build_queuemonitor
           filters:
             branches:
               only:
