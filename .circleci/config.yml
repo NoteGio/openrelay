@@ -249,7 +249,8 @@ jobs:
       - run: TAG=$(echo "$CIRCLE_BRANCH" | sed 's^/^-^g') docker-compose -f docker-compose-testrpc.yml push
       - run: TAG=$CIRCLE_SHA1 docker-compose -f docker-compose-testrpc.yml push
       - run: TAG=$(echo "$CIRCLE_BRANCH" | sed 's^/^-^g')_$CIRCLE_SHA1 docker-compose -f docker-compose-testrpc.yml push
-      - run: [[ CIRCLE_BRANCH = 'master' ]] && TAG=latest docker-compose -f docker-compose-testrpc.yml push || true
+      - run: |
+          [[ CIRCLE_BRANCH = 'master' ]] && TAG=latest docker-compose -f docker-compose-testrpc.yml push || true
 workflows:
   version: 2
   build_and_test:
