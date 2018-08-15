@@ -47,7 +47,7 @@ func saltedSampleOrder(t *testing.T) *dbModule.Order {
 	signedBytes := crypto.Keccak256(hashedBytes)
 
 	sig, _ := crypto.Sign(signedBytes, key)
-	order.Signature[0] = sig[64]
+	order.Signature[0] = sig[64] + 27
 	copy(order.Signature[1:33], sig[0:32])
 	copy(order.Signature[33:65], sig[32:64])
 	order.Signature[65] = types.SigTypeEthSign
