@@ -80,9 +80,14 @@ func (funds *orderValidator) ValidateOrder(order *types.Order) (bool, error) {
 		log.Printf("Error getting fee token '%v'", err.Error())
 		return false, err
 	}
-	proxyAddress, err := funds.tokenProxy.Get(order)
+	makerProxyAddress, err := funds.tokenProxy.Get(order)
 	if err != nil {
 		log.Printf("Error getting token proxy address '%v'", err.Error())
+		return false, err
+	}
+	feeProxyAddress, err := funds.tokenProxy.GetById(order, types.ERC20ProxyID)
+	if err != nil {
+		log.Printf("Error getting fee token proxy address '%v'", err.Error())
 		return false, err
 	}
 	makerChan := make(chan boolOrErr)
@@ -105,14 +110,14 @@ func (funds *orderValidator) ValidateOrder(order *types.Order) (bool, error) {
 	go funds.checkAllowance(
 		order.MakerAssetData,
 		order.Maker,
-		proxyAddress,
+		makerProxyAddress,
 		getRemainingAmount(unavailableAmount.Bytes(), order.TakerAssetAmount[:], order.MakerAssetAmount[:]),
 		makerAllowanceChan,
 	)
 	go funds.checkAllowance(
 		feeToken,
 		order.Maker,
-		proxyAddress,
+		feeProxyAddress,
 		getRemainingAmount(unavailableAmount.Bytes(), order.TakerAssetAmount[:], order.MakerFee[:]),
 		feeAllowanceChan,
 	)

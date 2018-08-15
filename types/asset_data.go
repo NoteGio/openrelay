@@ -32,7 +32,15 @@ func (data AssetData) IsType(proxyId [4]byte) (bool) {
 }
 
 func (data AssetData) SupportedType() (bool) {
-	return data.IsType(ERC20ProxyID) //|| data.IsType(ERC721ProxyID)
+	return data.IsType(ERC20ProxyID) || data.IsType(ERC721ProxyID)
+}
+
+func (data AssetData) TokenID() (*Uint256) {
+	tokenID := &Uint256{}
+	if data.IsType(ERC721ProxyID) {
+		copy(tokenID[:], data[36:])
+	}
+	return tokenID
 }
 
 func (data AssetData) MarshalJSON() ([]byte, error) {

@@ -103,5 +103,6 @@ func NewRpcRoutingBalanceChecker(rpcURL string) (CachedBalanceChecker, error) {
 	}
 	checkers := make(map[string]BalanceChecker)
 	checkers["0xf47261b0"] = NewRpcERC20BalanceChecker(conn)
+	checkers["0x02571792"] = NewRpcERC721BalanceChecker(conn)
 	return &routingBalanceChecker{nil, &sync.Mutex{}, checkers}, nil
 }
