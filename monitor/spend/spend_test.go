@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"math/big"
 	"testing"
-	"github.com/notegio/openrelay/funds"
+	"github.com/notegio/openrelay/funds/balance"
 	"github.com/notegio/openrelay/monitor/spend"
 	"github.com/notegio/openrelay/monitor/blocks"
 	"github.com/notegio/openrelay/monitor/blocks/mock"
@@ -105,7 +105,7 @@ func TestSpendFromBlock(t *testing.T) {
 		"0x4444444444444444444444444444444444444444",
 		mock.NewMockLogFilterer([]types.Log{*testLog}),
 		destPublisher,
-		funds.NewMockBalanceChecker(balanceMap),
+		balance.NewMockBalanceChecker(balanceMap),
 	))
 	consumerChannel.StartConsuming()
 	defer consumerChannel.StopConsuming()
@@ -154,7 +154,7 @@ func TestNoSpendInBlock(t *testing.T) {
 		"0x4444444444444444444444444444444444444444",
 		mock.NewMockLogFilterer([]types.Log{*testLog}),
 		destPublisher,
-		funds.NewMockBalanceChecker(make(map[orTypes.Address]map[orTypes.Address]*big.Int)),
+		balance.NewMockBalanceChecker(make(map[orTypes.Address]map[orTypes.Address]*big.Int)),
 	))
 	consumerChannel.StartConsuming()
 	defer consumerChannel.StopConsuming()
