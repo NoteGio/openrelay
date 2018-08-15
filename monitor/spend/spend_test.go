@@ -11,6 +11,7 @@ import (
 	"github.com/notegio/openrelay/monitor/blocks"
 	"github.com/notegio/openrelay/monitor/blocks/mock"
 	orTypes "github.com/notegio/openrelay/types"
+	orCommon "github.com/notegio/openrelay/common"
 	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/db"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -98,9 +99,9 @@ func TestSpendFromBlock(t *testing.T) {
 	spenderAddress := &orTypes.Address{}
 	copy(tokenAddress[:], tokenBytes[:])
 	copy(spenderAddress[:], spenderBytes[:])
-	balanceMap := make(map[orTypes.Address]map[orTypes.Address]*big.Int)
-	balanceMap[*tokenAddress] = make(map[orTypes.Address]*big.Int)
-	balanceMap[*tokenAddress][*spenderAddress] = big.NewInt(0)
+	balanceMap := make(map[string]map[orTypes.Address]*big.Int)
+	balanceMap[string(orCommon.ToERC20AssetData(tokenAddress))] = make(map[orTypes.Address]*big.Int)
+	balanceMap[string(orCommon.ToERC20AssetData(tokenAddress))][*spenderAddress] = big.NewInt(0)
 	consumerChannel.AddConsumer(spend.NewSpendBlockConsumer(tokenProxyAddress,
 		"0x4444444444444444444444444444444444444444",
 		mock.NewMockLogFilterer([]types.Log{*testLog}),
@@ -154,7 +155,7 @@ func TestNoSpendInBlock(t *testing.T) {
 		"0x4444444444444444444444444444444444444444",
 		mock.NewMockLogFilterer([]types.Log{*testLog}),
 		destPublisher,
-		balance.NewMockBalanceChecker(make(map[orTypes.Address]map[orTypes.Address]*big.Int)),
+		balance.NewMockBalanceChecker(make(map[string]map[orTypes.Address]*big.Int)),
 	))
 	consumerChannel.StartConsuming()
 	defer consumerChannel.StopConsuming()

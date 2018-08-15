@@ -62,9 +62,18 @@ func (consumer *spendBlockConsumer) Consume(delivery channels.Delivery) {
 			}
 			senderAddress := &types.Address{}
 			tokenAddress := &types.Address{}
+			var tokenAssetData types.AssetData
 			copy(senderAddress[:], spendLog.Topics[1][12:])
 			copy(tokenAddress[:], spendLog.Address[:])
-			tokenAssetData := orCommon.AddressToERC20AssetData(tokenAddress)
+			if len(spendLog.Topics) == 4 {
+				// ERC721
+				tokenID := &types.Uint256{}
+				copy(tokenID[:], spendLog.Topics[3][:])
+				tokenAssetData = orCommon.ToERC721AssetData(tokenAddress, tokenID)
+			} else {
+				// ERC20
+				tokenAssetData = orCommon.ToERC20AssetData(tokenAddress)
+			}
 			pairKey := fmt.Sprintf("%#x:%#x", senderAddress, tokenAddress)
 			if _, ok := tradedTokens[pairKey]; ok {
 				// If the same account sent the same token multiple times in a single

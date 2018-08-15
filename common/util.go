@@ -44,10 +44,17 @@ func HexToAddress(addressHex string) (*types.Address, error) {
 	return address, nil
 }
 
-func AddressToERC20AssetData(address *types.Address) (types.AssetData) {
+func ToERC20AssetData(address *types.Address) (types.AssetData) {
 	assetData := make(types.AssetData, 36)
 	copy(assetData[0:4], types.ERC20ProxyID[:])
 	copy(assetData[16:], address[:])
+	return assetData
+}
+func ToERC721AssetData(address *types.Address, tokenID *types.Uint256) (types.AssetData) {
+	assetData := make(types.AssetData, 68)
+	copy(assetData[0:4], types.ERC20ProxyID[:])
+	copy(assetData[16:36], address[:])
+	copy(assetData[36:68], tokenID[:])
 	return assetData
 }
 
