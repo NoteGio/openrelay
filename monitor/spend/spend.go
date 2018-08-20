@@ -67,6 +67,12 @@ func (consumer *spendBlockConsumer) Consume(delivery channels.Delivery) {
 			copy(tokenAddress[:], spendLog.Address[:])
 			if len(spendLog.Topics) == 4 {
 				// ERC721
+				// Currently, it appears that the best way to distinguish an ERC20
+				// spend from an ERC721 spend is to test for the number of topics.
+				//
+				// This seems shakey, but without knowing about the contract ahead of
+				// time and without running other queries to determine the contract
+				// type, this seems like the best we've got
 				tokenID := &types.Uint256{}
 				copy(tokenID[:], spendLog.Topics[3][:])
 				tokenAssetData = orCommon.ToERC721AssetData(tokenAddress, tokenID)
@@ -116,6 +122,7 @@ func (consumer *spendBlockConsumer) Consume(delivery channels.Delivery) {
 
 			sr := &db.SpendRecord{
 				TokenAddress: strings.ToLower(spendLog.Address.String()),
+				AssetData: hexutil.Encode(tokenAssetData[:]),
 				SpenderAddress: hexutil.Encode(spendLog.Topics[1][12:]),
 				ZrxToken: consumer.feeTokenAddress,
 				Balance: balance.String(),

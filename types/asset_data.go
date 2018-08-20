@@ -11,7 +11,7 @@ import (
 type AssetData []byte
 
 var ERC20ProxyID = [4]byte{244, 114, 97, 176}
-var ERC721ProxyID = [4]byte{8, 233, 55, 250}
+var ERC721ProxyID = [4]byte{2, 87, 23, 146}
 
 func (data AssetData) ProxyId() ([4]byte) {
 	result := [4]byte{}

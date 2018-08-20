@@ -55,13 +55,18 @@ func (indexer *Indexer) RecordFill(fillRecord *FillRecord) error {
 
 // RecordSpend takes information about a token transfer, and updates any
 // orders that might have become unfillable as a result of the transfer.
-func (indexer *Indexer) RecordSpend(makerAddress, tokenAddress, zrxAddress *types.Address, balance *types.Uint256) error {
+func (indexer *Indexer) RecordSpend(makerAddress, tokenAddress, zrxAddress *types.Address, assetData types.AssetData, balance *types.Uint256) error {
 	// NOTE: Right now we're doing this as a single check/update. Eventually it
 	// might make sense to do a check against a read replica, and the update
 	// against the write node if the check passes. It's more work over-all, but
 	// if the write node is a major bottleneck, it could probably take a good
 	// bit of pressure off.
-	query := indexer.db.Model(&Order{}).Where("status = ? AND maker_asset_address = ? AND maker = ? AND ? < maker_asset_remaining", StatusOpen, tokenAddress, makerAddress, balance)
+	var query *gorm.DB
+	if len(assetData) == 0 {
+		query = indexer.db.Model(&Order{}).Where("status = ? AND maker_asset_address = ? AND maker = ? AND ? < maker_asset_remaining", StatusOpen, tokenAddress, makerAddress, balance)
+	} else {
+		query = indexer.db.Model(&Order{}).Where("status = ? AND maker_asset_data = ? AND maker = ? AND ? < maker_asset_remaining", StatusOpen, assetData, makerAddress, balance)
+	}
 	if(bytes.Equal(tokenAddress[:], zrxAddress[:])) {
 		query = query.Or("maker = ? AND ? < maker_fee_remaining", makerAddress, balance)
 	}

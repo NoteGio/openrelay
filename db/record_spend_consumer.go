@@ -11,6 +11,7 @@ import (
 
 type SpendRecord struct {
 	TokenAddress    string `json:"tokenAddress"`
+	AssetData       string `json:"assetData"`
 	SpenderAddress  string `json:"spenderAddress"`
 	ZrxToken        string `json:"zrxToken"`
 	Balance         string `json:"balance"`
@@ -44,6 +45,12 @@ func (consumer *RecordSpendConsumer) Consume(msg channels.Delivery) {
 			msg.Reject()
 			return
 		}
+		assetData, err := common.HexToAssetData(spendRecord.AssetData)
+		if err != nil {
+			log.Printf("Failed to record spend: '%v', '%v'", msg.Payload(), err.Error())
+			msg.Reject()
+			return
+		}
 		zrxToken, err := common.HexToAddress(spendRecord.ZrxToken)
 		if err != nil {
 			log.Printf("Failed to record spend: '%v', '%v'", msg.Payload(), err.Error())
@@ -51,7 +58,7 @@ func (consumer *RecordSpendConsumer) Consume(msg channels.Delivery) {
 			return
 		}
 		balance, err := types.IntStringToUint256(spendRecord.Balance)
-		if err := consumer.idx.RecordSpend(spenderAddress, tokenAddress, zrxToken, balance); err == nil {
+		if err := consumer.idx.RecordSpend(spenderAddress, tokenAddress, zrxToken, assetData, balance); err == nil {
 			msg.Ack()
 			} else {
 				log.Printf("Failed to record spend: '%v', '%v'", msg.Payload(), err.Error())
