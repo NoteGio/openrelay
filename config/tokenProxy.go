@@ -58,6 +58,10 @@ func (tokenProxy *rpcTokenProxy) GetById(order *types.Order, proxyID [4]byte) (*
 		return nil, err
 	}
 	copy(tokenProxyAddress[:], tokenProxyGethAddress[:])
+	_, ok := tokenProxy.exchangeProxyMap[*order.ExchangeAddress]
+	if !ok {
+		tokenProxy.exchangeProxyMap[*order.ExchangeAddress] = make(map[[4]byte]*types.Address)
+	}
 	tokenProxy.exchangeProxyMap[*order.ExchangeAddress][proxyID] = tokenProxyAddress
 	return tokenProxyAddress, nil
 }

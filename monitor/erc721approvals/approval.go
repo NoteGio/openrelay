@@ -37,6 +37,7 @@ func (consumer *approvalBlockConsumer) Consume(delivery channels.Delivery) {
 		log.Printf("Error parsing payload: %v\n", err.Error())
 	}
 	if block.Bloom.Test(consumer.approvalTopic) || (block.Bloom.Test(consumer.approveAllTopic) && block.Bloom.Test(consumer.tokenProxyAddress)){
+		// TODO: This test is errantly failing. Not sure why.
 		log.Printf("Block %#x bloom filter indicates approval event for %#x", block.Hash, consumer.tokenProxyAddress)
 		query := ethereum.FilterQuery{
 			FromBlock: block.Number,
@@ -56,11 +57,12 @@ func (consumer *approvalBlockConsumer) Consume(delivery channels.Delivery) {
 		}
 		log.Printf("Found %v approval logs", len(logs))
 		for _, approvalLog := range logs {
-			if len(approvalLog.Topics) != 4 {
-				// Not enough topics, probably an ERC20 event
-				continue
-			}
 			if new(big.Int).SetBytes(approvalLog.Topics[0][:]).Cmp(consumer.approvalTopic) == 0 {
+				if topicCount := len(approvalLog.Topics); topicCount != 4 {
+					// Not enough topics, probably an ERC20 event
+					log.Printf("Expected 4 topics, got %v - %v", topicCount, approvalLog.Address.String())
+					continue
+				}
 				// Approve
 				if new(big.Int).SetBytes(approvalLog.Topics[2][:]).Cmp(consumer.tokenProxyAddress) == 0 {
 					// They've just set the tokenProxy as the approved sender. This can't
@@ -94,10 +96,15 @@ func (consumer *approvalBlockConsumer) Consume(delivery channels.Delivery) {
 				}
 
 			} else {
+				if topicCount := len(approvalLog.Topics); topicCount != 3 {
+					// Not enough topics, probably an ERC20 event
+					log.Printf("Expected 3 topics, got %v - %v", topicCount, approvalLog.Address.String())
+					continue
+				}
 				// ApproveForAll
 				if new(big.Int).SetBytes(approvalLog.Topics[2][:]).Cmp(consumer.tokenProxyAddress) == 0 {
-					if new(big.Int).SetBytes(approvalLog.Topics[3][:]).Cmp(big.NewInt(0)) == 0 {
-						// If they've revoked the tokenPoxy as an operator, we're going to
+					if new(big.Int).SetBytes(approvalLog.Data[:]).Cmp(big.NewInt(0)) == 0 {
+						// If they've revoked the tokenProxy as an operator, we're going to
 						// remove all orders for tokens of this asset type. We don't have a
 						// mechanism to easily check whether specific assets have
 						// asset-specific approval, so we're going to remove all of them.
@@ -157,5 +164,6 @@ func NewRPCAllowanceBlockConsumer(rpcURL string, exchangeAddress string, publish
 		log.Printf("error getting tokenProxyAddress")
 		return nil, err
 	}
+	log.Printf("TP: %#x - %v", tokenProxyAddress[:], exchangeAddress)
 	return NewAllowanceBlockConsumer(tokenProxyAddress.Big(), feeTokenAddress.String(), client, publisher), nil
 }

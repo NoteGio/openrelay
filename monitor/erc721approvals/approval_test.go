@@ -62,9 +62,9 @@ func approveAllLog(tokenProxyHex string, approved int64) *types.Log {
 		common.BigToHash(approvalTopic),
 		common.BigToHash(senderAddress.Big()),
 		common.BigToHash(tokenProxyAddress.Big()),
-		common.BigToHash(big.NewInt(approved)),
 	}
-	return buildLog(ctrAddress, topics, []byte{})
+	data := common.BigToHash(big.NewInt(approved))
+	return buildLog(ctrAddress, topics, data[:])
 }
 
 func TestBloom(t *testing.T) {

@@ -7,6 +7,7 @@ import (
 	"github.com/notegio/openrelay/types"
 	"math/big"
 	"bytes"
+	"log"
 )
 
 type rpcERC721BalanceChecker struct {
@@ -32,7 +33,12 @@ func (funds *rpcERC721BalanceChecker) GetAllowance(tokenAsset types.AssetData, o
 		return nil, err
 	}
 	if approved, err := token.IsApprovedForAll(nil, orCommon.ToGethAddress(ownerAddress), orCommon.ToGethAddress(spenderAddress)); err != nil {
-		return nil, err
+		if err.Error() != "VM Exception while processing transaction: revert" {
+			return nil, err
+		} else {
+			// Some early ERC721 tokens don't implement this
+			log.Printf("Token %#x does not provide isApprovedForAll. Testing getApproved.", tokenAsset.Address())
+		}
 	} else if approved {
 		return big.NewInt(1), nil
 	}

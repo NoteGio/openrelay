@@ -56,30 +56,37 @@ func (consumer *spendBlockConsumer) Consume(delivery channels.Delivery) {
 		log.Printf("Found %v spend logs", len(logs))
 		tradedTokens := make(map[string]struct{})
 		for _, spendLog := range logs {
-			if len(spendLog.Topics) < 2 {
-				log.Printf("Unexpected log data. Skipping.")
-				continue
-			}
+			// if len(spendLog.Topics) < 2 {
+			// 	log.Printf("Unexpected log data. Skipping.")
+			// 	continue
+			// }
 			senderAddress := &types.Address{}
 			tokenAddress := &types.Address{}
 			var tokenAssetData types.AssetData
-			copy(senderAddress[:], spendLog.Topics[1][12:])
+
 			copy(tokenAddress[:], spendLog.Address[:])
-			if len(spendLog.Topics) == 4 {
+
+			if len(spendLog.Topics) == 0  && len(spendLog.Data) >= 96{
+				// CryptoKitties Style ERC721
+				copy(senderAddress[:], spendLog.Data[12:32])
+				tokenID := &types.Uint256{}
+				copy(tokenID[:], spendLog.Data[len(spendLog.Data)-32:])
+				tokenAssetData = orCommon.ToERC721AssetData(tokenAddress, tokenID)
+			} else if len(spendLog.Topics) == 3 {
+				// ERC20
+				copy(senderAddress[:], spendLog.Topics[1][12:])
+				tokenAssetData = orCommon.ToERC20AssetData(tokenAddress)
+			} else if len(spendLog.Topics) == 4 {
 				// ERC721
-				// Currently, it appears that the best way to distinguish an ERC20
-				// spend from an ERC721 spend is to test for the number of topics.
-				//
-				// This seems shakey, but without knowing about the contract ahead of
-				// time and without running other queries to determine the contract
-				// type, this seems like the best we've got
+				copy(senderAddress[:], spendLog.Topics[1][12:])
 				tokenID := &types.Uint256{}
 				copy(tokenID[:], spendLog.Topics[3][:])
 				tokenAssetData = orCommon.ToERC721AssetData(tokenAddress, tokenID)
 			} else {
-				// ERC20
-				tokenAssetData = orCommon.ToERC20AssetData(tokenAddress)
+				log.Printf("Unexpected log data. Skipping.")
+				continue
 			}
+
 			pairKey := fmt.Sprintf("%#x:%#x", senderAddress, tokenAddress)
 			if _, ok := tradedTokens[pairKey]; ok {
 				// If the same account sent the same token multiple times in a single
@@ -89,9 +96,19 @@ func (consumer *spendBlockConsumer) Consume(delivery channels.Delivery) {
 			}
 			tradedTokens[pairKey] = struct{}{}
 			var balance *big.Int
+			log.Printf("%#x - %#x - %#x", tokenAssetData[:], senderAddress[:], consumer.tokenProxyAddress[:])
 			allowance, err := consumer.balanceChecker.GetAllowance(tokenAssetData, senderAddress, consumer.tokenProxyAddress)
+			if err != nil && err.Error() == "VM Exception while processing transaction: revert" {
+				// Some ERC721 tokens have the ERC20 signature, but implement ERC721
+				// allowance / balance signatures
+				log.Printf("ERC20 token with allowance mismatch: %#x", tokenAddress[:])
+				tokenID := &types.Uint256{}
+				copy(tokenID[:], spendLog.Data[:])
+				tokenAssetData = orCommon.ToERC721AssetData(tokenAddress, tokenID)
+				allowance, err = consumer.balanceChecker.GetAllowance(tokenAssetData, senderAddress, consumer.tokenProxyAddress)
+			}
 			if err != nil {
-				if err.Error() == "abi: unmarshalling empty output" || err.Error() == "no contract code at given address" {
+				if err.Error() == "abi: unmarshalling empty output" || err.Error() == "no contract code at given address" || err.Error() == "VM Exception while processing transaction: revert" {
 					log.Printf("balance checker gave error: %v -- using 0 balance", err.Error())
 					allowance = big.NewInt(0)
 				} else {
@@ -106,7 +123,7 @@ func (consumer *spendBlockConsumer) Consume(delivery channels.Delivery) {
 			} else {
 				balance, err = consumer.balanceChecker.GetBalance(tokenAssetData, senderAddress)
 				if err != nil {
-					if err.Error() == "abi: unmarshalling empty output" || err.Error() == "no contract code at given address" {
+					if err.Error() == "abi: unmarshalling empty output" || err.Error() == "no contract code at given address" || err.Error() == "VM Exception while processing transaction: revert" {
 						log.Printf("balance checker gave error: %v -- using 0 balance", err.Error())
 						balance = big.NewInt(0)
 						} else {
