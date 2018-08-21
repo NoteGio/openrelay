@@ -4,6 +4,7 @@ import (
 	// "encoding/hex"
 	"bytes"
 	"fmt"
+	"database/sql/driver"
 	// "strings"
 	// "log"
 )
@@ -45,4 +46,8 @@ func (data AssetData) TokenID() (*Uint256) {
 
 func (data AssetData) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("\"%#x\"", data[:])), nil
+}
+
+func (data AssetData) Value() (driver.Value, error) {
+	return []byte(data[:]), nil
 }

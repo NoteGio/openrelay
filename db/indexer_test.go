@@ -101,7 +101,7 @@ func TestCheckUnfundedSufficient(t *testing.T) {
 	}
 	// Checking that the MakerAddress has enough of MakerAssetData.Address(), asserting that they have exactly MakerAssetAmount of the token
 	// This check ignores ZRX, by saying that the TakerAssetData is ZRX, rather than the MakerAssetData.
-	if err := indexer.RecordSpend(dbOrder.Maker, dbOrder.MakerAssetData.Address(), dbOrder.TakerAssetData.Address(), dbOrder.MakerAssetAmount); err != nil {
+	if err := indexer.RecordSpend(dbOrder.Maker, dbOrder.MakerAssetData.Address(), dbOrder.TakerAssetData.Address(), dbOrder.MakerAssetData, dbOrder.MakerAssetAmount); err != nil {
 		t.Errorf(err.Error())
 	}
 	dbOrders := []dbModule.Order{}
@@ -136,7 +136,7 @@ func TestCheckUnfundedNotFound(t *testing.T) {
 	// Checking that the Taker has enough of MakerAssetData.Address(), asserting that they have exactly MakerAssetAmount of the token
 	// This check ignores ZRX, by saying that the TakerAssetData is ZRX, rather than the MakerAssetData.
 	// This should not change anything, because no orders will match
-	if err := indexer.RecordSpend(dbOrder.Taker, dbOrder.MakerAssetData.Address(), dbOrder.TakerAssetData.Address(), dbOrder.MakerAssetAmount); err != nil {
+	if err := indexer.RecordSpend(dbOrder.Taker, dbOrder.MakerAssetData.Address(), dbOrder.TakerAssetData.Address(), dbOrder.MakerAssetData, dbOrder.MakerAssetAmount); err != nil {
 		t.Errorf(err.Error())
 	}
 	dbOrders := []dbModule.Order{}
@@ -172,7 +172,7 @@ func TestCheckUnfundedInsufficient(t *testing.T) {
 	// This check ignores ZRX, by saying that the TakerAssetData is ZRX, rather than the MakerAssetData.
 	// This should not change anything, because no orders will match
 	zero := &types.Uint256{}
-	if err := indexer.RecordSpend(dbOrder.Maker, dbOrder.MakerAssetData.Address(), dbOrder.TakerAssetData.Address(), zero); err != nil {
+	if err := indexer.RecordSpend(dbOrder.Maker, dbOrder.MakerAssetData.Address(), dbOrder.TakerAssetData.Address(), dbOrder.MakerAssetData, zero); err != nil {
 		t.Errorf(err.Error())
 	}
 	dbOrders := []dbModule.Order{}

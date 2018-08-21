@@ -9,7 +9,6 @@ import (
 	"math/big"
 	"strings"
 	"bytes"
-	// "log"
 )
 
 type FillRecord struct {
@@ -65,7 +64,7 @@ func (indexer *Indexer) RecordSpend(makerAddress, tokenAddress, zrxAddress *type
 	if len(assetData) == 0 {
 		query = indexer.db.Model(&Order{}).Where("status = ? AND maker_asset_address = ? AND maker = ? AND ? < maker_asset_remaining", StatusOpen, tokenAddress, makerAddress, balance)
 	} else {
-		query = indexer.db.Model(&Order{}).Where("status = ? AND maker_asset_data = ? AND maker = ? AND ? < maker_asset_remaining", StatusOpen, assetData, makerAddress, balance)
+		query = indexer.db.Model(&Order{}).Where("status = ? AND maker_asset_data = ? AND maker = ? AND ? < maker_asset_remaining", StatusOpen, []byte(assetData), makerAddress, balance)
 	}
 	if(bytes.Equal(tokenAddress[:], zrxAddress[:])) {
 		query = query.Or("maker = ? AND ? < maker_fee_remaining", makerAddress, balance)
