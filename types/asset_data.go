@@ -4,6 +4,7 @@ import (
 	// "encoding/hex"
 	"bytes"
 	"fmt"
+	"database/sql/driver"
 	// "strings"
 	// "log"
 )
@@ -11,7 +12,7 @@ import (
 type AssetData []byte
 
 var ERC20ProxyID = [4]byte{244, 114, 97, 176}
-var ERC721ProxyID = [4]byte{8, 233, 55, 250}
+var ERC721ProxyID = [4]byte{2, 87, 23, 146}
 
 func (data AssetData) ProxyId() ([4]byte) {
 	result := [4]byte{}
@@ -32,9 +33,21 @@ func (data AssetData) IsType(proxyId [4]byte) (bool) {
 }
 
 func (data AssetData) SupportedType() (bool) {
-	return data.IsType(ERC20ProxyID) //|| data.IsType(ERC721ProxyID)
+	return data.IsType(ERC20ProxyID) || data.IsType(ERC721ProxyID)
+}
+
+func (data AssetData) TokenID() (*Uint256) {
+	tokenID := &Uint256{}
+	if data.IsType(ERC721ProxyID) {
+		copy(tokenID[:], data[36:])
+	}
+	return tokenID
 }
 
 func (data AssetData) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("\"%#x\"", data[:])), nil
+}
+
+func (data AssetData) Value() (driver.Value, error) {
+	return []byte(data[:]), nil
 }

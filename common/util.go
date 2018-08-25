@@ -1,8 +1,10 @@
 package common
 
 import (
+	"math/big"
 	"encoding/hex"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/notegio/openrelay/aws"
 	"github.com/notegio/openrelay/types"
 	"io/ioutil"
@@ -42,6 +44,42 @@ func HexToAddress(addressHex string) (*types.Address, error) {
 	address := &types.Address{}
 	copy(address[:], addressBytes[:])
 	return address, nil
+}
+
+func HexToAssetData(assetDataHex string) (types.AssetData, error) {
+	assetDataBytes, err := hex.DecodeString(strings.TrimPrefix(assetDataHex, "0x"))
+	if err != nil {
+		return nil, err
+	}
+	assetData := types.AssetData{}
+	copy(assetData[:], assetDataBytes[:])
+	return assetData, nil
+}
+
+func BigToUint256(number *big.Int) (*types.Uint256) {
+	result := &types.Uint256{}
+	copy(result[:], abi.U256(number))
+	return result
+}
+
+func BytesToUint256(data [32]byte) (*types.Uint256) {
+	result := &types.Uint256{}
+	copy(result[:], data[:])
+	return result
+}
+
+func ToERC20AssetData(address *types.Address) (types.AssetData) {
+	assetData := make(types.AssetData, 36)
+	copy(assetData[0:4], types.ERC20ProxyID[:])
+	copy(assetData[16:], address[:])
+	return assetData
+}
+func ToERC721AssetData(address *types.Address, tokenID *types.Uint256) (types.AssetData) {
+	assetData := make(types.AssetData, 68)
+	copy(assetData[0:4], types.ERC721ProxyID[:])
+	copy(assetData[16:36], address[:])
+	copy(assetData[36:68], tokenID[:])
+	return assetData
 }
 
 // GetSecret retrieves a secret from various supported secret stores

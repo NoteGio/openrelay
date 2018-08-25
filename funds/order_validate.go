@@ -6,6 +6,7 @@ import (
 	"github.com/notegio/openrelay/config"
 	"github.com/notegio/openrelay/types"
 	"github.com/notegio/openrelay/channels"
+	"github.com/notegio/openrelay/funds/balance"
 	"log"
 	"math/big"
 )
@@ -15,7 +16,7 @@ type OrderValidator interface {
 }
 
 type orderValidator struct {
-	balanceChecker BalanceChecker
+	balanceChecker balance.BalanceChecker
 	feeToken       config.FeeToken
 	tokenProxy     config.TokenProxy
 }
@@ -25,7 +26,7 @@ type boolOrErr struct {
 	err     error
 }
 
-func (funds *orderValidator) checkBalance(tokenAddress, userAddress *types.Address, required []byte, respond chan boolOrErr) {
+func (funds *orderValidator) checkBalance(assetData types.AssetData, userAddress *types.Address, required []byte, respond chan boolOrErr) {
 	requiredInt := new(big.Int)
 	requiredInt.SetBytes(required[:])
 	if requiredInt.Cmp(big.NewInt(0)) == 0 {
@@ -33,16 +34,16 @@ func (funds *orderValidator) checkBalance(tokenAddress, userAddress *types.Addre
 		respond <- boolOrErr{true, nil}
 		return
 	}
-	balance, err := funds.balanceChecker.GetBalance(tokenAddress, userAddress)
+	balance, err := funds.balanceChecker.GetBalance(assetData, userAddress)
 	if err != nil {
-		log.Printf("'%v': '%v', '%v'", err.Error(), hex.EncodeToString(tokenAddress[:]), hex.EncodeToString(userAddress[:]))
+		log.Printf("'%v': '%v', '%v'", err.Error(), hex.EncodeToString(assetData[:]), hex.EncodeToString(userAddress[:]))
 		respond <- boolOrErr{false, err}
 		return
 	}
 	respond <- boolOrErr{(requiredInt.Cmp(balance) <= 0), nil}
 }
 
-func (funds *orderValidator) checkAllowance(tokenAddress, userAddress, proxyAddress *types.Address, required []byte, respond chan boolOrErr) {
+func (funds *orderValidator) checkAllowance(assetData types.AssetData, userAddress, proxyAddress *types.Address, required []byte, respond chan boolOrErr) {
 	requiredInt := new(big.Int)
 	requiredInt.SetBytes(required[:])
 	if requiredInt.Cmp(big.NewInt(0)) == 0 {
@@ -50,9 +51,9 @@ func (funds *orderValidator) checkAllowance(tokenAddress, userAddress, proxyAddr
 		respond <- boolOrErr{true, nil}
 		return
 	}
-	balance, err := funds.balanceChecker.GetAllowance(tokenAddress, userAddress, proxyAddress)
+	balance, err := funds.balanceChecker.GetAllowance(assetData, userAddress, proxyAddress)
 	if err != nil {
-		log.Printf("'%v': '%v', '%v'", err.Error(), hex.EncodeToString(tokenAddress[:]), hex.EncodeToString(userAddress[:]))
+		log.Printf("'%v': '%v', '%v'", err.Error(), hex.EncodeToString(assetData[:]), hex.EncodeToString(userAddress[:]))
 		respond <- boolOrErr{false, err}
 		return
 	}
@@ -79,9 +80,14 @@ func (funds *orderValidator) ValidateOrder(order *types.Order) (bool, error) {
 		log.Printf("Error getting fee token '%v'", err.Error())
 		return false, err
 	}
-	proxyAddress, err := funds.tokenProxy.Get(order)
+	makerProxyAddress, err := funds.tokenProxy.Get(order)
 	if err != nil {
 		log.Printf("Error getting token proxy address '%v'", err.Error())
+		return false, err
+	}
+	feeProxyAddress, err := funds.tokenProxy.GetById(order, types.ERC20ProxyID)
+	if err != nil {
+		log.Printf("Error getting fee token proxy address '%v'", err.Error())
 		return false, err
 	}
 	makerChan := make(chan boolOrErr)
@@ -90,7 +96,7 @@ func (funds *orderValidator) ValidateOrder(order *types.Order) (bool, error) {
 	feeAllowanceChan := make(chan boolOrErr)
 	unavailableAmount := order.TakerAssetAmountFilled.Big()
 	go funds.checkBalance(
-		order.MakerAssetData.Address(),
+		order.MakerAssetData,
 		order.Maker,
 		getRemainingAmount(unavailableAmount.Bytes(), order.TakerAssetAmount[:], order.MakerAssetAmount[:]),
 		makerChan,
@@ -102,16 +108,16 @@ func (funds *orderValidator) ValidateOrder(order *types.Order) (bool, error) {
 		feeChan,
 	)
 	go funds.checkAllowance(
-		order.MakerAssetData.Address(),
+		order.MakerAssetData,
 		order.Maker,
-		proxyAddress,
+		makerProxyAddress,
 		getRemainingAmount(unavailableAmount.Bytes(), order.TakerAssetAmount[:], order.MakerAssetAmount[:]),
 		makerAllowanceChan,
 	)
 	go funds.checkAllowance(
 		feeToken,
 		order.Maker,
-		proxyAddress,
+		feeProxyAddress,
 		getRemainingAmount(unavailableAmount.Bytes(), order.TakerAssetAmount[:], order.MakerFee[:]),
 		feeAllowanceChan,
 	)
@@ -160,7 +166,7 @@ func (funds *orderValidator) ValidateOrder(order *types.Order) (bool, error) {
 }
 
 func NewRpcOrderValidator(rpcUrl string, feeToken config.FeeToken, tokenProxy config.TokenProxy, invalidationChannel channels.ConsumerChannel) (OrderValidator, error) {
-	if checker, err := NewRpcBalanceChecker(rpcUrl); err == nil {
+	if checker, err := balance.NewRpcRoutingBalanceChecker(rpcUrl); err == nil {
 		if invalidationChannel != nil {
 			invalidationChannel.AddConsumer(checker)
 			invalidationChannel.StartConsuming()
@@ -170,6 +176,6 @@ func NewRpcOrderValidator(rpcUrl string, feeToken config.FeeToken, tokenProxy co
 		return nil, err
 	}
 }
-func NewOrderValidator(checker BalanceChecker, feeToken config.FeeToken, tokenProxy config.TokenProxy) OrderValidator {
+func NewOrderValidator(checker balance.BalanceChecker, feeToken config.FeeToken, tokenProxy config.TokenProxy) OrderValidator {
 	return &orderValidator{checker, feeToken, tokenProxy}
 }

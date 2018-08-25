@@ -61,6 +61,9 @@ bin/blockmonitor: $(BASE) cmd/blockmonitor/main.go
 bin/allowancemonitor: $(BASE) cmd/allowancemonitor/main.go
 	cd "$(BASE)" && $(GOSTATIC) -o bin/allowancemonitor cmd/allowancemonitor/main.go
 
+bin/erc721approvalmonitor: $(BASE) cmd/erc721approvalmonitor/main.go
+	cd "$(BASE)" && $(GOSTATIC) -o bin/erc721approvalmonitor cmd/erc721approvalmonitor/main.go
+
 bin/canceluptomonitor: $(BASE) cmd/canceluptomonitor/main.go
 	cd "$(BASE)" && $(GOSTATIC) -o bin/canceluptomonitor cmd/canceluptomonitor/main.go
 
@@ -94,7 +97,7 @@ bin/searchapi: $(BASE) cmd/searchapi/main.go
 bin/queuemonitor: $(BASE) cmd/queuemonitor/main.go
 	cd "$(BASE)" && CGO_ENABLED=0 $(GOSTATIC) -o bin/queuemonitor cmd/queuemonitor/main.go
 
-bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate bin/indexer bin/fillindexer bin/automigrate bin/searchapi bin/exchangesplitter bin/blockmonitor bin/allowancemonitor bin/spendmonitor bin/fillmonitor bin/multisigmonitor bin/spendrecorder bin/queuemonitor bin/canceluptomonitor bin/canceluptofilter bin/canceluptoindexer
+bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate bin/indexer bin/fillindexer bin/automigrate bin/searchapi bin/exchangesplitter bin/blockmonitor bin/allowancemonitor bin/spendmonitor bin/fillmonitor bin/multisigmonitor bin/spendrecorder bin/queuemonitor bin/canceluptomonitor bin/canceluptofilter bin/canceluptoindexer bin/erc721approvalmonitor
 
 truffleCompile:
 	cd js ; node_modules/.bin/truffle compile
@@ -127,6 +130,8 @@ test-blocksmonitor: $(BASE)
 	cd "$(BASE)/monitor/blocks" && go test
 test-allowancemonitor: $(BASE)
 	cd "$(BASE)/monitor/allowance" && go test
+test-erc721approval: $(BASE)
+	cd "$(BASE)/monitor/erc721approval" && go test
 test-canceluptomonitor: $(BASE)
 	cd "$(BASE)/monitor/cancelupto" && go test
 test-fillmonitor: $(BASE)
@@ -153,9 +158,9 @@ newvendor:
 	govendor add +external
 
 0x-testrpc-snapshot.tar.gz:
-	wget https://s3.amazonaws.com/testrpc-shapshots/a83f5241dc84984a5db46dd14955e1fa052aad59.zip -O testrpc-db.zip
+	wget https://s3.amazonaws.com/testrpc-shapshots/2c62504b79315099346665225d3637662ff87db6.zip -O testrpc-db.zip
 	mkdir -p /tmp/testrpc-snapshot
 	unzip testrpc-db.zip -d /tmp/testrpc-snapshot
-	tar -czf 0x-testrpc-snapshot.tar.gz -C /tmp/testrpc-snapshot/0x_testrpc_snapshot/ .
+	tar -czf 0x-testrpc-snapshot.tar.gz -C /tmp/testrpc-snapshot/ .
 	rm testrpc-db.zip
 	rm -rf /tmp/testrpc-snapshot

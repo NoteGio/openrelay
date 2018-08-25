@@ -8,13 +8,12 @@ import (
 	"github.com/notegio/openrelay/types"
 	orCommon "github.com/notegio/openrelay/common"
 	"github.com/notegio/openrelay/exchangecontract"
-	"gopkg.in/redis.v3"
-	"time"
 	"log"
 )
 
 type TokenProxy interface {
 	Get(order *types.Order) (*types.Address, error)
+	GetById(order *types.Order, proxyID [4]byte) (*types.Address, error)
 	Set(*types.Address) error
 }
 
@@ -26,6 +25,10 @@ func (tokenProxy *staticTokenProxy) Get(order *types.Order) (*types.Address, err
 	return tokenProxy.value, nil
 }
 
+func (tokenProxy *staticTokenProxy) GetById(order *types.Order, proxyID [4]byte) (*types.Address, error) {
+	return tokenProxy.value, nil
+}
+
 func (tokenProxy *staticTokenProxy) Set(address *types.Address) error {
 	tokenProxy.value = address
 	return nil
@@ -33,12 +36,15 @@ func (tokenProxy *staticTokenProxy) Set(address *types.Address) error {
 
 type rpcTokenProxy struct {
 	conn bind.ContractBackend
-	exchangeProxyMap map[types.Address]*types.Address
+	exchangeProxyMap map[types.Address]map[[4]byte]*types.Address
 }
 
 func (tokenProxy *rpcTokenProxy) Get(order *types.Order) (*types.Address, error) {
+	return tokenProxy.GetById(order, order.MakerAssetData.ProxyId())
+}
+func (tokenProxy *rpcTokenProxy) GetById(order *types.Order, proxyID [4]byte) (*types.Address, error) {
 	tokenProxyAddress := &types.Address{}
-	if tokenProxyAddress, ok := tokenProxy.exchangeProxyMap[*order.ExchangeAddress]; ok {
+	if tokenProxyAddress, ok := tokenProxy.exchangeProxyMap[*order.ExchangeAddress][proxyID]; ok {
 		return tokenProxyAddress, nil
 	}
 	exchange, err := exchangecontract.NewExchange(orCommon.ToGethAddress(order.ExchangeAddress), tokenProxy.conn)
@@ -46,13 +52,17 @@ func (tokenProxy *rpcTokenProxy) Get(order *types.Order) (*types.Address, error)
 		log.Printf("Error intializing exchange contract '%v': '%v'", hex.EncodeToString(order.ExchangeAddress[:]), err.Error())
 		return tokenProxyAddress, err
 	}
-	tokenProxyGethAddress, err := exchange.GetAssetProxy(nil, order.MakerAssetData.ProxyId())
+	tokenProxyGethAddress, err := exchange.GetAssetProxy(nil, proxyID)
 	if err != nil {
 		log.Printf("Error getting token proxy address for exhange %#x", order.ExchangeAddress)
 		return nil, err
 	}
 	copy(tokenProxyAddress[:], tokenProxyGethAddress[:])
-	tokenProxy.exchangeProxyMap[*order.ExchangeAddress] = tokenProxyAddress
+	_, ok := tokenProxy.exchangeProxyMap[*order.ExchangeAddress]
+	if !ok {
+		tokenProxy.exchangeProxyMap[*order.ExchangeAddress] = make(map[[4]byte]*types.Address)
+	}
+	tokenProxy.exchangeProxyMap[*order.ExchangeAddress][proxyID] = tokenProxyAddress
 	return tokenProxyAddress, nil
 }
 
@@ -62,37 +72,7 @@ func (tokenProxy *rpcTokenProxy) Set(value *types.Address) error {
 	return nil
 }
 
-type redisTokenProxy struct {
-	redisClient     *redis.Client
-	cachedValue     *types.Address
-	cacheExpiration int64
-}
-
-func (tokenProxy *redisTokenProxy) Get(order *types.Order) (*types.Address, error) {
-	if tokenProxy.cacheExpiration > time.Now().Unix() {
-		// The token proxy shouldn't change often, but it doesn't hurt to check
-		// periodically.
-		return tokenProxy.cachedValue, nil
-	}
-	result := &types.Address{}
-	val, err := tokenProxy.redisClient.Get("tokenProxy::address").Result()
-	if err != nil {
-		return result, err
-	}
-	addressSlice, err := hex.DecodeString(val)
-	if err != nil {
-		return result, err
-	}
-
-	copy(result[:], addressSlice[:])
-	return result, nil
-}
-
-func (tokenProxy *redisTokenProxy) Set(value *types.Address) error {
-	return tokenProxy.redisClient.Set("tokenProxy::address", hex.EncodeToString(value[:]), 0).Err()
-}
-
-func NewRpcTokenProxy(rpcURL string) (FeeToken, error) {
+func NewRpcTokenProxy(rpcURL string) (TokenProxy, error) {
 	conn, err := ethclient.Dial(rpcURL)
 	if err != nil {
 		return nil, err
@@ -103,11 +83,7 @@ func NewRpcTokenProxy(rpcURL string) (FeeToken, error) {
 		// function we call isn't important, but SyncProgress is pretty cheap.
 		return nil, err
 	}
-	return &rpcTokenProxy{conn, make(map[types.Address]*types.Address)}, nil
-}
-
-func NewTokenProxy(client *redis.Client) TokenProxy {
-	return &redisTokenProxy{client, &types.Address{}, 0}
+	return &rpcTokenProxy{conn, make(map[types.Address]map[[4]byte]*types.Address)}, nil
 }
 
 func StaticTokenProxy(address *types.Address) TokenProxy {

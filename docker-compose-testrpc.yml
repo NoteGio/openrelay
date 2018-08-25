@@ -281,7 +281,7 @@ services:
       context: ./
       dockerfile: Dockerfile.simplerelay
     image: "openrelay/simplerelay:${TAG:-latest}"
-    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://ordersfilled=>queue://pgordersfilled=>topic://ordersfilled", "queue://newblocks=>queue://allowanceblocks=>queue://spendblocks=>topic://newblocks=>queue://fillblocks=>queue://canceluptoblocks"]
+    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://ordersfilled=>queue://pgordersfilled=>topic://ordersfilled", "queue://newblocks=>queue://allowanceblocks=>queue://erc721approvalblocks=>queue://spendblocks=>topic://newblocks=>queue://fillblocks=>queue://canceluptoblocks"]
     depends_on:
       - redis
       - corebuild
@@ -324,6 +324,21 @@ services:
       dockerfile: Dockerfile.allowancemonitor
     image: "openrelay/allowancemonitor:${TAG:-latest}"
     command: ["/allowancemonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://allowanceblocks", "queue://recordspend", "0x48bacb9266a570d521063ef5dd96e61686dbe788"]
+    depends_on:
+      - redis
+      - ethnode
+      - corebuild
+    restart: on-failure
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  erc721approvalmonitor:
+    build:
+      context: ./
+      dockerfile: Dockerfile.erc721approvalmonitor
+    image: "openrelay/erc721approvalmonitor:${TAG:-latest}"
+    command: ["/erc721approvalmonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://erc721approvalblocks", "queue://recordspend", "0x48bacb9266a570d521063ef5dd96e61686dbe788"]
     depends_on:
       - redis
       - ethnode

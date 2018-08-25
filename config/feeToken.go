@@ -8,89 +8,57 @@ import (
 	"github.com/notegio/openrelay/types"
 	"github.com/notegio/openrelay/exchangecontract"
 	orCommon "github.com/notegio/openrelay/common"
-	"gopkg.in/redis.v3"
-	"time"
 	"log"
 )
 
 type FeeToken interface {
-	Get(order *types.Order) (*types.Address, error)
-	Set(*types.Address) error
+	Get(order *types.Order) (types.AssetData, error)
+	Set(types.AssetData) error
 }
 
 type staticFeeToken struct {
-	value *types.Address
+	value types.AssetData
 }
 
-func (feeToken *staticFeeToken) Get(order *types.Order) (*types.Address, error) {
+func (feeToken *staticFeeToken) Get(order *types.Order) (types.AssetData, error) {
 		return feeToken.value, nil
 }
 
-func (feeToken *staticFeeToken) Set(address *types.Address) error {
-	feeToken.value = address
+func (feeToken *staticFeeToken) Set(assetData types.AssetData) error {
+	feeToken.value = assetData
 	return nil
-}
-
-type redisFeeToken struct {
-	redisClient     *redis.Client
-	cachedValue     *types.Address
-	cacheExpiration int64
 }
 
 type rpcFeeToken struct {
 	conn bind.ContractBackend
-	exchangeTokenMap map[types.Address]*types.Address
+	exchangeTokenMap map[types.Address]types.AssetData
 }
 
-func (feeToken *rpcFeeToken) Get(order *types.Order) (*types.Address, error) {
-	feeTokenAddress := &types.Address{}
-	if feeTokenAddress, ok := feeToken.exchangeTokenMap[*order.ExchangeAddress]; ok {
-		return feeTokenAddress, nil
+func (feeToken *rpcFeeToken) Get(order *types.Order) (types.AssetData, error) {
+	feeTokenAssetData := types.AssetData{}
+	if feeTokenAssetData, ok := feeToken.exchangeTokenMap[*order.ExchangeAddress]; ok {
+		return feeTokenAssetData, nil
 	}
 	exchange, err := exchangecontract.NewExchange(orCommon.ToGethAddress(order.ExchangeAddress), feeToken.conn)
 	if err != nil {
 		log.Printf("Error intializing exchange contract '%v': '%v'", hex.EncodeToString(order.ExchangeAddress[:]), err.Error())
-		return feeTokenAddress, err
+		return feeTokenAssetData, err
 	}
-	feeTokenAssetData, err := exchange.ZRX_ASSET_DATA(nil)
+	feeTokenAssetDataBytes, err := exchange.ZRX_ASSET_DATA(nil)
 	if err != nil {
 		log.Printf("Error getting fee token address for exchange %#x", order.ExchangeAddress)
 		return nil, err
 	}
-	feeTokenAsset := make(types.AssetData, len(feeTokenAssetData))
-	copy(feeTokenAsset[:], feeTokenAssetData[:])
-	feeTokenAddress = feeTokenAsset.Address()
-	feeToken.exchangeTokenMap[*order.ExchangeAddress] = feeTokenAddress
-	return feeTokenAddress, nil
+	feeTokenAssetData = make(types.AssetData, len(feeTokenAssetDataBytes))
+	copy(feeTokenAssetData[:], feeTokenAssetDataBytes[:])
+	feeToken.exchangeTokenMap[*order.ExchangeAddress] = feeTokenAssetData
+	return feeTokenAssetData, nil
 }
 
-func (feeToken *rpcFeeToken) Set(value *types.Address) error {
+func (feeToken *rpcFeeToken) Set(value types.AssetData) error {
 	// the rpcFeeToken looks up from the RPC server, so we can't actually set
 	// the value.
 	return nil
-}
-
-func (feeToken *redisFeeToken) Get(order *types.Order) (*types.Address, error) {
-	if feeToken.cacheExpiration > time.Now().Unix() {
-		// The fee token is unlikely to change, so caching it should be fine.
-		// Doesn't hurt to check periodically just in case though.
-		return feeToken.cachedValue, nil
-	}
-	result := &types.Address{}
-	val, err := feeToken.redisClient.Get("feeToken::address").Result()
-	if err != nil {
-		return result, err
-	}
-	addressSlice, err := hex.DecodeString(val)
-	if err != nil {
-		return result, err
-	}
-	copy(result[:], addressSlice[:])
-	return result, nil
-}
-
-func (feeToken *redisFeeToken) Set(value *types.Address) error {
-	return feeToken.redisClient.Set("feeToken::address", hex.EncodeToString(value[:]), 0).Err()
 }
 
 func NewRpcFeeToken(rpcURL string) (FeeToken, error) {
@@ -104,13 +72,9 @@ func NewRpcFeeToken(rpcURL string) (FeeToken, error) {
 		// function we call isn't important, but SyncProgress is pretty cheap.
 		return nil, err
 	}
-	return &rpcFeeToken{conn, make(map[types.Address]*types.Address)}, nil
+	return &rpcFeeToken{conn, make(map[types.Address]types.AssetData)}, nil
 }
 
-func NewFeeToken(client *redis.Client) FeeToken {
-	return &redisFeeToken{client, &types.Address{}, 0}
-}
-
-func StaticFeeToken(address *types.Address) FeeToken {
+func StaticFeeToken(address types.AssetData) FeeToken {
 	return &staticFeeToken{address}
 }

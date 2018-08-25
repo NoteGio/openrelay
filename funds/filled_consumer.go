@@ -16,7 +16,6 @@ func doLookup(order *types.Order, oldValue *types.Uint256, lookupFn func(*types.
 		value = oldValue
 	}
 	valChan <- value
-	log.Printf("%v - %v", value, oldValue)
 	changeChan <- !reflect.DeepEqual(value, oldValue)
 }
 

@@ -8,8 +8,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	// "github.com/ethereum/go-ethereum/core/types"
-	"github.com/notegio/openrelay/funds"
+	"github.com/notegio/openrelay/funds/balance"
 	"github.com/notegio/openrelay/channels"
+	orCommon "github.com/notegio/openrelay/common"
 	"github.com/notegio/openrelay/db"
 	"github.com/notegio/openrelay/types"
 	"github.com/notegio/openrelay/exchangecontract"
@@ -26,7 +27,7 @@ type spendBlockConsumer struct {
 	feeTokenAddress    string  // Needed for the SpendRecord,
 	logFilter          ethereum.LogFilterer
 	publisher          channels.Publisher
-	balanceChecker     funds.BalanceChecker
+	balanceChecker     balance.BalanceChecker
 }
 
 func (consumer *spendBlockConsumer) Consume(delivery channels.Delivery) {
@@ -55,14 +56,37 @@ func (consumer *spendBlockConsumer) Consume(delivery channels.Delivery) {
 		log.Printf("Found %v spend logs", len(logs))
 		tradedTokens := make(map[string]struct{})
 		for _, spendLog := range logs {
-			if len(spendLog.Topics) < 2 {
+			// if len(spendLog.Topics) < 2 {
+			// 	log.Printf("Unexpected log data. Skipping.")
+			// 	continue
+			// }
+			senderAddress := &types.Address{}
+			tokenAddress := &types.Address{}
+			var tokenAssetData types.AssetData
+
+			copy(tokenAddress[:], spendLog.Address[:])
+
+			if len(spendLog.Topics) == 0  && len(spendLog.Data) >= 96{
+				// CryptoKitties Style ERC721
+				copy(senderAddress[:], spendLog.Data[12:32])
+				tokenID := &types.Uint256{}
+				copy(tokenID[:], spendLog.Data[len(spendLog.Data)-32:])
+				tokenAssetData = orCommon.ToERC721AssetData(tokenAddress, tokenID)
+			} else if len(spendLog.Topics) == 3 {
+				// ERC20
+				copy(senderAddress[:], spendLog.Topics[1][12:])
+				tokenAssetData = orCommon.ToERC20AssetData(tokenAddress)
+			} else if len(spendLog.Topics) == 4 {
+				// ERC721
+				copy(senderAddress[:], spendLog.Topics[1][12:])
+				tokenID := &types.Uint256{}
+				copy(tokenID[:], spendLog.Topics[3][:])
+				tokenAssetData = orCommon.ToERC721AssetData(tokenAddress, tokenID)
+			} else {
 				log.Printf("Unexpected log data. Skipping.")
 				continue
 			}
-			senderAddress := &types.Address{}
-			tokenAddress := &types.Address{}
-			copy(senderAddress[:], spendLog.Topics[1][12:])
-			copy(tokenAddress[:], spendLog.Address[:])
+
 			pairKey := fmt.Sprintf("%#x:%#x", senderAddress, tokenAddress)
 			if _, ok := tradedTokens[pairKey]; ok {
 				// If the same account sent the same token multiple times in a single
@@ -72,9 +96,19 @@ func (consumer *spendBlockConsumer) Consume(delivery channels.Delivery) {
 			}
 			tradedTokens[pairKey] = struct{}{}
 			var balance *big.Int
-			allowance, err := consumer.balanceChecker.GetAllowance(tokenAddress, senderAddress, consumer.tokenProxyAddress)
+			log.Printf("%#x - %#x - %#x", tokenAssetData[:], senderAddress[:], consumer.tokenProxyAddress[:])
+			allowance, err := consumer.balanceChecker.GetAllowance(tokenAssetData, senderAddress, consumer.tokenProxyAddress)
+			if err != nil && err.Error() == "VM Exception while processing transaction: revert" {
+				// Some ERC721 tokens have the ERC20 signature, but implement ERC721
+				// allowance / balance signatures
+				log.Printf("ERC20 token with allowance mismatch: %#x", tokenAddress[:])
+				tokenID := &types.Uint256{}
+				copy(tokenID[:], spendLog.Data[:])
+				tokenAssetData = orCommon.ToERC721AssetData(tokenAddress, tokenID)
+				allowance, err = consumer.balanceChecker.GetAllowance(tokenAssetData, senderAddress, consumer.tokenProxyAddress)
+			}
 			if err != nil {
-				if err.Error() == "abi: unmarshalling empty output" || err.Error() == "no contract code at given address" {
+				if err.Error() == "abi: unmarshalling empty output" || err.Error() == "no contract code at given address" || err.Error() == "VM Exception while processing transaction: revert" {
 					log.Printf("balance checker gave error: %v -- using 0 balance", err.Error())
 					allowance = big.NewInt(0)
 				} else {
@@ -87,9 +121,9 @@ func (consumer *spendBlockConsumer) Consume(delivery channels.Delivery) {
 				// we don't need to get the actual balance.
 				balance = allowance
 			} else {
-				balance, err = consumer.balanceChecker.GetBalance(tokenAddress, senderAddress)
+				balance, err = consumer.balanceChecker.GetBalance(tokenAssetData, senderAddress)
 				if err != nil {
-					if err.Error() == "abi: unmarshalling empty output" || err.Error() == "no contract code at given address" {
+					if err.Error() == "abi: unmarshalling empty output" || err.Error() == "no contract code at given address" || err.Error() == "VM Exception while processing transaction: revert" {
 						log.Printf("balance checker gave error: %v -- using 0 balance", err.Error())
 						balance = big.NewInt(0)
 						} else {
@@ -105,6 +139,7 @@ func (consumer *spendBlockConsumer) Consume(delivery channels.Delivery) {
 
 			sr := &db.SpendRecord{
 				TokenAddress: strings.ToLower(spendLog.Address.String()),
+				AssetData: hexutil.Encode(tokenAssetData[:]),
 				SpenderAddress: hexutil.Encode(spendLog.Topics[1][12:]),
 				ZrxToken: consumer.feeTokenAddress,
 				Balance: balance.String(),
@@ -122,7 +157,7 @@ func (consumer *spendBlockConsumer) Consume(delivery channels.Delivery) {
 	delivery.Ack()
 }
 
-func NewSpendBlockConsumer(tp *types.Address, feeToken string, lf ethereum.LogFilterer, publisher channels.Publisher, bc funds.BalanceChecker) (channels.Consumer) {
+func NewSpendBlockConsumer(tp *types.Address, feeToken string, lf ethereum.LogFilterer, publisher channels.Publisher, bc balance.BalanceChecker) (channels.Consumer) {
 	spendTopic := &big.Int{}
 	spendTopic.SetString("ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", 16)
 	return &spendBlockConsumer{tp, spendTopic, feeToken, lf, publisher, bc}
@@ -153,7 +188,7 @@ func NewRPCSpendBlockConsumer(rpcURL string, exchangeAddress string, publisher c
 	}
 	tokenProxyAddressOr := &types.Address{}
 	copy(tokenProxyAddressOr[:], tokenProxyAddress[:])
-	balanceChecker, err := funds.NewRpcBalanceChecker(rpcURL)
+	balanceChecker, err := balance.NewRpcRoutingBalanceChecker(rpcURL)
 	if err != nil {
 		log.Printf("Error getting balance checker")
 		return nil, err
