@@ -173,6 +173,16 @@ jobs:
           root: bin
           paths:
             - spendmonitor
+  golang_build_spendrecorder:
+    docker:
+      - image: circleci/golang:1.8
+    steps:
+      - checkout
+      - run: make bin/spendrecorder
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - spendrecorder
   golang_build_fillmonitor:
     docker:
       - image: circleci/golang:1.8
@@ -203,6 +213,36 @@ jobs:
           root: bin
           paths:
             - canceluptomonitor
+  golang_build_canceluptofilter:
+    docker:
+      - image: circleci/golang:1.8
+    steps:
+      - checkout
+      - run: make bin/canceluptofilter
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - canceluptofilter
+  golang_build_canceluptoindexer:
+    docker:
+      - image: circleci/golang:1.8
+    steps:
+      - checkout
+      - run: make bin/canceluptoindexer
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - canceluptoindexer
+  golang_build_queuemonitor:
+    docker:
+      - image: circleci/golang:1.8
+    steps:
+      - checkout
+      - run: make bin/queuemonitor
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - queuemonitor
   golang_test:
     docker:
       # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
@@ -235,22 +275,27 @@ jobs:
       - attach_workspace:
           at: bin
           # TODO: Configure CircleCi credentials in circleci
-      - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+      - setup_remote_docker
+      - run: docker login -u "$DOCKER_USER" -p "$DOCKER_PASS"
       - run:
           name: Install Docker Compose
           command: |
             curl -L https://github.com/docker/compose/releases/download/1.19.0/docker-compose-`uname -s`-`uname -m` > ~/docker-compose
             chmod +x ~/docker-compose
             sudo mv ~/docker-compose /usr/local/bin/docker-compose
-      - run: docker build -t corebuild:latest Dockerfile.cibase
+      - run : sudo apt-get install python-yaml
+      - run: docker build -t corebuild:latest -f Dockerfile.cibase .
       # TODO: Make sure to change this when you update the default docker-compose file
-      - run: docker-compose -f docker-compose-testrpc.yml up  -d --no-build
+      - run: docker-compose -f docker-compose-testrpc.yml up  -d
+      - run: bash docker-cfg/retag.sh ./docker-compose-testrpc.yml latest $(echo "$CIRCLE_BRANCH" | sed 's^/^-^g')
+      - run: bash docker-cfg/retag.sh ./docker-compose-testrpc.yml latest $(echo "$CIRCLE_BRANCH" | sed 's^/^-^g')_$CIRCLE_SHA1
+      - run: bash docker-cfg/retag.sh ./docker-compose-testrpc.yml latest $CIRCLE_SHA1
       # TODO: Docker does not support '/' and other characters. This is a dirty workaround for the '/' naming convention being used currently
-      - run: TAG=$(echo "$CIRCLE_BRANCH" | sed 's^/^-^g') docker-compose -f docker-compose-testrpc.yml push
-      - run: TAG=$CIRCLE_SHA1 docker-compose -f docker-compose-testrpc.yml push
-      - run: TAG=$(echo "$CIRCLE_BRANCH" | sed 's^/^-^g')_$CIRCLE_SHA1 docker-compose -f docker-compose-testrpc.yml push
+      - run: TAG=$(echo "$CIRCLE_BRANCH" | sed 's^/^-^g') docker-compose -f docker-compose-testrpc.yml push --ignore-push-failures
+      - run: TAG=$CIRCLE_SHA1 docker-compose -f docker-compose-testrpc.yml push --ignore-push-failures
+      - run: TAG=$(echo "$CIRCLE_BRANCH" | sed 's^/^-^g')_$CIRCLE_SHA1 docker-compose -f docker-compose-testrpc.yml push --ignore-push-failures
       - run: |
-          [[ CIRCLE_BRANCH = 'master' ]] && TAG=latest docker-compose -f docker-compose-testrpc.yml push || true
+          [[ CIRCLE_BRANCH = 'master' ]] && docker-compose -f docker-compose-testrpc.yml push --ignore-push-failures || true
 workflows:
   version: 2
   build_and_test:
@@ -271,8 +316,14 @@ workflows:
       - golang_build_searchapi
       - golang_build_blockmonitor
       - golang_build_allowancemonitor
-      - golang_build_delayrelay
+      - golang_build_spendmonitor
+      - golang_build_spendrecorder
+      - golang_build_fillmonitor
+      - golang_build_multisigmonitor
       - golang_build_canceluptomonitor
+      - golang_build_canceluptofilter
+      - golang_build_canceluptoindexer
+      - golang_build_queuemonitor
       - golang_test
       - docker_build_deploy:
           requires:
@@ -292,11 +343,18 @@ workflows:
             - golang_build_searchapi
             - golang_build_blockmonitor
             - golang_build_allowancemonitor
-            - golang_build_delayrelay
+            - golang_build_spendmonitor
+            - golang_build_spendrecorder
+            - golang_build_fillmonitor
+            - golang_build_multisigmonitor
             - golang_build_canceluptomonitor
+            - golang_build_canceluptofilter
+            - golang_build_canceluptoindexer
+            - golang_build_queuemonitor
           filters:
             branches:
               only:
                 - master
                 - support/0xv1
                 - 0xv2-support
+                - docker-push
