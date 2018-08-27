@@ -286,12 +286,15 @@ jobs:
       - run: docker build -t corebuild:latest -f Dockerfile.cibase .
       # TODO: Make sure to change this when you update the default docker-compose file
       - run: docker-compose -f docker-compose-testrpc.yml up  -d
+      - run: bash docker-cfg/retag.sh ./docker-compose-testrpc.yml latest $(echo "$CIRCLE_BRANCH" | sed 's^/^-^g')
+      - run: bash docker-cfg/retag.sh ./docker-compose-testrpc.yml latest $(echo "$CIRCLE_BRANCH" | sed 's^/^-^g')_$CIRCLE_SHA1
+      - run: bash docker-cfg/retag.sh ./docker-compose-testrpc.yml latest $CIRCLE_SHA1
       # TODO: Docker does not support '/' and other characters. This is a dirty workaround for the '/' naming convention being used currently
       - run: TAG=$(echo "$CIRCLE_BRANCH" | sed 's^/^-^g') docker-compose -f docker-compose-testrpc.yml push --ignore-push-failures
       - run: TAG=$CIRCLE_SHA1 docker-compose -f docker-compose-testrpc.yml push --ignore-push-failures
       - run: TAG=$(echo "$CIRCLE_BRANCH" | sed 's^/^-^g')_$CIRCLE_SHA1 docker-compose -f docker-compose-testrpc.yml push --ignore-push-failures
       - run: |
-          [[ CIRCLE_BRANCH = 'master' ]] && TAG=latest docker-compose -f docker-compose-testrpc.yml push --ignore-push-failures || true
+          [[ CIRCLE_BRANCH = 'master' ]] && docker-compose -f docker-compose-testrpc.yml push --ignore-push-failures || true
 workflows:
   version: 2
   build_and_test:
