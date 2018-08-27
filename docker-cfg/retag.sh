@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 CONFIG_FILE=$1
 SOURCE_TAG=$2
 NEW_TAG=$3
