@@ -1,0 +1,54 @@
+package search
+
+import (
+	dbModule "github.com/notegio/openrelay/db"
+	"github.com/notegio/openrelay/types"
+	"fmt"
+)
+
+type FormattedOrder struct {
+	Order *types.Order       `json:"order"`
+	Metadata *OrderMetadata  `json:"metaData"`
+}
+
+type OrderMetadata struct {
+	Hash string                   `json:"hash"`
+	MakerAssetRemaining string    `json:"makerAssetRemaining"`
+	FeeRate float64               `json:"feeRate"`
+	Status int64                  `json:"status"`
+	TakerAssetAmountFilled string `json:"takerAssetAmountFilled"`
+}
+
+func GetFormattedOrder(order *dbModule.Order) (*FormattedOrder) {
+	return &FormattedOrder{
+		&order.Order,
+		&OrderMetadata{
+			fmt.Sprintf("%#x", order.OrderHash[:]),
+			order.MakerAssetRemaining.String(),
+			order.FeeRate,
+			order.Status,
+			order.TakerAssetAmountFilled.String(),
+		},
+	}
+}
+
+
+type PagedResult struct {
+	Total int           `json:"total"`
+	Page int            `json:"page"`
+	PerPage int         `json:"perPage"`
+	Records interface{} `json:"records"`
+}
+
+
+func GetPagedResult(total, page, per_page int, records interface{}) (*PagedResult) {
+	return &PagedResult{total, page, per_page, records}
+}
+
+
+type PagedOrders struct {
+	Total int           `json:"total"`
+	Page int            `json:"page"`
+	PerPage int         `json:"perPage"`
+	Records []FormattedOrder `json:"records"`
+}

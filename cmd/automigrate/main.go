@@ -20,7 +20,19 @@ func main() {
 	if err := db.AutoMigrate(&dbModule.Cancellation{}).Error; err != nil {
 		log.Fatalf("Error migrating cancellation table: %v", err.Error())
 	}
-	if err := db.Model(&dbModule.Order{}).AddIndex("idx_order_maker_asset_taker_asset", "maker_asset_address", "taker_asset_address").Error; err != nil {
+	if err := db.AutoMigrate(&dbModule.Exchange{}).Error; err != nil {
+		log.Fatalf("Error migrating cancellation table: %v", err.Error())
+	}
+	kovanAddress := common.HexToAddress("0xa458ec0709468996ef2ef668f5e52f37ceb66627")
+	db.Where(
+		&db.Exchange{Network: 42},
+	).FirstOrCreate(&db.Exchange{Network: 42, Address: kovanAddress })
+	ganacheAddress := common.HexToAddress("0x48bacb9266a570d521063ef5dd96e61686dbe788")
+	db.Where(
+		&db.Exchange{Network: 50},
+	).FirstOrCreate(&db.Exchange{Network: 50, Address: ganacheAddress })
+
+	if err := db.Model(&dbModule.Order{}).AddIndex("idx_order_maker_asset_taker_asset_data", "maker_asset_data", "taker_asset_data").Error; err != nil {
 		log.Fatalf("Error adding token pair index: %v", err.Error())
 	}
 	for _, credString := range(os.Args[3:]) {

@@ -42,7 +42,7 @@ func IndexConsumerDefaultStatus(status int64, t *testing.T) {
 		)
 	}
 	if dbOrder.Status != status {
-		t.Errorf("Order unexpectedly not open - %v", dbOrder.Status)
+		t.Errorf("Unexpected order status. Wanted %v, got %v", status, dbOrder.Status)
 	}
 	if channel.PurgeRejected() > 0 {
 		t.Errorf("Failed to record order")

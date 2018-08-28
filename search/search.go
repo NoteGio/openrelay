@@ -7,14 +7,14 @@ import (
 	"github.com/notegio/openrelay/blockhash"
 	"github.com/notegio/openrelay/common"
 	dbModule "github.com/notegio/openrelay/db"
-	"github.com/notegio/openrelay/types"
+	// "github.com/notegio/openrelay/types"
 	"net/http"
 	urlModule "net/url"
 	"strconv"
 	"strings"
 )
 
-func FormatResponse(orders []dbModule.Order, format string) ([]byte, string, error) {
+func FormatResponse(orders []dbModule.Order, format string, total, page, perPage int) ([]byte, string, error) {
 	if format == "application/octet-stream" {
 		result := []byte{}
 		for _, order := range orders {
@@ -23,11 +23,11 @@ func FormatResponse(orders []dbModule.Order, format string) ([]byte, string, err
 		}
 		return result, "application/octet-stream", nil
 	} else {
-		orderList := []types.Order{}
+		orderList := []FormattedOrder{}
 		for _, order := range orders {
-			orderList = append(orderList, order.Order)
+			orderList = append(orderList, *GetFormattedOrder(&order))
 		}
-		result, err := json.Marshal(orderList)
+		result, err := json.Marshal(GetPagedResult(total, page, perPage, orderList))
 		return result, "application/json", err
 	}
 }
@@ -70,7 +70,20 @@ func applyOrFilter(query *gorm.DB, queryField, dbField1, dbField2 string, queryO
 func returnError(w http.ResponseWriter, err error, code int) {
 	w.WriteHeader(code)
 	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(fmt.Sprintf("{\"error\": \"%v\"}", err.Error())))
+	w.Write([]byte(fmt.Sprintf("{\"code\":100,\"reason\":\"%v\"}", err.Error())))
+}
+
+func returnErrorList(w http.ResponseWriter, errs []ValidationError) {
+	w.WriteHeader(400)
+	apiError := ApiError{100, "Validation Failed", errs}
+	w.Header().Set("Content-Type", "application/json")
+	data, err := json.Marshal(apiError)
+	if err == nil {
+		w.Write(data)
+	} else {
+		w.Write([]byte(err.Error()))
+	}
+
 }
 
 func getPages(queryObject urlModule.Values) (int, int, error) {
@@ -110,78 +123,106 @@ func BlockHashDecorator(blockHash blockhash.BlockHash, fn func(http.ResponseWrit
 	}
 }
 
+func filterByNetworkId(query *gorm.DB, queryObject urlModule.Values, exchangeLookup *dbModule.ExchangeLookup) (*gorm.DB, error) {
+	networkID, err := strconv.Atoi(queryObject.Get("networkId"))
+	if err != nil {
+		networkID = 1
+	}
+	exchanges, err := exchangeLookup.GetExchangesByNetwork(int64(networkID))
+	if err != nil {
+		return query, err
+	}
+	if len(exchanges) == 0 {
+		return query, fmt.Errorf("Network id %v is not supported", networkID)
+	}
+	queryStrings := []string{}
+	for _, _ = range exchanges {
+		queryStrings = append(queryStrings, "exchange_address = ?")
+	}
+	// Note that while we are using string manipulation to build the query, the
+	// only thing the user can provide is the network number. The list of
+	// exchanges can be considered sanitized data, and even then that only
+	// impacts the length of the query string - the actual addresses are
+	// parameterized.
+	query = query.Where(fmt.Sprintf("(%v)", strings.Join(queryStrings, " OR ")), exchanges)
+	return query, nil
+}
+
 func SearchHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
+	exchangeLookup := dbModule.NewExchangeLookup(db)
 	return func(w http.ResponseWriter, r *http.Request) {
 		queryObject := r.URL.Query()
 		query := db.Model(&dbModule.Order{}).Where("status = ?", dbModule.StatusOpen)
 
-		query, err := applyFilter(query, "exchangeContractAddress", "exchange_address", queryObject)
+		errs := []ValidationError{}
+
+		query, err := filterByNetworkId(query, queryObject, exchangeLookup)
+
 		if err != nil {
-			returnError(w, err, 400)
-			return
+			errs = append(errs, ValidationError{err.Error(), 1006, "networkId"})
+		}
+
+
+		query, err = applyFilter(query, "exchangeContractAddress", "exchange_address", queryObject)
+		if err != nil {
+			errs = append(errs, ValidationError{err.Error(), 1003, "exchangeContractAddress"})
 		}
 		query, err = applyFilter(query, "makerAssetAddress", "maker_asset_address", queryObject)
 		if err != nil {
-			returnError(w, err, 400)
-			return
+			errs = append(errs, ValidationError{err.Error(), 1003, "makerAssetAddress"})
 		}
 		query, err = applyFilter(query, "takerAssetAddress", "taker_asset_address", queryObject)
 		if err != nil {
-			returnError(w, err, 400)
-			return
+			errs = append(errs, ValidationError{err.Error(), 1003, "takerAssetAddress"})
 		}
 		query, err = applyFilter(query, "makerAssetData", "maker_asset_data", queryObject)
 		if err != nil {
-			returnError(w, err, 400)
-			return
+			errs = append(errs, ValidationError{err.Error(), 1003, "makerAssetData"})
 		}
 		query, err = applyFilter(query, "takerAssetData", "taker_asset_data", queryObject)
 		if err != nil {
-			returnError(w, err, 400)
-			return
+			errs = append(errs, ValidationError{err.Error(), 1003, "takerAssetData"})
 		}
 		query, err = applyFilter(query, "maker", "maker", queryObject)
 		if err != nil {
-			returnError(w, err, 400)
-			return
+			errs = append(errs, ValidationError{err.Error(), 1003, "maker"})
 		}
 		query, err = applyFilter(query, "taker", "taker", queryObject)
 		if err != nil {
-			returnError(w, err, 400)
-			return
+			errs = append(errs, ValidationError{err.Error(), 1003, "taker"})
 		}
 		query, err = applyFilter(query, "feeRecipient", "fee_recipient", queryObject)
 		if err != nil {
-			returnError(w, err, 400)
-			return
+			errs = append(errs, ValidationError{err.Error(), 1003, "feeRecipient"})
 		}
 		query, err = applyOrFilter(query, "assetAddress", "maker_asset_address", "taker_asset_address", queryObject)
 		if err != nil {
-			returnError(w, err, 400)
-			return
+			errs = append(errs, ValidationError{err.Error(), 1003, "assetAddress"})
 		}
 		query, err = applyOrFilter(query, "assetData", "maker_address", "taker_address", queryObject)
 		if err != nil {
-			returnError(w, err, 400)
-			return
+			errs = append(errs, ValidationError{err.Error(), 1001, "assetData"})
 		}
 		query, err = applyOrFilter(query, "trader", "maker", "taker", queryObject)
 		if err != nil {
-			returnError(w, err, 400)
-			return
+			errs = append(errs, ValidationError{err.Error(), 1003, "trader"})
 		}
 
 		pageInt, perPageInt, err := getPages(queryObject)
 		if err != nil {
-			returnError(w, err, 400)
-			return
+			errs = append(errs, ValidationError{err.Error(), 1001, "page"})
 		}
 		query = query.Where("expiration_timestamp_in_sec > ?", getExpTime(queryObject))
+		var count int
+		query.Count(&count)
 		query = query.Offset((pageInt - 1) * perPageInt).Limit(perPageInt)
 		if query.Error != nil {
-			returnError(w, query.Error, 400)
-			return
+			errs = append(errs, ValidationError{err.Error(), 1001, "_expTime"})
 		}
+		if len(errs) > 0 {
+			returnErrorList(w, errs)
+		}
+
 		if queryObject.Get("makerAssetAddress") != "" && queryObject.Get("takerAssetAddress") != "" {
 			query := query.Order("price asc, fee_rate asc")
 			if query.Error != nil {
@@ -191,7 +232,7 @@ func SearchHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 		} else {
 			query := query.Order("updated_at")
 			if query.Error != nil {
-				returnError(w, query.Error, 400)
+				returnError(w, query.Error, 500)
 				return
 			}
 		}
@@ -207,7 +248,7 @@ func SearchHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 		} else {
 			acceptHeader = "unknown"
 		}
-		response, contentType, err := FormatResponse(orders, acceptHeader)
+		response, contentType, err := FormatResponse(orders, acceptHeader, count, pageInt, perPageInt)
 		if err == nil {
 			w.WriteHeader(200)
 

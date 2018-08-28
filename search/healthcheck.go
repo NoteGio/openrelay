@@ -10,7 +10,6 @@ import (
 )
 
 type HealthCheck struct {
-	Count     int
 	BlockHash string
 }
 
@@ -23,7 +22,12 @@ func HealthCheckHandler(db *gorm.DB, blockHash blockhash.BlockHash) func(http.Re
 			returnError(w, errors.New("Got empty blockhash"), 500)
 			return
 		}
-		db.Table("orders").Count(&hc.Count)
+		if db != nil {
+			if err := db.Raw("SELECT 1").Error; err != nil {
+				returnError(w, err, 500)
+				return
+			}
+		}
 		response, err := json.Marshal(hc)
 		if err != nil {
 			returnError(w, err, 500)

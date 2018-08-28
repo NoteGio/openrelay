@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/jinzhu/gorm"
 	dbModule "github.com/notegio/openrelay/db"
+	"github.com/notegio/openrelay/common"
 	"github.com/notegio/openrelay/types"
 	"os"
 	"reflect"
@@ -133,11 +134,11 @@ func checkPairs(t *testing.T, tokenPairs []dbModule.Pair, sOrder *types.Order) {
 		t.Errorf("Expected 1 value, got %v", len(tokenPairs))
 		return
 	}
-	if !reflect.DeepEqual(tokenPairs[0].TokenA, sOrder.TakerAssetData.Address()) {
-		t.Errorf("Expected %#x, got %#x", sOrder.TakerAssetData.Address(), tokenPairs[0].TokenA[:])
+	if !reflect.DeepEqual(tokenPairs[0].TokenA, sOrder.TakerAssetData) {
+		t.Errorf("Expected %#x, got %#x", sOrder.TakerAssetData, tokenPairs[0].TokenA[:])
 	}
-	if !reflect.DeepEqual(tokenPairs[0].TokenB, sOrder.MakerAssetData.Address()) {
-		t.Errorf("Expected %#x, got %#x", sOrder.MakerAssetData.Address(), tokenPairs[0].TokenB[:])
+	if !reflect.DeepEqual(tokenPairs[0].TokenB, sOrder.MakerAssetData) {
+		t.Errorf("Expected %#x, got %#x", sOrder.MakerAssetData, tokenPairs[0].TokenB[:])
 	}
 }
 
@@ -155,13 +156,20 @@ func TestQueryPairs(t *testing.T) {
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
+	if err := tx.AutoMigrate(&dbModule.Exchange{}).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	sampleAddress, _ := common.HexToAddress("0x90fe2af704b34e0224bf2299c838e04d4dcf1364")
+	tx.Where(
+		&dbModule.Exchange{Network: 1},
+	).FirstOrCreate(&dbModule.Exchange{Network: 1, Address: sampleAddress })
 	sOrder := sampleOrder(t)
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *sOrder
 	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	tokenPairs, err := dbModule.GetAllTokenPairs(tx, 0, 10)
+	tokenPairs, _, err := dbModule.GetAllTokenPairs(tx, 0, 10, 1)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -182,13 +190,20 @@ func TestQueryPairsTokenAFilter(t *testing.T) {
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
+	if err := tx.AutoMigrate(&dbModule.Exchange{}).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	sampleAddress, _ := common.HexToAddress("0x90fe2af704b34e0224bf2299c838e04d4dcf1364")
+	tx.Where(
+		&dbModule.Exchange{Network: 1},
+	).FirstOrCreate(&dbModule.Exchange{Network: 1, Address: sampleAddress })
 	sOrder := sampleOrder(t)
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *sOrder
 	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	tokenPairs, err := dbModule.GetTokenAPairs(tx, sOrder.TakerAssetData.Address(), 0, 10)
+	tokenPairs, _, err := dbModule.GetTokenAPairs(tx, sOrder.TakerAssetData, 0, 10, 1)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -215,7 +230,14 @@ func TestQueryPairsTokenABFilter(t *testing.T) {
 	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	tokenPairs, err := dbModule.GetTokenABPairs(tx, sOrder.TakerAssetData.Address(), sOrder.MakerAssetData.Address())
+	if err := tx.AutoMigrate(&dbModule.Exchange{}).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	sampleAddress, _ := common.HexToAddress("0x90fe2af704b34e0224bf2299c838e04d4dcf1364")
+	tx.Where(
+		&dbModule.Exchange{Network: 1},
+	).FirstOrCreate(&dbModule.Exchange{Network: 1, Address: sampleAddress })
+	tokenPairs, _, err := dbModule.GetTokenABPairs(tx, sOrder.TakerAssetData, sOrder.MakerAssetData, 1)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -236,13 +258,20 @@ func TestQueryPairsTokenEmptyFilter(t *testing.T) {
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
+	if err := tx.AutoMigrate(&dbModule.Exchange{}).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	sampleAddress, _ := common.HexToAddress("0x90fe2af704b34e0224bf2299c838e04d4dcf1364")
+	tx.Where(
+		&dbModule.Exchange{Network: 1},
+	).FirstOrCreate(&dbModule.Exchange{Network: 1, Address: sampleAddress })
 	sOrder := sampleOrder(t)
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *sOrder
 	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	tokenPairs, err := dbModule.GetTokenAPairs(tx, sOrder.Taker, 0, 10)
+	tokenPairs, _, err := dbModule.GetTokenAPairs(tx, types.AssetData{}, 0, 10, 1)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -254,9 +283,9 @@ func TestQueryPairsTokenEmptyFilter(t *testing.T) {
 
 func TestMarshalPairs(t *testing.T) {
 	sOrder := sampleOrder(t)
-	pair := &dbModule.Pair{sOrder.MakerAssetData.Address(), sOrder.TakerAssetData.Address()}
+	pair := &dbModule.Pair{sOrder.MakerAssetData, sOrder.TakerAssetData}
 	pairJSON, _ := json.Marshal(pair)
-	if string(pairJSON) != "{\"tokenA\":{\"address\":\"0x1dad4783cf3fe3085c1426157ab175a6119a04ba\",\"minAmount\":\"1\",\"maxAmount\":\"115792089237316195423570985008687907853269984665640564039457584007913129639935\",\"precision\":5},\"tokenB\":{\"address\":\"0x05d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"minAmount\":\"1\",\"maxAmount\":\"115792089237316195423570985008687907853269984665640564039457584007913129639935\",\"precision\":5}}" {
+	if string(pairJSON) != "{\"assetDataA\":{\"assetData\":\"0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba\",\"minAmount\":\"1\",\"maxAmount\":\"115792089237316195423570985008687907853269984665640564039457584007913129639935\",\"precision\":5},\"assetDataB\":{\"assetData\":\"0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"minAmount\":\"1\",\"maxAmount\":\"115792089237316195423570985008687907853269984665640564039457584007913129639935\",\"precision\":5}}" {
 		t.Errorf("Unexpected response, got '%v'", string(pairJSON))
 	}
 }
