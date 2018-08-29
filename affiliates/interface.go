@@ -12,4 +12,5 @@ type Affiliate interface {
 type AffiliateService interface {
 	Get(*types.Address) (Affiliate, error)
 	Set(*types.Address, Affiliate) error
+	List() ([]types.Address, error)
 }

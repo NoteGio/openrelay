@@ -4,6 +4,7 @@ import (
 	"github.com/notegio/openrelay/search"
 	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/blockhash"
+	"github.com/notegio/openrelay/affiliates"
 	dbModule "github.com/notegio/openrelay/db"
 	"net/http"
 	"gopkg.in/redis.v3"
@@ -38,6 +39,7 @@ func main() {
 	searchHandler := search.BlockHashDecorator(blockHash, search.SearchHandler(db))
 	orderHandler := search.BlockHashDecorator(blockHash, search.OrderHandler(db))
 	orderBookHandler := search.BlockHashDecorator(blockHash, search.OrderBookHandler(db))
+	feeRecipientsHandler := search.BlockHashDecorator(blockHash, search.FeeRecipientHandler(affiliates.NewRedisAffiliateService(redisClient)))
 	pairHandler := search.PairHandler(db)
 
 	mux := http.NewServeMux()
@@ -45,6 +47,7 @@ func main() {
 	mux.HandleFunc("/v2/order/", orderHandler)
 	mux.HandleFunc("/v2/asset_pairs", pairHandler)
 	mux.HandleFunc("/v2/orderbook", orderBookHandler)
+	mux.HandleFunc("/v2/fee_recipients", feeRecipientsHandler)
 	mux.HandleFunc("/_hc", search.HealthCheckHandler(db, blockHash))
 	corsHandler := cors.Default().Handler(mux)
 	log.Printf("Order Search Serving on :%v", port)

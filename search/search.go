@@ -37,7 +37,7 @@ func FormatSingleResponse(order *dbModule.Order, format string) ([]byte, string,
 		result := order.Bytes()
 		return result[:], "application/octet-stream", nil
 	}
-	result, err := json.Marshal(order)
+	result, err := json.Marshal(GetFormattedOrder(order))
 	return result, "application/json", err
 }
 
