@@ -24,7 +24,15 @@ func FeeRecipientHandler(affiliateService affiliates.AffiliateService) func(http
 			return
 		}
 		//total, page, per_page int, records
-		pagedResult := GetPagedResult(len(affiliates), pageInt, perPageInt, affiliates[(pageInt - 1) * perPageInt:pageInt * perPageInt])
+		startIndex := (pageInt - 1) * perPageInt
+		if startIndex > len(affiliates) {
+			startIndex = len(affiliates)
+		}
+		endIndex := pageInt * perPageInt
+		if endIndex > len(affiliates) {
+			endIndex = len(affiliates)
+		}
+		pagedResult := GetPagedResult(len(affiliates), pageInt, perPageInt, affiliates[startIndex:endIndex])
 		response, err := json.Marshal(pagedResult)
 		if err != nil {
 			returnError(w, err, 500)
