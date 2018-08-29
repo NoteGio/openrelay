@@ -51,7 +51,7 @@ func HexToAssetData(assetDataHex string) (types.AssetData, error) {
 	if err != nil {
 		return nil, err
 	}
-	assetData := types.AssetData{}
+	assetData := make(types.AssetData, len(assetDataBytes))
 	copy(assetData[:], assetDataBytes[:])
 	return assetData, nil
 }

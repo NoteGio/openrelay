@@ -7,38 +7,68 @@ import (
 	"github.com/notegio/openrelay/common"
 	dbModule "github.com/notegio/openrelay/db"
 	"net/http"
+	// "log"
 )
 
 type OrderBook struct {
-	Asks []dbModule.Order `json:"asks"`
-	Bids []dbModule.Order `json:"bids"`
+	Asks *PagedResult `json:"asks"`
+	Bids *PagedResult `json:"bids"`
 }
 
 func OrderBookHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		queryObject := r.URL.Query()
-		baseTokenAddressHex := queryObject.Get("baseTokenAddress")
-		quoteTokenAddressHex := queryObject.Get("quoteTokenAddress")
-		if baseTokenAddressHex == "" || quoteTokenAddressHex == "" {
-			returnError(w, errors.New("Must provide baseTokenAddress and quoteTokenAddress "), 404)
+		errs := []ValidationError{}
+		pageInt, perPageInt, err := getPages(queryObject)
+		if err != nil {
+			errs = append(errs, ValidationError{err.Error(), 1001, "page"})
+		}
+		baseAssetDataHex := queryObject.Get("baseAssetData")
+		quoteAssetDataHex := queryObject.Get("quoteAssetData")
+		if baseAssetDataHex == "" || quoteAssetDataHex == "" {
+			returnError(w, errors.New("Must provide baseAssetData and quoteAssetData "), 404)
 			return
 		}
-		baseTokenAddressBytes, err := common.HexToBytes(baseTokenAddressHex)
+		baseAssetData, err := common.HexToAssetData(baseAssetDataHex)
 		if err != nil {
-			returnError(w, err, 400)
-			return
+			errs = append(errs, ValidationError{err.Error(), 1001, "baseAssetData"})
 		}
-		quoteTokenAddressBytes, err := common.HexToBytes(quoteTokenAddressHex)
+		quoteAssetData, err := common.HexToAssetData(quoteAssetDataHex)
 		if err != nil {
-			returnError(w, err, 400)
+			errs = append(errs, ValidationError{err.Error(), 1001, "quoteAssetData"})
+		}
+		if len(errs) > 0 {
+			returnErrorList(w, errs)
 			return
 		}
 		currentTime := getExpTime(queryObject)
-		baseTokenAddress := common.BytesToOrAddress(baseTokenAddressBytes)
-		quoteTokenAddress := common.BytesToOrAddress(quoteTokenAddressBytes)
-		orderBook := &OrderBook{[]dbModule.Order{}, []dbModule.Order{}}
-		db.Model(&dbModule.Order{}).Where("status = ?", dbModule.StatusOpen).Where("expiration_timestamp_in_sec > ?", currentTime).Where("taker_asset_address = ? AND maker_asset_address = ?", baseTokenAddress, quoteTokenAddress).Order("price, fee_rate, expiration_timestamp_in_sec").Find(&orderBook.Bids)
-		db.Model(&dbModule.Order{}).Where("status = ?", dbModule.StatusOpen).Where("expiration_timestamp_in_sec > ?", currentTime).Where("maker_asset_address = ? AND taker_asset_address = ?", baseTokenAddress, quoteTokenAddress).Order("price, fee_rate, expiration_timestamp_in_sec").Find(&orderBook.Asks)
+		bids := []dbModule.Order{}
+		asks := []dbModule.Order{}
+		var bidCount int
+		var askCount int
+		// orderBook := &OrderBook{[]dbModule.Order{}, []dbModule.Order{}}
+		db.Model(&dbModule.Order{}).Where("status = ?", dbModule.StatusOpen).Where("expiration_timestamp_in_sec > ?", currentTime).Where("taker_asset_data = ? AND maker_asset_data = ?", []byte(baseAssetData[:]), []byte(quoteAssetData[:])).Order("price, fee_rate, expiration_timestamp_in_sec").Count(&bidCount)
+		db.Model(&dbModule.Order{}).Where("status = ?", dbModule.StatusOpen).Where("expiration_timestamp_in_sec > ?", currentTime).Where("maker_asset_data = ? AND taker_asset_data = ?", []byte(baseAssetData[:]), []byte(quoteAssetData[:])).Order("price, fee_rate, expiration_timestamp_in_sec").Count(&askCount)
+		if bidCount > (pageInt - 1) * perPageInt {
+			// We don't need to bother with this query if te total is less than the
+			// offset
+			db.Model(&dbModule.Order{}).Where("status = ?", dbModule.StatusOpen).Where("expiration_timestamp_in_sec > ?", currentTime).Where("taker_asset_data = ? AND maker_asset_data = ?", []byte(baseAssetData[:]), []byte(quoteAssetData[:])).Order("price, fee_rate, expiration_timestamp_in_sec").Offset((pageInt - 1) * perPageInt).Limit(perPageInt).Find(&bids)
+		}
+		if askCount > (pageInt - 1) * perPageInt {
+			db.Model(&dbModule.Order{}).Where("status = ?", dbModule.StatusOpen).Where("expiration_timestamp_in_sec > ?", currentTime).Where("maker_asset_data = ? AND taker_asset_data = ?", []byte(baseAssetData[:]), []byte(quoteAssetData[:])).Order("price, fee_rate, expiration_timestamp_in_sec").Offset((pageInt - 1) * perPageInt).Limit(perPageInt).Find(&asks)
+		}
+		formattedAsks := []FormattedOrder{}
+		formattedBids := []FormattedOrder{}
+		for _, order := range asks {
+			formattedAsks = append(formattedAsks, *GetFormattedOrder(&order))
+		}
+		for _, order := range bids {
+			formattedBids = append(formattedBids, *GetFormattedOrder(&order))
+		}
+		orderBook := &OrderBook{
+			GetPagedResult(askCount, pageInt, perPageInt, formattedAsks),
+			GetPagedResult(bidCount, pageInt, perPageInt, formattedBids),
+		}
 		response, err := json.Marshal(orderBook)
 		if err != nil {
 			returnError(w, err, 500)

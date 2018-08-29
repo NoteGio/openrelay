@@ -221,6 +221,7 @@ func SearchHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 		}
 		if len(errs) > 0 {
 			returnErrorList(w, errs)
+			return
 		}
 
 		if queryObject.Get("makerAssetAddress") != "" && queryObject.Get("takerAssetAddress") != "" {
@@ -238,9 +239,11 @@ func SearchHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 		}
 
 		orders := []dbModule.Order{}
-		if err := query.Find(&orders).Error; err != nil {
-			returnError(w, err, 500)
-			return
+		if count > (pageInt - 1) * perPageInt {
+			if err := query.Find(&orders).Error; err != nil {
+				returnError(w, err, 500)
+				return
+			}
 		}
 		var acceptHeader string
 		if acceptVal, ok := r.Header["Accept"]; ok {

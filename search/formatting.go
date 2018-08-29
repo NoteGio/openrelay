@@ -3,6 +3,7 @@ package search
 import (
 	dbModule "github.com/notegio/openrelay/db"
 	"github.com/notegio/openrelay/types"
+	"math/big"
 	"fmt"
 )
 
@@ -13,10 +14,9 @@ type FormattedOrder struct {
 
 type OrderMetadata struct {
 	Hash string                   `json:"hash"`
-	MakerAssetRemaining string    `json:"makerAssetRemaining"`
 	FeeRate float64               `json:"feeRate"`
 	Status int64                  `json:"status"`
-	TakerAssetAmountFilled string `json:"takerAssetAmountFilled"`
+	TakerAssetAmountFilled string `json:"takerAssetAmountRemaining"`
 }
 
 func GetFormattedOrder(order *dbModule.Order) (*FormattedOrder) {
@@ -24,10 +24,9 @@ func GetFormattedOrder(order *dbModule.Order) (*FormattedOrder) {
 		&order.Order,
 		&OrderMetadata{
 			fmt.Sprintf("%#x", order.OrderHash[:]),
-			order.MakerAssetRemaining.String(),
 			order.FeeRate,
 			order.Status,
-			order.TakerAssetAmountFilled.String(),
+			new(big.Int).Sub(order.TakerAssetAmount.Big(), order.TakerAssetAmountFilled.Big()).String(),
 		},
 	}
 }
