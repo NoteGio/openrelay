@@ -43,8 +43,9 @@ func main() {
 	feeHandler := ingest.FeeHandler(publisher, accountService, affiliateService, defaultFeeRecipientBytes)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/order", handler)
-	mux.HandleFunc("/v1/fees", feeHandler)
+	mux.HandleFunc("/v2/order", handler)
+	mux.HandleFunc("/v2/order_config", feeHandler)
+	mux.HandleFunc("/_hc", ingest.HealthCheckHandler(redisClient))
 	corsHandler := cors.Default().Handler(mux)
 	log.Printf("Order Ingest Serving on :%v", port)
 	http.ListenAndServe(":"+port, corsHandler)

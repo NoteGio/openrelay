@@ -9,6 +9,7 @@ import (
 	"math/big"
 	"os"
 	"testing"
+	"bytes"
 	// "time"
 )
 
@@ -63,5 +64,15 @@ func TestSetAffiliate(t *testing.T) {
 	fee, _ := baseFee.Get()
 	if lookedUpAffiliate.Fee().Cmp(fee) != 0 {
 		t.Errorf("Fee should be equal to base fee")
+	}
+	listedAffiliates, err := service.List()
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	if len(listedAffiliates) != 1 {
+		t.Fatalf("Expected exactly one affiliate")
+	}
+	if !bytes.Equal(listedAffiliates[0][:], addressArray[:]) {
+		t.Errorf("Expected '%#x' to equal '%#x'", listedAffiliates[0][:], addressArray[:])
 	}
 }

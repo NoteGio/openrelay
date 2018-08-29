@@ -17,12 +17,10 @@ const (
 	SigTypeInvalid = 1
 	SigTypeEIP712 = 2
 	SigTypeEthSign = 3
-	SigTypeCaller = 4
-	SigTypeWallet = 5
-	SigTypeValidator = 6
-	SigTypePreSigned = 7
-	SigTypeTrezor = 8
-	NSigTypes = 9
+	SigTypeWallet = 4
+	SigTypeValidator = 5
+	SigTypePreSigned = 6
+	NSigTypes = 7
 )
 
 type Signature []byte
@@ -44,8 +42,6 @@ func (sig Signature) Verify(address *Address, hash []byte) bool {
 		return sig.verifyWallet(address, hash)
 	case SigTypeValidator:
 		return sig.verifyValidator(address, hash)
-	case SigTypeTrezor:
-		return sig.verifyTrezor(address, hash)
 	default:
 		return false
 	}
@@ -56,8 +52,6 @@ func (sig Signature) Supported() bool {
 	case SigTypeEIP712:
 		return true
 	case SigTypeEthSign:
-		return true
-	case SigTypeTrezor:
 		return true
 	default:
 		return false
@@ -124,26 +118,4 @@ func (sig Signature) verifyValidator(address *Address, hash []byte) bool {
 	// can monitor for events that would invalidate an order in a scalable
 	// manner.
 	return false
-}
-
-func (sig Signature) verifyTrezor(address *Address, hash []byte) bool {
-	if len(sig[:]) != 66 {
-		log.Printf("Invalid length: %v", len(sig[:]))
-		return false
-	}
-	hashedBytes := append([]byte("\x19Ethereum Signed Message:\n\x20"), hash[:]...)
-	signedBytes := crypto.Keccak256(hashedBytes)
-	v := sig[0]
-	r := sig[1:33]
-	s := sig[33:65]
-	if v < 27 {
-		return false
-	}
-	pub, err := crypto.Ecrecover(signedBytes, append(append(r, s...), v - 27))
-	if err != nil {
-		log.Println(err.Error())
-		return false
-	}
-	recoverAddress := common.BytesToAddress(crypto.Keccak256(pub[1:])[12:])
-	return bytes.Equal(address[:], recoverAddress[:])
 }

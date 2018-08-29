@@ -6,13 +6,18 @@ import (
 	"github.com/notegio/openrelay/common"
 	dbModule "github.com/notegio/openrelay/db"
 	"net/http"
+	"strconv"
 )
 
 func PairHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		queryObject := r.URL.Query()
-		tokenAString := queryObject.Get("tokenA")
-		tokenBString := queryObject.Get("tokenB")
+		tokenAString := queryObject.Get("assetA")
+		tokenBString := queryObject.Get("assetB")
+		networkID, err := strconv.Atoi(queryObject.Get("networkId"))
+		if err != nil {
+			networkID = 1
+		}
 		if tokenAString == "" && tokenBString != "" {
 			tokenAString, tokenBString = tokenBString, ""
 		}
@@ -23,36 +28,35 @@ func PairHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 		var pairs []dbModule.Pair
+		var count int
 		if tokenAString == "" {
-			pairs, err = dbModule.GetAllTokenPairs(db, offset, perPageInt)
+			pairs, count, err = dbModule.GetAllTokenPairs(db, offset, perPageInt, networkID)
 			if err != nil {
 				returnError(w, err, 400)
 				return
 			}
 		} else {
-			tokenABytes, err := common.HexToBytes(tokenAString)
+			assetDataA, err := common.HexToAssetData(tokenAString)
 			if err != nil {
 				returnError(w, err, 400)
 				return
 			}
-			tokenAAddress := common.BytesToOrAddress(tokenABytes)
 			if tokenBString == "" {
-				pairs, err = dbModule.GetTokenAPairs(db, tokenAAddress, offset, perPageInt)
+				pairs, count, err = dbModule.GetTokenAPairs(db, assetDataA, offset, perPageInt, networkID)
 			} else {
-				tokenBBytes, err := common.HexToBytes(tokenBString)
+				assetDataB, err := common.HexToAssetData(tokenBString)
 				if err != nil {
 					returnError(w, err, 400)
 					return
 				}
-				tokenBAddress := common.BytesToOrAddress(tokenBBytes)
-				pairs, err = dbModule.GetTokenABPairs(db, tokenAAddress, tokenBAddress)
+				pairs, count, err = dbModule.GetTokenABPairs(db, assetDataA, assetDataB, networkID)
 			}
 			if err != nil {
 				returnError(w, err, 400)
 				return
 			}
 		}
-		response, err := json.Marshal(pairs)
+		response, err := json.Marshal(GetPagedResult(count, pageInt, perPageInt, pairs))
 		if err != nil {
 			returnError(w, err, 500)
 			return

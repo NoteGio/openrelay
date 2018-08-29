@@ -4,9 +4,12 @@ import (
 	"encoding/json"
 	"github.com/notegio/openrelay/config"
 	"github.com/notegio/openrelay/types"
+	"github.com/notegio/openrelay/common"
 	"gopkg.in/redis.v3"
 	"math/big"
 	"fmt"
+	"log"
+	"strings"
 )
 
 type redisAffiliateService struct {
@@ -38,6 +41,22 @@ func (affiliateService *redisAffiliateService) Set(address *types.Address, acct 
 		return err
 	}
 	return affiliateService.redisClient.Set(fmt.Sprintf("affiliate::%x", address[:]), string(data), 0).Err()
+}
+
+func (affiliateService *redisAffiliateService) List() ([]types.Address, error) {
+	addresses := []types.Address{}
+	addressesHex, err := affiliateService.redisClient.Keys("affiliate::*").Result()
+	if err != nil {
+		return addresses, err
+	}
+	for _, addressHex := range addressesHex {
+		if address, err := common.HexToAddress(strings.TrimPrefix(addressHex, "affiliate::")); err == nil {
+			addresses = append(addresses, *address)
+		} else {
+			log.Printf("Invalid affiliate address: %v", addressHex)
+		}
+	}
+	return addresses, nil
 }
 
 func NewRedisAffiliateService(redisClient *redis.Client) AffiliateService {

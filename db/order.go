@@ -33,22 +33,8 @@ func (order *Order) TableName() string {
 	return "orderv2"
 }
 
-// Save records the order in the database, defaulting to the specified status.
-// Status should either be db.StatusOpen, or db.StatusUnfunded. If the order
-// is filled based on order.TakerAssetAmountFilled + order.TakerAssetAmountCancelled
-// the status will be recorded as db.StatusFilled regardless of the specified status.
-func (order *Order) Save(db *gorm.DB, status int64) *gorm.DB {
-	if !order.Signature.Verify(order.Maker, order.Hash()) {
-		scope := db.New()
-		scope.AddError(errors.New("Failed to verify signature"))
-		return scope
-	}
+func (order *Order) Populate() {
 	order.OrderHash = order.Hash()
-	log.Printf("Attempting to save order %#x", order.Hash())
-	if order.Cancelled {
-		status = StatusCancelled
-	}
-
 	remainingAmount := order.TakerAssetAmount.Big()
 	thresholdAmount := order.TakerAssetAmount.Big()
 	// If the order is larger than 100 base units, we want to remove it from the
@@ -68,22 +54,8 @@ func (order *Order) Save(db *gorm.DB, status int64) *gorm.DB {
 	makerFeeRemainingInt := new(big.Int).Div(new(big.Int).Mul(order.MakerFee.Big(), remainingAmount), order.TakerAssetAmount.Big())
 	makerFeeRemaining := &types.Uint256{}
 	copy(makerFeeRemaining[:], abi.U256(makerFeeRemainingInt))
-	updates := map[string]interface{}{
-		"taker_asset_amount_filled":    order.TakerAssetAmountFilled,
-		"maker_asset_remaining":        makerRemaining,
-		"maker_fee_remaining":          makerFeeRemaining,
-		"status":                       status,
-	}
-	if thresholdAmount.Cmp(big.NewInt(0)) <= 0 {
-		updates["status"] = StatusFilled
-	}
-	updateScope := db.Model(Order{}).Where("order_hash = ?", order.OrderHash).Updates(updates)
-	if updateScope.Error != nil {
-		log.Printf(updateScope.Error.Error())
-	}
-	if updateScope.RowsAffected > 0 {
-		return updateScope
-	}
+	order.MakerAssetRemaining = makerRemaining
+	order.MakerFeeRemaining = makerFeeRemaining
 
 	takerTokenAmount := new(big.Float).SetInt(order.TakerAssetAmount.Big())
 	makerTokenAmount := new(big.Float).SetInt(order.MakerAssetAmount.Big())
@@ -91,8 +63,49 @@ func (order *Order) Save(db *gorm.DB, status int64) *gorm.DB {
 
 	order.Price, _ = new(big.Float).Quo(takerTokenAmount, makerTokenAmount).Float64()
 	order.FeeRate, _ = new(big.Float).Quo(takerFeeAmount, takerTokenAmount).Float64()
-	order.Status = status
-	order.MakerAssetRemaining = makerRemaining
-	order.MakerFeeRemaining = makerFeeRemaining
+
+	if order.Cancelled {
+		order.Status = StatusCancelled
+	}
+
+	if thresholdAmount.Cmp(big.NewInt(0)) <= 0 {
+		order.Status = StatusFilled
+	}
+}
+
+// Save records the order in the database, defaulting to the specified status.
+// Status should either be db.StatusOpen, or db.StatusUnfunded. If the order
+// is filled based on order.TakerAssetAmountFilled + order.TakerAssetAmountCancelled
+// the status will be recorded as db.StatusFilled regardless of the specified status.
+func (order *Order) Save(db *gorm.DB, status int64) *gorm.DB {
+	if !order.Signature.Verify(order.Maker, order.Hash()) {
+		scope := db.New()
+		scope.AddError(errors.New("Failed to verify signature"))
+		return scope
+	}
+	order.Populate()
+
+	if order.Status == StatusOpen {
+		order.Status = status
+	}
+
+	log.Printf("Attempting to save order %#x", order.Hash())
+
+
+
+	updates := map[string]interface{}{
+		"taker_asset_amount_filled":    order.TakerAssetAmountFilled,
+		"maker_asset_remaining":        order.MakerAssetRemaining,
+		"maker_fee_remaining":          order.MakerFeeRemaining,
+		"status":                       order.Status,
+	}
+
+	updateScope := db.Model(Order{}).Where("order_hash = ?", order.OrderHash).Updates(updates)
+	if updateScope.Error != nil {
+		log.Printf(updateScope.Error.Error())
+	}
+	if updateScope.RowsAffected > 0 {
+		return updateScope
+	}
 	return db.Create(order)
 }

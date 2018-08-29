@@ -64,6 +64,10 @@ func (service *TestAffiliateService) Set(address *types.Address, affiliate affil
 	return nil
 }
 
+func (service *TestAffiliateService) List() ([]types.Address, error) {
+	return []types.Address{}, nil
+}
+
 type TestAccountService struct {
 	blacklist bool
 	discount  *big.Int

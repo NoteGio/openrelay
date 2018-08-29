@@ -8,6 +8,7 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/notegio/openrelay/blockhash"
+	"github.com/notegio/openrelay/common"
 	"github.com/notegio/openrelay/channels"
 	dbModule "github.com/notegio/openrelay/db"
 	"github.com/notegio/openrelay/search"
@@ -31,6 +32,7 @@ func sampleOrder(t *testing.T) *dbModule.Order {
 	}
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *order
+	dbOrder.Populate()
 	return dbOrder
 }
 
@@ -86,14 +88,14 @@ func getDb() (*gorm.DB, error) {
 func TestFormatResponseJson(t *testing.T) {
 	order := sampleOrder(t)
 	orders := []dbModule.Order{*order, *order}
-	response, contentType, err := search.FormatResponse(orders, "application/json")
+	response, contentType, err := search.FormatResponse(orders, "application/json", 2, 1, 100)
 	if err != nil {
 		t.Errorf("Error getting formatted response: %v", err.Error())
 	}
 	if contentType != "application/json" {
 		t.Errorf("Expected content type application/json, got '%v'", contentType)
 	}
-	if string(response) != "[{\"makerAddress\":\"0x627306090abab3a6e1400e9345bc60c78a8bef57\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba\",\"takerAssetData\":\"0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x90fe2af704b34e0224bf2299c838e04d4dcf1364\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"50000000000000000000\",\"takerAssetAmount\":\"1000000000000000000\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"5797808836\",\"salt\":\"11065671350908846865864045738088581419204014210814002044381812654087807531\",\"signature\":\"0x1c34f27415dc0177bc4016d48c3ec7eb19ee31124bcf4ca2eb3aba767c24e4712043bf8e49d1e28c6efa5a5e8a6824886700f356a403e0e66c75621e56b184b47b03\"},{\"makerAddress\":\"0x627306090abab3a6e1400e9345bc60c78a8bef57\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba\",\"takerAssetData\":\"0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x90fe2af704b34e0224bf2299c838e04d4dcf1364\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"50000000000000000000\",\"takerAssetAmount\":\"1000000000000000000\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"5797808836\",\"salt\":\"11065671350908846865864045738088581419204014210814002044381812654087807531\",\"signature\":\"0x1c34f27415dc0177bc4016d48c3ec7eb19ee31124bcf4ca2eb3aba767c24e4712043bf8e49d1e28c6efa5a5e8a6824886700f356a403e0e66c75621e56b184b47b03\"}]" {
+	if string(response) != "{\"total\":2,\"page\":1,\"perPage\":100,\"records\":[{\"order\":{\"makerAddress\":\"0x627306090abab3a6e1400e9345bc60c78a8bef57\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba\",\"takerAssetData\":\"0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x90fe2af704b34e0224bf2299c838e04d4dcf1364\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"50000000000000000000\",\"takerAssetAmount\":\"1000000000000000000\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"5797808836\",\"salt\":\"11065671350908846865864045738088581419204014210814002044381812654087807531\",\"signature\":\"0x1c34f27415dc0177bc4016d48c3ec7eb19ee31124bcf4ca2eb3aba767c24e4712043bf8e49d1e28c6efa5a5e8a6824886700f356a403e0e66c75621e56b184b47b03\"},\"metaData\":{\"hash\":\"0x73eff0f95a1f6c56e9d9c1c714340307b81a0591e4c63e1e0917722198f5cd6d\",\"feeRate\":0,\"status\":0,\"takerAssetAmountRemaining\":\"1000000000000000000\"}},{\"order\":{\"makerAddress\":\"0x627306090abab3a6e1400e9345bc60c78a8bef57\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba\",\"takerAssetData\":\"0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x90fe2af704b34e0224bf2299c838e04d4dcf1364\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"50000000000000000000\",\"takerAssetAmount\":\"1000000000000000000\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"5797808836\",\"salt\":\"11065671350908846865864045738088581419204014210814002044381812654087807531\",\"signature\":\"0x1c34f27415dc0177bc4016d48c3ec7eb19ee31124bcf4ca2eb3aba767c24e4712043bf8e49d1e28c6efa5a5e8a6824886700f356a403e0e66c75621e56b184b47b03\"},\"metaData\":{\"hash\":\"0x73eff0f95a1f6c56e9d9c1c714340307b81a0591e4c63e1e0917722198f5cd6d\",\"feeRate\":0,\"status\":0,\"takerAssetAmountRemaining\":\"1000000000000000000\"}}]}" {
 		t.Errorf("Got '%v'", string(response))
 	}
 }
@@ -125,7 +127,7 @@ func TestFormatSingleResponseJson(t *testing.T) {
 	if contentType != "application/json" {
 		t.Errorf("Expected content type application/json, got '%v'", contentType)
 	}
-	if string(response) != "{\"makerAddress\":\"0x627306090abab3a6e1400e9345bc60c78a8bef57\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba\",\"takerAssetData\":\"0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x90fe2af704b34e0224bf2299c838e04d4dcf1364\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"50000000000000000000\",\"takerAssetAmount\":\"1000000000000000000\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"5797808836\",\"salt\":\"11065671350908846865864045738088581419204014210814002044381812654087807531\",\"signature\":\"0x1c34f27415dc0177bc4016d48c3ec7eb19ee31124bcf4ca2eb3aba767c24e4712043bf8e49d1e28c6efa5a5e8a6824886700f356a403e0e66c75621e56b184b47b03\"}" {
+	if string(response) != "{\"order\":{\"makerAddress\":\"0x627306090abab3a6e1400e9345bc60c78a8bef57\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba\",\"takerAssetData\":\"0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x90fe2af704b34e0224bf2299c838e04d4dcf1364\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"50000000000000000000\",\"takerAssetAmount\":\"1000000000000000000\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"5797808836\",\"salt\":\"11065671350908846865864045738088581419204014210814002044381812654087807531\",\"signature\":\"0x1c34f27415dc0177bc4016d48c3ec7eb19ee31124bcf4ca2eb3aba767c24e4712043bf8e49d1e28c6efa5a5e8a6824886700f356a403e0e66c75621e56b184b47b03\"},\"metaData\":{\"hash\":\"0x73eff0f95a1f6c56e9d9c1c714340307b81a0591e4c63e1e0917722198f5cd6d\",\"feeRate\":0,\"status\":0,\"takerAssetAmountRemaining\":\"1000000000000000000\"}}" {
 		t.Errorf("Got '%v'", string(response))
 	}
 }
@@ -179,6 +181,13 @@ func filterContractRequest(queryString, emptyQueryString string, t *testing.T) {
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
+	if err := tx.AutoMigrate(&dbModule.Exchange{}).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	sampleAddress, _ := common.HexToAddress("0x90fe2af704b34e0224bf2299c838e04d4dcf1364")
+	tx.Where(
+		&dbModule.Exchange{Network: 1},
+	).FirstOrCreate(&dbModule.Exchange{Network: 1, Address: sampleAddress })
 	if err := sampleOrder(t).Save(tx, 0).Error; err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -190,7 +199,7 @@ func filterContractRequest(queryString, emptyQueryString string, t *testing.T) {
 		t.Errorf("Unexpected response code '%v'", recorder.Code)
 	}
 	response := recorder.Body.String()
-	if string(response) != "[{\"makerAddress\":\"0x627306090abab3a6e1400e9345bc60c78a8bef57\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba\",\"takerAssetData\":\"0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x90fe2af704b34e0224bf2299c838e04d4dcf1364\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"50000000000000000000\",\"takerAssetAmount\":\"1000000000000000000\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"5797808836\",\"salt\":\"11065671350908846865864045738088581419204014210814002044381812654087807531\",\"signature\":\"0x1c34f27415dc0177bc4016d48c3ec7eb19ee31124bcf4ca2eb3aba767c24e4712043bf8e49d1e28c6efa5a5e8a6824886700f356a403e0e66c75621e56b184b47b03\"}]" {
+	if string(response) != "{\"total\":1,\"page\":1,\"perPage\":20,\"records\":[{\"order\":{\"makerAddress\":\"0x627306090abab3a6e1400e9345bc60c78a8bef57\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba\",\"takerAssetData\":\"0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x90fe2af704b34e0224bf2299c838e04d4dcf1364\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"50000000000000000000\",\"takerAssetAmount\":\"1000000000000000000\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"5797808836\",\"salt\":\"11065671350908846865864045738088581419204014210814002044381812654087807531\",\"signature\":\"0x1c34f27415dc0177bc4016d48c3ec7eb19ee31124bcf4ca2eb3aba767c24e4712043bf8e49d1e28c6efa5a5e8a6824886700f356a403e0e66c75621e56b184b47b03\"},\"metaData\":{\"hash\":\"0x73eff0f95a1f6c56e9d9c1c714340307b81a0591e4c63e1e0917722198f5cd6d\",\"feeRate\":0,\"status\":0,\"takerAssetAmountRemaining\":\"1000000000000000000\"}}]}" {
 		t.Errorf("Got '%v'", string(response))
 	}
 	request, _ = http.NewRequest("GET", "/v0/orders?"+emptyQueryString+"&blockhash=x", nil)
@@ -200,7 +209,7 @@ func filterContractRequest(queryString, emptyQueryString string, t *testing.T) {
 		t.Errorf("Unexpected response code '%v'", recorder.Code)
 	}
 	response = recorder.Body.String()
-	if string(response) != "[]" {
+	if string(response) != "{\"total\":0,\"page\":1,\"perPage\":20,\"records\":[]}" {
 		t.Errorf("Got '%v'", string(response))
 	}
 }
@@ -255,6 +264,13 @@ func TestPagination(t *testing.T) {
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
+	if err := tx.AutoMigrate(&dbModule.Exchange{}).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	sampleAddress, _ := common.HexToAddress("0x90fe2af704b34e0224bf2299c838e04d4dcf1364")
+	tx.Where(
+		&dbModule.Exchange{Network: 1},
+	).FirstOrCreate(&dbModule.Exchange{Network: 1, Address: sampleAddress })
 	for i := 0; i < 21; i++ {
 		saltedSampleOrder(t).Save(tx, 0)
 	}
@@ -266,10 +282,15 @@ func TestPagination(t *testing.T) {
 	if recorder.Code != 200 {
 		t.Errorf("Unexpected response code '%v'", recorder.Code)
 	}
-	orders := []dbModule.Order{}
-	if err := json.Unmarshal(recorder.Body.Bytes(), &orders); err != nil {
+	// orders := []dbModule.Order{}
+	pagedResult := &search.PagedOrders{}
+	if err := json.Unmarshal(recorder.Body.Bytes(), pagedResult); err != nil {
 		t.Fatalf(err.Error())
 	}
+	if pagedResult.Total != 21 {
+		t.Fatalf("Expected 21 total results, 20 on this page")
+	}
+	orders := pagedResult.Records
 	if length := len(orders); length != 20 {
 			t.Errorf("Expected 20 items, got '%v'", (length))
 	}
@@ -283,10 +304,14 @@ func TestPagination(t *testing.T) {
 	if recorder.Code != 200 {
 		t.Errorf("Unexpected response code '%v'", recorder.Code)
 	}
-	orders = []dbModule.Order{}
-	if err := json.Unmarshal(recorder.Body.Bytes(), &orders); err != nil {
+	pagedResult = &search.PagedOrders{}
+	if err := json.Unmarshal(recorder.Body.Bytes(), pagedResult); err != nil {
 		t.Fatalf(err.Error())
 	}
+	if pagedResult.Total != 21 {
+		t.Fatalf("Expected 21 total results, 20 on this page")
+	}
+	orders = pagedResult.Records
 	if length := len(orders); length != 1 {
 			t.Errorf("Expected 1 items, got '%v'", (length))
 	}
@@ -306,6 +331,13 @@ func TestOrderLookup(t *testing.T) {
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
+	if err := tx.AutoMigrate(&dbModule.Exchange{}).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	sampleAddress, _ := common.HexToAddress("0x90fe2af704b34e0224bf2299c838e04d4dcf1364")
+	tx.Where(
+		&dbModule.Exchange{Network: 1},
+	).FirstOrCreate(&dbModule.Exchange{Network: 1, Address: sampleAddress })
 	order := sampleOrder(t)
 	order.Save(tx, 0)
 	orderHash := order.Hash()
@@ -321,7 +353,7 @@ func TestOrderLookup(t *testing.T) {
 		t.Errorf("Unexpected Content-Type: '%v'", contentType)
 	}
 	response := recorder.Body.String()
-	if string(response) != "{\"makerAddress\":\"0x627306090abab3a6e1400e9345bc60c78a8bef57\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba\",\"takerAssetData\":\"0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x90fe2af704b34e0224bf2299c838e04d4dcf1364\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"50000000000000000000\",\"takerAssetAmount\":\"1000000000000000000\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"5797808836\",\"salt\":\"11065671350908846865864045738088581419204014210814002044381812654087807531\",\"signature\":\"0x1c34f27415dc0177bc4016d48c3ec7eb19ee31124bcf4ca2eb3aba767c24e4712043bf8e49d1e28c6efa5a5e8a6824886700f356a403e0e66c75621e56b184b47b03\"}" {
+	if string(response) != "{\"order\":{\"makerAddress\":\"0x627306090abab3a6e1400e9345bc60c78a8bef57\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba\",\"takerAssetData\":\"0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x90fe2af704b34e0224bf2299c838e04d4dcf1364\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"50000000000000000000\",\"takerAssetAmount\":\"1000000000000000000\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"5797808836\",\"salt\":\"11065671350908846865864045738088581419204014210814002044381812654087807531\",\"signature\":\"0x1c34f27415dc0177bc4016d48c3ec7eb19ee31124bcf4ca2eb3aba767c24e4712043bf8e49d1e28c6efa5a5e8a6824886700f356a403e0e66c75621e56b184b47b03\"},\"metaData\":{\"hash\":\"0x73eff0f95a1f6c56e9d9c1c714340307b81a0591e4c63e1e0917722198f5cd6d\",\"feeRate\":0,\"status\":0,\"takerAssetAmountRemaining\":\"1000000000000000000\"}}" {
 		t.Errorf("Got '%v'", string(response))
 	}
 }
@@ -340,10 +372,17 @@ func TestPairLookup(t *testing.T) {
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
+	if err := tx.AutoMigrate(&dbModule.Exchange{}).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	sampleAddress, _ := common.HexToAddress("0x90fe2af704b34e0224bf2299c838e04d4dcf1364")
+	tx.Where(
+		&dbModule.Exchange{Network: 1},
+	).FirstOrCreate(&dbModule.Exchange{Network: 1, Address: sampleAddress })
 	order := sampleOrder(t)
 	order.Save(tx, 0)
 	handler := search.PairHandler(tx)
-	request, _ := http.NewRequest("GET", "/v0/token_pairs", nil)
+	request, _ := http.NewRequest("GET", "/v0/asset_pairs", nil)
 	recorder := httptest.NewRecorder()
 	handler(recorder, request)
 	if recorder.Code != 200 {
@@ -353,7 +392,7 @@ func TestPairLookup(t *testing.T) {
 		t.Errorf("Unexpected Content-Type: '%v'", contentType)
 	}
 	response := recorder.Body.String()
-	if string(response) != "[{\"tokenA\":{\"address\":\"0x05d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"minAmount\":\"1\",\"maxAmount\":\"115792089237316195423570985008687907853269984665640564039457584007913129639935\",\"precision\":5},\"tokenB\":{\"address\":\"0x1dad4783cf3fe3085c1426157ab175a6119a04ba\",\"minAmount\":\"1\",\"maxAmount\":\"115792089237316195423570985008687907853269984665640564039457584007913129639935\",\"precision\":5}}]" {
+	if string(response) != "{\"total\":1,\"page\":1,\"perPage\":20,\"records\":[{\"assetDataA\":{\"assetData\":\"0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"minAmount\":\"1\",\"maxAmount\":\"115792089237316195423570985008687907853269984665640564039457584007913129639935\",\"precision\":5},\"assetDataB\":{\"assetData\":\"0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba\",\"minAmount\":\"1\",\"maxAmount\":\"115792089237316195423570985008687907853269984665640564039457584007913129639935\",\"precision\":5}}]}" {
 		t.Errorf("Got unexpected JSON response '%v'", string(response))
 	}
 }
@@ -372,10 +411,19 @@ func TestOrderBookLookup(t *testing.T) {
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
+	if err := tx.AutoMigrate(&dbModule.Exchange{}).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	sampleAddress, _ := common.HexToAddress("0x90fe2af704b34e0224bf2299c838e04d4dcf1364")
+	tx.Where(
+		&dbModule.Exchange{Network: 1},
+	).FirstOrCreate(&dbModule.Exchange{Network: 1, Address: sampleAddress })
 	order := sampleOrder(t)
-	order.Save(tx, 0)
+	if err := order.Save(tx, 0).Error; err != nil {
+		t.Errorf(err.Error())
+	}
 	handler := getTestOrderBookHandler(tx)
-	request, _ := http.NewRequest("GET", "/v0/orderbook?blockhash=x&quoteTokenAddress=0x1dad4783cf3fe3085c1426157ab175a6119a04ba&baseTokenAddress=0x05d090b51c40b020eab3bfcb6a2dff130df22e9c&_expTime=0", nil)
+	request, _ := http.NewRequest("GET", "/v0/orderbook?blockhash=x&quoteAssetData=0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba&baseAssetData=0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c&_expTime=0", nil)
 	recorder := httptest.NewRecorder()
 	handler(recorder, request)
 	if recorder.Code != 200 {
@@ -385,7 +433,7 @@ func TestOrderBookLookup(t *testing.T) {
 		t.Errorf("Unexpected Content-Type: '%v'", contentType)
 	}
 	response := recorder.Body.String()
-	if string(response) != "{\"asks\":[],\"bids\":[{\"makerAddress\":\"0x627306090abab3a6e1400e9345bc60c78a8bef57\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba\",\"takerAssetData\":\"0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x90fe2af704b34e0224bf2299c838e04d4dcf1364\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"50000000000000000000\",\"takerAssetAmount\":\"1000000000000000000\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"5797808836\",\"salt\":\"11065671350908846865864045738088581419204014210814002044381812654087807531\",\"signature\":\"0x1c34f27415dc0177bc4016d48c3ec7eb19ee31124bcf4ca2eb3aba767c24e4712043bf8e49d1e28c6efa5a5e8a6824886700f356a403e0e66c75621e56b184b47b03\"}]}" {
+	if string(response) != "{\"asks\":{\"total\":0,\"page\":1,\"perPage\":20,\"records\":[]},\"bids\":{\"total\":1,\"page\":1,\"perPage\":20,\"records\":[{\"order\":{\"makerAddress\":\"0x627306090abab3a6e1400e9345bc60c78a8bef57\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba\",\"takerAssetData\":\"0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x90fe2af704b34e0224bf2299c838e04d4dcf1364\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"50000000000000000000\",\"takerAssetAmount\":\"1000000000000000000\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"5797808836\",\"salt\":\"11065671350908846865864045738088581419204014210814002044381812654087807531\",\"signature\":\"0x1c34f27415dc0177bc4016d48c3ec7eb19ee31124bcf4ca2eb3aba767c24e4712043bf8e49d1e28c6efa5a5e8a6824886700f356a403e0e66c75621e56b184b47b03\"},\"metaData\":{\"hash\":\"0x73eff0f95a1f6c56e9d9c1c714340307b81a0591e4c63e1e0917722198f5cd6d\",\"feeRate\":0,\"status\":0,\"takerAssetAmountRemaining\":\"1000000000000000000\"}}]}}" {
 		t.Errorf("Got '%v'", string(response))
 	}
 }
