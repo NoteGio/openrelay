@@ -63,9 +63,11 @@ func (sig Signature) verifyEIP712(address *Address, hash []byte) bool {
 		log.Printf("Invalid length: %v", len(sig[:]))
 		return false
 	}
-	v := sig[0]
-	r := sig[1:33]
-	s := sig[33:65]
+	cleanSig := make([]byte, len(sig))
+	copy(cleanSig[:], sig[:])
+	v := cleanSig[0]
+	r := cleanSig[1:33]
+	s := cleanSig[33:65]
 	if v < 27 {
 		return false
 	}
