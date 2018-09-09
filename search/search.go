@@ -144,6 +144,8 @@ func filterByNetworkId(query *gorm.DB, queryObject urlModule.Values, exchangeLoo
 	// exchanges can be considered sanitized data, and even then that only
 	// impacts the length of the query string - the actual addresses are
 	// parameterized.
+
+	// TODO: This breaks if len(exchanges) > 1
 	query = query.Where(fmt.Sprintf("(%v)", strings.Join(queryStrings, " OR ")), exchanges)
 	return query, nil
 }
