@@ -51,9 +51,10 @@ func returnError(w http.ResponseWriter, errResp IngestError, status int) {
 func Handler(publisher channels.Publisher, accounts accountsModule.AccountService, affiliates affiliatesModule.AffiliateService) func(http.ResponseWriter, *http.Request) {
 	var contentType string
 	ValidExchangeAddresses := []types.Address{}
-	// TODO: Look up valid exchanges from Redis dynamically
 	addrBytes := &types.Address{}
+	// TODO: Look this up from the database
 	knownExchanges := []string{
+		"4f833a24e1f95d70f028921e27040ca56e09ab0b",
 		"a458ec0709468996ef2ef668f5e52f37ceb66627",
 		"b65619b82c4d385de0c5b4005452c2fdee0f86d1",
 		"48bacb9266a570d521063ef5dd96e61686dbe788",

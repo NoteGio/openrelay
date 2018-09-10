@@ -5,14 +5,15 @@ import (
 	"github.com/notegio/openrelay/types"
 	"github.com/notegio/openrelay/common"
 	"log"
+	"fmt"
 )
 
 // AddressSplitterConsumer relays orders to different channels based on the
 // exchange specified in the order.
 type AddressSplitterConsumer struct {
-	exchanges        map[types.Address]channels.Publisher
-	defaultPublisher channels.Publisher
-	addrGetter       func(*types.Order) (types.Address)
+	translator       channels.URITranslator
+	suffix           string
+	attrGetter       func(*types.Order) (interface{})
 	s                common.Semaphore
 }
 
@@ -32,19 +33,21 @@ func (consumer *AddressSplitterConsumer) Consume(delivery channels.Delivery) {
 			delivery.Reject()
 			return
 		}
-		publisher, ok := consumer.exchanges[*order.ExchangeAddress]
-		if !ok {
-			publisher = consumer.defaultPublisher
+		publisher, err := consumer.translator.PublisherFromURI(fmt.Sprintf("queue://%v-%v", consumer.attrGetter(order), consumer.suffix))
+		if err != nil {
+			log.Printf("Error producing publisher for %v", consumer.attrGetter(order))
+			delivery.Reject()
+			return
 		}
 		publisher.Publish(payload)
 		delivery.Ack()
 	}()
 }
 
-func NewExchangeSplitterConsumer(exchanges map[types.Address]channels.Publisher, defaultPublisher channels.Publisher, concurrency int) (*AddressSplitterConsumer) {
-	return &AddressSplitterConsumer{exchanges, defaultPublisher, func(order *types.Order) (types.Address) {return *order.ExchangeAddress}, make(common.Semaphore, concurrency)}
+func NewExchangeSplitterConsumer(translator channels.URITranslator, suffix string, concurrency int) (*AddressSplitterConsumer) {
+	return &AddressSplitterConsumer{translator, suffix, func(order *types.Order) (interface{}) {return order.ExchangeAddress}, make(common.Semaphore, concurrency)}
 }
 
-func NewMakerSplitterConsumer(exchanges map[types.Address]channels.Publisher, defaultPublisher channels.Publisher, concurrency int) (*AddressSplitterConsumer) {
-	return &AddressSplitterConsumer{exchanges, defaultPublisher, func(order *types.Order) (types.Address) {return *order.Maker}, make(common.Semaphore, concurrency)}
+func NewMakerSplitterConsumer(translator channels.URITranslator, suffix string, concurrency int) (*AddressSplitterConsumer) {
+	return &AddressSplitterConsumer{translator, suffix, func(order *types.Order) (interface{}) {return order.Maker}, make(common.Semaphore, concurrency)}
 }
