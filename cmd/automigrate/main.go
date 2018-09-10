@@ -23,7 +23,7 @@ func main() {
 	if err := db.AutoMigrate(&dbModule.Exchange{}).Error; err != nil {
 		log.Fatalf("Error migrating cancellation table: %v", err.Error())
 	}
-	kovanAddress, _ := common.HexToAddress("0xa458ec0709468996ef2ef668f5e52f37ceb66627")
+	kovanAddress, _ := common.HexToAddress("0x35dd2932454449b14cee11a94d3674a936d5d7b2")
 	db.Where(
 		&dbModule.Exchange{Network: 42},
 	).FirstOrCreate(&dbModule.Exchange{Network: 42, Address: kovanAddress })
@@ -31,6 +31,10 @@ func main() {
 	db.Where(
 		&dbModule.Exchange{Network: 50},
 	).FirstOrCreate(&dbModule.Exchange{Network: 50, Address: ganacheAddress })
+	mainnetAddress, _ := common.HexToAddress("0x4f833a24e1f95d70f028921e27040ca56e09ab0b")
+	db.Where(
+		&dbModule.Exchange{Network: 1},
+	).FirstOrCreate(&dbModule.Exchange{Network: 50, Address: mainnetAddress })
 
 	if err := db.Model(&dbModule.Order{}).AddIndex("idx_order_maker_asset_taker_asset_data", "maker_asset_data", "taker_asset_data").Error; err != nil {
 		log.Fatalf("Error adding token pair index: %v", err.Error())
