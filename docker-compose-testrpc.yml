@@ -54,7 +54,7 @@ services:
       context: ./
       dockerfile: Dockerfile.exchangesplitter
     image: "openrelay/exchangesplitter:${TAG:-latest}"
-    command: ["/exchangesplitter", "${REDIS_HOST:-redis:6379}", "queue://ingest", "queue://canceluptocheck", "0x1dad4783cf3fe3085c1426157ab175a6119a04ba=queue://canceluptocheck-othernet"]
+    command: ["/exchangesplitter", "${REDIS_HOST:-redis:6379}", "queue://ingest", "testrpc"]
     depends_on:
       - redis
       - corebuild
@@ -400,7 +400,7 @@ services:
       context: ./
       dockerfile: Dockerfile.canceluptofilter
     image: "openrelay/canceluptofilter:${TAG:-latest}"
-    command: ["/canceluptofilter", "${REDIS_HOST:-redis:6379}", "postgres://cancelfilter@postgres", "env://POSTGRES_PASSWORD", "queue://canceluptocheck=>queue://fillupdate", "queue://cancelrecheck=>queue://fillrecheck"]
+    command: ["/canceluptofilter", "${REDIS_HOST:-redis:6379}", "postgres://cancelfilter@postgres", "env://POSTGRES_PASSWORD", "queue://0x48bacb9266a570d521063ef5dd96e61686dbe788-testrpc=>queue://fillupdate", "queue://cancelrecheck=>queue://fillrecheck"]
     environment:
       POSTGRES_PASSWORD: password
     depends_on:
@@ -429,7 +429,7 @@ services:
       context: ./
       dockerfile: Dockerfile.queuemonitor
     image: "openrelay/queuemonitor:${TAG:-latest}"
-    command: ["/queuemonitor", "${REDIS_HOST:-redis:6379}", "1", "newblocks-ropsten", "ordersfilled", "pgordersfilled", "newblocks", "released-ropsten", "fundcheck-ropsten", "allowanceblocks", "recheck-ropsten", "fillupdate-ropsten", "indexer", "preindexer", "spendblocks-ropsten", "recordspend", "ordersfilled-ropsten", "delay2-ropsten", "released", "fundcheck", "allowanceblocks-ropsten", "recheck2-ropsten", "fillupdate", "fillblocks-ropsten", "spendblocks", "recheck2", "delay1", "delay2", "ingest", "fillblocks", "pgindexer", "delay1-ropsten", "multisigblocks", "recheck", "canceluptoblocks", "recordcancel", "canceluptocheck"]
+    command: ["/queuemonitor", "${REDIS_HOST:-redis:6379}", "1", "newblocks-ropsten", "ordersfilled", "pgordersfilled", "newblocks", "released-ropsten", "fundcheck-ropsten", "allowanceblocks", "recheck-ropsten", "fillupdate-ropsten", "indexer", "preindexer", "spendblocks-ropsten", "recordspend", "ordersfilled-ropsten", "delay2-ropsten", "released", "fundcheck", "allowanceblocks-ropsten", "recheck2-ropsten", "fillupdate", "fillblocks-ropsten", "spendblocks", "recheck2", "delay1", "delay2", "ingest", "fillblocks", "pgindexer", "delay1-ropsten", "multisigblocks", "recheck", "canceluptoblocks", "recordcancel", "0x48bacb9266a570d521063ef5dd96e61686dbe788-testrpc"]
     depends_on:
       - redis
       - corebuild

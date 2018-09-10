@@ -29,3 +29,40 @@ func PublisherFromURI(uri string, redisClient *redis.Client) (Publisher, error) 
 		return nil, errors.New("Must specify uri starting with queue:// or topic://")
 	}
 }
+
+type URITranslator interface {
+	ConsumerFromURI(string) (ConsumerChannel, error)
+	PublisherFromURI(string) (Publisher, error)
+}
+
+type RedisURITranslator struct {
+	redisClient *redis.Client
+}
+
+func (rut *RedisURITranslator) ConsumerFromURI(uri string) (ConsumerChannel, error) {
+	return ConsumerFromURI(uri, rut.redisClient)
+}
+
+func (rut *RedisURITranslator) PublisherFromURI(uri string) (Publisher, error) {
+	return PublisherFromURI(uri, rut.redisClient)
+}
+
+func NewRedisURITranslator(redisClient *redis.Client) (URITranslator) {
+	return &RedisURITranslator{redisClient}
+}
+
+type MockURITranslator struct {
+	redisClient *redis.Client
+}
+
+func (rut *MockURITranslator) ConsumerFromURI(uri string) (ConsumerChannel, error) {
+	return ConsumerFromURI(uri, rut.redisClient)
+}
+
+func (rut *MockURITranslator) PublisherFromURI(uri string) (Publisher, error) {
+	return PublisherFromURI(uri, rut.redisClient)
+}
+
+func NewMockURITranslator(redisClient *redis.Client) (URITranslator) {
+	return &MockURITranslator{redisClient}
+}
