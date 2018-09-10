@@ -10,7 +10,6 @@ import (
 	// "github.com/ethereum/go-ethereum/accounts/abi"
 	"math/big"
 	// "strconv"
-	// "log"
 )
 
 // Order represents an 0x order object
@@ -153,10 +152,24 @@ func (order *Order) fromStrings(maker, taker, makerToken, takerToken, feeRecipie
 }
 
 func (order *Order) Hash() []byte {
+
+	eip191Header := []byte{25, 1}
+	twelveNullBytes := [12]byte{}  // Addresses are 20 bytes, but the hashes expect 32, so we'll just add twelveNullBytes before each address
 	domainSchemaSha := sha3.NewKeccak256()
-	domainSchemaSha.Write([]byte("DomainSeparator(address contract)"))
+	domainSchemaSha.Write([]byte("EIP712Domain(string name,string version,address verifyingContract)"))
+	domainSha := sha3.NewKeccak256()
+	nameSha := sha3.NewKeccak256()
+	nameSha.Write([]byte("0x Protocol"))
+	versionSha := sha3.NewKeccak256()
+	versionSha.Write([]byte("2"))
+	domainSha.Write(domainSchemaSha.Sum(nil))
+	domainSha.Write(nameSha.Sum(nil))
+	domainSha.Write(versionSha.Sum(nil))
+	domainSha.Write(twelveNullBytes[:])
+	domainSha.Write(order.ExchangeAddress[:])
+
 	orderSchemaSha := sha3.NewKeccak256()
-	orderSchemaSha.Write([]byte("Order(address makerAddress,address takerAddress,address feeRecipientAddress,address senderAddress,uint256 makerAssetAmount,uint256 takerAssetAmount,uint256 makerFee,uint256 takerFee,uint256 expirationTimeSeconds,uint256 salt,bytes makerAssetData,bytes takerAssetData,)"))
+	orderSchemaSha.Write([]byte("Order(address makerAddress,address takerAddress,address feeRecipientAddress,address senderAddress,uint256 makerAssetAmount,uint256 takerAssetAmount,uint256 makerFee,uint256 takerFee,uint256 expirationTimeSeconds,uint256 salt,bytes makerAssetData,bytes takerAssetData)"))
 	exchangeSha := sha3.NewKeccak256()
 	exchangeSha.Write(order.ExchangeAddress[:])
 	makerAssetDataSha := sha3.NewKeccak256()
@@ -164,9 +177,14 @@ func (order *Order) Hash() []byte {
 	takerAssetDataSha := sha3.NewKeccak256()
 	takerAssetDataSha.Write(order.TakerAssetData[:])
 	orderSha := sha3.NewKeccak256()
+	orderSha.Write(orderSchemaSha.Sum(nil))
+	orderSha.Write(twelveNullBytes[:])
 	orderSha.Write(order.Maker[:])
+	orderSha.Write(twelveNullBytes[:])
 	orderSha.Write(order.Taker[:])
+	orderSha.Write(twelveNullBytes[:])
 	orderSha.Write(order.FeeRecipient[:])
+	orderSha.Write(twelveNullBytes[:])
 	orderSha.Write(order.SenderAddress[:])
 	orderSha.Write(order.MakerAssetAmount[:])
 	orderSha.Write(order.TakerAssetAmount[:])
@@ -178,9 +196,8 @@ func (order *Order) Hash() []byte {
 	orderSha.Write(takerAssetDataSha.Sum(nil))
 
 	sha := sha3.NewKeccak256()
-	sha.Write(domainSchemaSha.Sum(nil))
-	sha.Write(exchangeSha.Sum(nil))
-	sha.Write(orderSchemaSha.Sum(nil))
+	sha.Write(eip191Header)
+	sha.Write(domainSha.Sum(nil))
 	sha.Write(orderSha.Sum(nil))
 
 	return sha.Sum(nil)

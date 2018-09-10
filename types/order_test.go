@@ -10,7 +10,7 @@ import (
 	"reflect"
 	"testing"
 	"bytes"
-	"log"
+	// "log"
 )
 
 func checkOrder(order *types.Order, t *testing.T) {
@@ -44,13 +44,13 @@ func checkOrder(order *types.Order, t *testing.T) {
 	if hex.EncodeToString(order.ExpirationTimestampInSec[:]) != "0000000000000000000000000000000000000000000000000000000000000000" {
 		t.Errorf("Unexpected ExpirationTimestampInSec: %#x", order.ExpirationTimestampInSec[:])
 	}
-	if hex.EncodeToString(order.ExchangeAddress[:]) != "b69e673309512a9d726f87304c6984054f87a93b" {
+	if hex.EncodeToString(order.ExchangeAddress[:]) != "1dc4c1cefef38a777b15aa20260a54e584b16c48" {
 		t.Errorf("Unexpected ExchangeAddress: %#x", order.ExchangeAddress[:])
 	}
 	if hex.EncodeToString(order.Salt[:]) != "0000000000000000000000000000000000000000000000000000000000000000" {
 		t.Errorf("Unexpected Salt: %#x", order.Salt[:])
 	}
-	if hex.EncodeToString(order.Hash()) != "367ad7730eb8b5feab8a9c9f47c6fcba77a2d4df125ee6a59cc26ac955710f7e" {
+	if hex.EncodeToString(order.Hash()) != "434c6b41e2fb6dfcfe1b45c4492fb03700798e9c1afc6f801ba6203f948c1fa7" {
 		t.Errorf("Hashes not equal %x", order.Hash())
 	}
 }
@@ -58,7 +58,7 @@ func checkOrder(order *types.Order, t *testing.T) {
 func TestOrderHash(t *testing.T) {
 	order := &types.Order{}
 	order.Initialize()
-	exchangeAddressBytes, err := types.HexStringToBytes("b69e673309512a9d726f87304c6984054f87a93b")
+	exchangeAddressBytes, err := types.HexStringToBytes("1dc4c1cefef38a777b15aa20260a54e584b16c48")
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -69,7 +69,7 @@ func TestOrderHash(t *testing.T) {
 func TestOrderToFromBytes(t *testing.T) {
 	order := &types.Order{}
 	order.Initialize()
-	exchangeAddressBytes, err := types.HexStringToBytes("b69e673309512a9d726f87304c6984054f87a93b")
+	exchangeAddressBytes, err := types.HexStringToBytes("1dc4c1cefef38a777b15aa20260a54e584b16c48")
 	if err != nil { t.Errorf(err.Error()) }
 	copy(order.ExchangeAddress[:], exchangeAddressBytes)
 	order2, err := types.OrderFromBytes(order.Bytes())
@@ -83,7 +83,7 @@ func TestOrderToFromBytes(t *testing.T) {
 }
 
 func TestOrderFromRawbytes(t *testing.T) {
-	orderBytes, err := hex.DecodeString("f9020994324454186bb728a3ea55750e0618ff1b18ce6cf894000000000000000000000000000000000000000094d0a1e359811322d97991e03f863a0c30c2cf029c946ff6c0ff1d68b964901f986d4c9fa3ac68346570a4f47261b0000000000000000000000000d0a1e359811322d97991e03f863a0c30c2cf029ca4f47261b00000000000000000000000006ff6c0ff1d68b964901f986d4c9fa3ac6834657094c22d5b2951db72b44cfb8089bb8cd374a3c354ea94b65619b82c4d385de0c5b4005452c2fdee0f86d1940000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000006a94d74f430000a000000000000000000000000000000000000000000000000029a2241af62c0000a00000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000002c68af0bb140000a0000000000000000000000000000000000000000000000000000000005b942ad1a00000000000000000000000000000000000000000000000000000000000000002b8421c811338af1c62c94861c1ad4f019ab611e37ba65cf0a1d44565fd466f3f3399200ccb62187d9597bfc28eee4ac9a34db2fc87119747433e74536a6f37bedd7b8a02a0000000000000000000000000000000000000000000000000000000000000000080")
+	orderBytes, err := hex.DecodeString("f9020994627306090abab3a6e1400e9345bc60c78a8bef57940000000000000000000000000000000000000000941dad4783cf3fe3085c1426157ab175a6119a04ba9405d090b51c40b020eab3bfcb6a2dff130df22e9ca4f47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04baa4f47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c9400000000000000000000000000000000000000009490fe2af704b34e0224bf2299c838e04d4dcf1364940000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000002b5e3af16b1880000a00000000000000000000000000000000000000000000000000de0b6b3a7640000a00000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000159938ac4a0000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222bb8421ba0ebab93c67e7cdf45e50c83b3a47681918c3f47f220935eb92b7338788024c82a0329105e2259b128ec811b69eb9eee253027089d544c37a1cc33b433ab9b8e03a0000000000000000000000000000000000000000000000000000000000000000080")
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -111,7 +111,7 @@ func scan(scanner sql.Scanner, data []byte) error {
 func TestValuerInterfaceAddress(t *testing.T) {
 	order := &types.Order{}
 	order.Initialize()
-	exchangeAddressBytes, err := types.HexStringToBytes("b69e673309512a9d726f87304c6984054f87a93b")
+	exchangeAddressBytes, err := types.HexStringToBytes("1dc4c1cefef38a777b15aa20260a54e584b16c48")
 	if err != nil { t.Errorf(err.Error()) }
 	copy(order.ExchangeAddress[:], exchangeAddressBytes)
 	if ExchangeAddress, _ := value(order.ExchangeAddress); !reflect.DeepEqual(ExchangeAddress, exchangeAddressBytes) {
@@ -122,7 +122,7 @@ func TestValuerInterfaceAddress(t *testing.T) {
 func TestValuerInterfaceUint256(t *testing.T) {
 	order := &types.Order{}
 	order.Initialize()
-	exchangeAddressBytes, err := types.HexStringToBytes("b69e673309512a9d726f87304c6984054f87a93b")
+	exchangeAddressBytes, err := types.HexStringToBytes("1dc4c1cefef38a777b15aa20260a54e584b16c48")
 	if err != nil { t.Errorf(err.Error()) }
 	copy(order.ExchangeAddress[:], exchangeAddressBytes)
 	if MakerAssetAmount, _ := value(order.MakerAssetAmount); !reflect.DeepEqual(MakerAssetAmount, make([]byte, 32)) {
@@ -143,7 +143,7 @@ func TestScannerInterfaceUint256(t *testing.T) {
 func TestJsonMarshal(t *testing.T) {
 	order := &types.Order{}
 	order.Initialize()
-	exchangeAddressBytes, err := types.HexStringToBytes("b69e673309512a9d726f87304c6984054f87a93b")
+	exchangeAddressBytes, err := types.HexStringToBytes("1dc4c1cefef38a777b15aa20260a54e584b16c48")
 	if err != nil { t.Errorf(err.Error()) }
 	copy(order.ExchangeAddress[:], exchangeAddressBytes)
 	sigBytes, err := types.HexStringToBytes("006bcc503876436ae6ebddecc16f95fdc74945ba85aa7debabdfa4a708a80b0272520d4f331a50396583db9a06bce884abc82219bfe180ef0093b0534786c996c203")
@@ -154,14 +154,14 @@ func TestJsonMarshal(t *testing.T) {
 		t.Errorf("Got error marshalling: %v", err.Error())
 		return
 	}
-	if string(data) != "{\"makerAddress\":\"0x0000000000000000000000000000000000000000\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0x0000000000000000000000000000000000000000\",\"takerAssetData\":\"0x0000000000000000000000000000000000000000\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0xb69e673309512a9d726f87304c6984054f87a93b\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"0\",\"takerAssetAmount\":\"0\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"0\",\"salt\":\"0\",\"signature\":\"0x006bcc503876436ae6ebddecc16f95fdc74945ba85aa7debabdfa4a708a80b0272520d4f331a50396583db9a06bce884abc82219bfe180ef0093b0534786c996c203\"}" {
+	if string(data) != "{\"makerAddress\":\"0x0000000000000000000000000000000000000000\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0x0000000000000000000000000000000000000000\",\"takerAssetData\":\"0x0000000000000000000000000000000000000000\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x1dc4c1cefef38a777b15aa20260a54e584b16c48\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"0\",\"takerAssetAmount\":\"0\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"0\",\"salt\":\"0\",\"signature\":\"0x006bcc503876436ae6ebddecc16f95fdc74945ba85aa7debabdfa4a708a80b0272520d4f331a50396583db9a06bce884abc82219bfe180ef0093b0534786c996c203\"}" {
 		t.Errorf("Got unexpected JSON value: %v", string(data))
 	}
 }
 func TestJsonMarshalSlice(t *testing.T) {
 	order := &types.Order{}
 	order.Initialize()
-	exchangeAddressBytes, err := types.HexStringToBytes("b69e673309512a9d726f87304c6984054f87a93b")
+	exchangeAddressBytes, err := types.HexStringToBytes("1dc4c1cefef38a777b15aa20260a54e584b16c48")
 	if err != nil { t.Errorf(err.Error()) }
 	copy(order.ExchangeAddress[:], exchangeAddressBytes)
 	sigBytes, err := types.HexStringToBytes("006bcc503876436ae6ebddecc16f95fdc74945ba85aa7debabdfa4a708a80b0272520d4f331a50396583db9a06bce884abc82219bfe180ef0093b0534786c996c203")
@@ -172,7 +172,7 @@ func TestJsonMarshalSlice(t *testing.T) {
 		t.Errorf("Got error marshalling: %v", err.Error())
 		return
 	}
-	if string(data) != "[{\"makerAddress\":\"0x0000000000000000000000000000000000000000\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0x0000000000000000000000000000000000000000\",\"takerAssetData\":\"0x0000000000000000000000000000000000000000\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0xb69e673309512a9d726f87304c6984054f87a93b\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"0\",\"takerAssetAmount\":\"0\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"0\",\"salt\":\"0\",\"signature\":\"0x006bcc503876436ae6ebddecc16f95fdc74945ba85aa7debabdfa4a708a80b0272520d4f331a50396583db9a06bce884abc82219bfe180ef0093b0534786c996c203\"}]" {
+	if string(data) != "[{\"makerAddress\":\"0x0000000000000000000000000000000000000000\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0x0000000000000000000000000000000000000000\",\"takerAssetData\":\"0x0000000000000000000000000000000000000000\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x1dc4c1cefef38a777b15aa20260a54e584b16c48\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"0\",\"takerAssetAmount\":\"0\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"0\",\"salt\":\"0\",\"signature\":\"0x006bcc503876436ae6ebddecc16f95fdc74945ba85aa7debabdfa4a708a80b0272520d4f331a50396583db9a06bce884abc82219bfe180ef0093b0534786c996c203\"}]" {
 		t.Errorf("Got unexpected JSON value: %v", string(data))
 	}
 }
@@ -226,12 +226,9 @@ func TestJsonUnmarshal(t *testing.T) {
 	if hex.EncodeToString(newOrder.Salt[:]) != "000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b" {
 		t.Errorf("Unexpected Salt: %#x", newOrder.Salt[:])
 	}
-	if hex.EncodeToString(newOrder.Hash()) != "73eff0f95a1f6c56e9d9c1c714340307b81a0591e4c63e1e0917722198f5cd6d" {
+	if hex.EncodeToString(newOrder.Hash()) != "0fa71adbd21643cbb4e87ab8e411655775b626b587e50d7b5303cf1a532e3be7" {
 		t.Errorf("Hashes not equal %x", newOrder.Hash())
 	}
-
-	log.Printf("%#x", newOrder.Bytes())
-
 	if !newOrder.Signature.Verify(newOrder.Maker, newOrder.Hash()) {
 		t.Errorf("Failed to verify order with signature: %#x", newOrder.Signature)
 	}
