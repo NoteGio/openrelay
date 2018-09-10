@@ -47,6 +47,22 @@ func (rut *RedisURITranslator) PublisherFromURI(uri string) (Publisher, error) {
 	return PublisherFromURI(uri, rut.redisClient)
 }
 
-func NewRedisURITraslator(redisClient *redis.Client) (URITranslator) {
+func NewRedisURITranslator(redisClient *redis.Client) (URITranslator) {
 	return &RedisURITranslator{redisClient}
+}
+
+type MockURITranslator struct {
+	redisClient *redis.Client
+}
+
+func (rut *MockURITranslator) ConsumerFromURI(uri string) (ConsumerChannel, error) {
+	return ConsumerFromURI(uri, rut.redisClient)
+}
+
+func (rut *MockURITranslator) PublisherFromURI(uri string) (Publisher, error) {
+	return PublisherFromURI(uri, rut.redisClient)
+}
+
+func NewMockURITranslator(redisClient *redis.Client) (URITranslator) {
+	return &MockURITranslator{redisClient}
 }

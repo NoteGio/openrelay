@@ -24,7 +24,7 @@ func main() {
 	if err != nil {
 		concurrency = 5
 	}
-	translator := channels.NewRedisURITraslator(redisClient)
+	translator := channels.NewRedisURITranslator(redisClient)
 	exchangeSplitter := splitter.NewExchangeSplitterConsumer(translator, suffix, concurrency)
 	sourceConsumerChannel.AddConsumer(exchangeSplitter)
 	sourceConsumerChannel.StartConsuming()
