@@ -17,16 +17,16 @@ import (
 // Everything else will be ignored.
 type FeeInputPayload struct {
 	Maker        string `json:"maker"`
-	FeeRecipient string `json:"feeRecipient"`
+	FeeRecipient string `json:"feeRecipientAddress"`
 	Taker        string `json:"taker"`
-	Sender       string `json:"sender"`
+	Sender       string `json:"senderAddress"`
 }
 
 type FeeResponse struct {
 	MakerFee       string `json:"makerFee"`
 	TakerFee       string `json:"takerFee"`
-	FeeRecipient   string `json:"feeRecipient"`
-	Sender         string `json:"sender"`
+	FeeRecipient   string `json:"feeRecipientAddress"`
+	Sender         string `json:"senderAddress"`
 	TakerToSpecify string `json:"takerToSpecify"`
 }
 
