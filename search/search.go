@@ -2,6 +2,7 @@ package search
 
 import (
 	"encoding/json"
+	"encoding/hex"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/notegio/openrelay/blockhash"
@@ -12,6 +13,7 @@ import (
 	urlModule "net/url"
 	"strconv"
 	"strings"
+	"bytes"
 )
 
 func FormatResponse(orders []dbModule.Order, format string, total, page, perPage int) ([]byte, string, error) {
@@ -41,7 +43,7 @@ func FormatSingleResponse(order *dbModule.Order, format string) ([]byte, string,
 	return result, "application/json", err
 }
 
-func applyFilter(query *gorm.DB, queryField, dbField string, queryObject urlModule.Values) (*gorm.DB, error) {
+func applyAddressFilter(query *gorm.DB, queryField, dbField string, queryObject urlModule.Values) (*gorm.DB, error) {
 	if address := queryObject.Get(queryField); address != "" {
 		addressBytes, err := common.HexToBytes(address)
 		if err != nil {
@@ -54,6 +56,47 @@ func applyFilter(query *gorm.DB, queryField, dbField string, queryObject urlModu
 	return query, nil
 }
 
+func applyAssetDataFilter(query *gorm.DB, queryField, dbField string, queryObject urlModule.Values) (*gorm.DB, error) {
+	if assetData := queryObject.Get(queryField); assetData != "" {
+		assetDataBytes, err := common.HexToAssetData(assetData)
+		if err != nil {
+			return query, err
+		}
+		whereClause := fmt.Sprintf("%v = ?", dbField)
+		filteredQuery := query.Where(whereClause, assetDataBytes)
+		return filteredQuery, filteredQuery.Error
+	}
+	return query, nil
+}
+func applyAssetDataOrFilter(query *gorm.DB, queryField, dbField1, dbField2 string, queryObject urlModule.Values) (*gorm.DB, error) {
+	if assetData := queryObject.Get(queryField); assetData != "" {
+		assetDataBytes, err := common.HexToAssetData(assetData)
+		if err != nil {
+			return query, err
+		}
+		whereClause := fmt.Sprintf("%v = ? or %v = ?", dbField1, dbField2)
+		filteredQuery := query.Where(whereClause, assetDataBytes, assetDataBytes)
+		return filteredQuery, filteredQuery.Error
+	}
+	return query, nil
+}
+
+func escape(queryBytes []byte) []byte {
+	return bytes.Replace(bytes.Replace(queryBytes, []byte("?"), []byte("\\?"), -1), []byte("_"), []byte("\\_"), -1)
+}
+
+func applyStartsWithFilter(query *gorm.DB, queryField, dbField string, queryObject urlModule.Values) (*gorm.DB, error) {
+	if prefix := queryObject.Get(queryField); prefix != "" {
+		prefixBytes, err := hex.DecodeString(strings.TrimPrefix(prefix, "0x"))
+		if err != nil {
+			return query, err
+		}
+		whereClause := fmt.Sprintf("%v LIKE ?", dbField)
+		filteredQuery := query.Where(whereClause, append(escape(prefixBytes), []byte("%")...))
+		return filteredQuery, filteredQuery.Error
+	}
+	return query, nil
+}
 func applyOrFilter(query *gorm.DB, queryField, dbField1, dbField2 string, queryObject urlModule.Values) (*gorm.DB, error) {
 	if address := queryObject.Get(queryField); address != "" {
 		addressBytes, err := common.HexToBytes(address)
@@ -165,37 +208,45 @@ func SearchHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 		}
 
 
-		query, err = applyFilter(query, "exchangeContractAddress", "exchange_address", queryObject)
+		query, err = applyAddressFilter(query, "exchangeContractAddress", "exchange_address", queryObject)
 		if err != nil {
 			errs = append(errs, ValidationError{err.Error(), 1003, "exchangeContractAddress"})
 		}
-		query, err = applyFilter(query, "makerAssetAddress", "maker_asset_address", queryObject)
+		query, err = applyAddressFilter(query, "makerAssetAddress", "maker_asset_address", queryObject)
 		if err != nil {
 			errs = append(errs, ValidationError{err.Error(), 1003, "makerAssetAddress"})
 		}
-		query, err = applyFilter(query, "takerAssetAddress", "taker_asset_address", queryObject)
+		query, err = applyAddressFilter(query, "takerAssetAddress", "taker_asset_address", queryObject)
 		if err != nil {
 			errs = append(errs, ValidationError{err.Error(), 1003, "takerAssetAddress"})
 		}
-		query, err = applyFilter(query, "makerAssetData", "maker_asset_data", queryObject)
+		query, err = applyAssetDataFilter(query, "makerAssetData", "maker_asset_data", queryObject)
 		if err != nil {
 			errs = append(errs, ValidationError{err.Error(), 1003, "makerAssetData"})
 		}
-		query, err = applyFilter(query, "takerAssetData", "taker_asset_data", queryObject)
+		query, err = applyAssetDataFilter(query, "takerAssetData", "taker_asset_data", queryObject)
 		if err != nil {
 			errs = append(errs, ValidationError{err.Error(), 1003, "takerAssetData"})
 		}
-		query, err = applyFilter(query, "maker", "maker", queryObject)
+		query, err = applyAddressFilter(query, "makerAddress", "maker", queryObject)
 		if err != nil {
 			errs = append(errs, ValidationError{err.Error(), 1003, "maker"})
 		}
-		query, err = applyFilter(query, "taker", "taker", queryObject)
+		query, err = applyAddressFilter(query, "takerAddress", "taker", queryObject)
 		if err != nil {
 			errs = append(errs, ValidationError{err.Error(), 1003, "taker"})
 		}
-		query, err = applyFilter(query, "feeRecipient", "fee_recipient", queryObject)
+		query, err = applyAddressFilter(query, "feeRecipient", "fee_recipient", queryObject)
 		if err != nil {
 			errs = append(errs, ValidationError{err.Error(), 1003, "feeRecipient"})
+		}
+		query, err = applyStartsWithFilter(query, "makerAssetProxyId", "maker_asset_data", queryObject)
+		if err != nil {
+			errs = append(errs, ValidationError{err.Error(), 1003, "makerAssetProxyId"})
+		}
+		query, err = applyStartsWithFilter(query, "takerAssetProxyId", "taker_asset_data", queryObject)
+		if err != nil {
+			errs = append(errs, ValidationError{err.Error(), 1003, "takerAssetProxyId"})
 		}
 		query, err = applyOrFilter(query, "assetAddress", "maker_asset_address", "taker_asset_address", queryObject)
 		if err != nil {
@@ -205,7 +256,7 @@ func SearchHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 		if err != nil {
 			errs = append(errs, ValidationError{err.Error(), 1001, "assetData"})
 		}
-		query, err = applyOrFilter(query, "trader", "maker", "taker", queryObject)
+		query, err = applyOrFilter(query, "traderAddress", "maker", "taker", queryObject)
 		if err != nil {
 			errs = append(errs, ValidationError{err.Error(), 1003, "trader"})
 		}
