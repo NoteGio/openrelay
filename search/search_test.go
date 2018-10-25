@@ -235,19 +235,26 @@ func TestFilterMakerTokenAndTakerTokenContract(t *testing.T) {
 }
 
 func TestFilterMaker(t *testing.T) {
-	filterContractRequest("maker=0x627306090abab3a6e1400e9345bc60c78a8bef57", "maker=0x90fe2af704b34e0224bf2299c838e04d4dcf1300", t)
+	filterContractRequest("makerAddress=0x627306090abab3a6e1400e9345bc60c78a8bef57", "makerAddress=0x90fe2af704b34e0224bf2299c838e04d4dcf1300", t)
 }
 
 func TestFilterTrader(t *testing.T) {
-	filterContractRequest("trader=0x627306090abab3a6e1400e9345bc60c78a8bef57", "trader=0x90fe2af704b34e0224bf2299c838e04d4dcf1300", t)
+	filterContractRequest("traderAddress=0x627306090abab3a6e1400e9345bc60c78a8bef57", "traderAddress=0x90fe2af704b34e0224bf2299c838e04d4dcf1300", t)
 }
 
 func TestFilterTaker(t *testing.T) {
-	filterContractRequest("taker=0x0000000000000000000000000000000000000000", "taker=0x90fe2af704b34e0224bf2299c838e04d4dcf1300", t)
+	filterContractRequest("takerAddress=0x0000000000000000000000000000000000000000", "takerAddress=0x90fe2af704b34e0224bf2299c838e04d4dcf1300", t)
 }
 
 func TestFilterFeeRecipientTaker(t *testing.T) {
 	filterContractRequest("feeRecipient=0x0000000000000000000000000000000000000000", "feeRecipient=0x90fe2af704b34e0224bf2299c838e04d4dcf1300", t)
+}
+
+func TestFilterMakerAssetProxyId(t *testing.T) {
+	filterContractRequest("makerAssetProxyId=0xf47261b0", "makerAssetProxyId=0x11111111", t)
+}
+func TestFilterTakerAssetProxyId(t *testing.T) {
+	filterContractRequest("takerAssetProxyId=0xf47261b0", "takerAssetProxyId=0x11111111", t)
 }
 
 func TestPagination(t *testing.T) {
