@@ -11,7 +11,36 @@ import (
 	"os"
 	"log"
 	"github.com/rs/cors"
+	"regexp"
 )
+
+type route struct {
+    pattern *regexp.Regexp
+    handler http.Handler
+}
+
+type regexpHandler struct {
+    routes []*route
+}
+
+func (h *regexpHandler) Handler(pattern *regexp.Regexp, handler http.Handler) {
+    h.routes = append(h.routes, &route{pattern, handler})
+}
+
+func (h *regexpHandler) HandleFunc(pattern *regexp.Regexp, handler func(http.ResponseWriter, *http.Request)) {
+    h.routes = append(h.routes, &route{pattern, http.HandlerFunc(handler)})
+}
+
+func (h *regexpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+    for _, route := range h.routes {
+        if route.pattern.MatchString(r.URL.Path) {
+            route.handler.ServeHTTP(w, r)
+            return
+        }
+    }
+    // no pattern matched; send 404 response
+    http.NotFound(w, r)
+}
 
 func main() {
 	redisURL := os.Args[1]
@@ -42,10 +71,10 @@ func main() {
 	handler := ingest.Handler(publisher, accountService, affiliateService)
 	feeHandler := ingest.FeeHandler(publisher, accountService, affiliateService, defaultFeeRecipientBytes)
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/v2/order", handler)
-	mux.HandleFunc("/v2/order_config", feeHandler)
-	mux.HandleFunc("/_hc", ingest.HealthCheckHandler(redisClient))
+	mux := &regexpHandler{[]*route{}}
+	mux.HandleFunc(regexp.MustCompile("^(/[^/]+)?/v2/order$"), handler)
+	mux.HandleFunc(regexp.MustCompile("^(/[^/]+)?/v2/order_config$"), feeHandler)
+	mux.HandleFunc(regex.MustCompile("^/_hc$"), ingest.HealthCheckHandler(redisClient))
 	corsHandler := cors.Default().Handler(mux)
 	log.Printf("Order Ingest Serving on :%v", port)
 	http.ListenAndServe(":"+port, corsHandler)

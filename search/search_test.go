@@ -56,6 +56,8 @@ func saltedSampleOrder(t *testing.T) *dbModule.Order {
 	return order
 }
 
+// TODO: Mock pool injection
+
 func getTestSearchHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 	_, consumerChannel := channels.MockChannel()
 	blockHash := blockhash.NewChanneledBlockHash(consumerChannel)
@@ -173,7 +175,7 @@ func filterContractRequest(queryString, emptyQueryString string, t *testing.T) {
 		t.Errorf(err.Error())
 		return
 	}
-	tx := db.Begin()
+	tx := db.Begin().Debug()
 	defer func() {
 		tx.Rollback()
 		db.Close()

@@ -163,9 +163,9 @@ newvendor:
 	govendor add +external
 
 0x-testrpc-snapshot.tar.gz:
-	wget https://s3.amazonaws.com/testrpc-shapshots/2c62504b79315099346665225d3637662ff87db6.zip -O testrpc-db.zip
+	wget https://s3.amazonaws.com/testrpc-shapshots/965d6098294beb22292090c461151274ee6f9a26.zip -O testrpc-db.zip
 	mkdir -p /tmp/testrpc-snapshot
 	unzip testrpc-db.zip -d /tmp/testrpc-snapshot
-	tar -czf 0x-testrpc-snapshot.tar.gz -C /tmp/testrpc-snapshot/ .
+	tar -czf 0x-testrpc-snapshot.tar.gz -C /tmp/testrpc-snapshot/0x_ganache_snapshot .
 	rm testrpc-db.zip
 	rm -rf /tmp/testrpc-snapshot

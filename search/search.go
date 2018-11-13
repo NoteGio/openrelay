@@ -8,7 +8,7 @@ import (
 	"github.com/notegio/openrelay/blockhash"
 	"github.com/notegio/openrelay/common"
 	dbModule "github.com/notegio/openrelay/db"
-	// "github.com/notegio/openrelay/types"
+	"github.com/notegio/openrelay/types"
 	"net/http"
 	urlModule "net/url"
 	"strconv"
@@ -193,79 +193,90 @@ func filterByNetworkId(query *gorm.DB, queryObject urlModule.Values, exchangeLoo
 	return query, nil
 }
 
-func SearchHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
+func QueryFilter(query *gorm.DB, queryObject urlModule.Values) (*gorm.DB, []ValidationError) {
+	query = query.Where("status = ?", dbModule.StatusOpen)
+
+	errs := []ValidationError{}
+
+	query, err := applyAddressFilter(query, "exchangeContractAddress", "exchange_address", queryObject)
+	if err != nil {
+		errs = append(errs, ValidationError{err.Error(), 1003, "exchangeContractAddress"})
+	}
+	query, err = applyAddressFilter(query, "makerAssetAddress", "maker_asset_address", queryObject)
+	if err != nil {
+		errs = append(errs, ValidationError{err.Error(), 1003, "makerAssetAddress"})
+	}
+	query, err = applyAddressFilter(query, "takerAssetAddress", "taker_asset_address", queryObject)
+	if err != nil {
+		errs = append(errs, ValidationError{err.Error(), 1003, "takerAssetAddress"})
+	}
+	query, err = applyAssetDataFilter(query, "makerAssetData", "maker_asset_data", queryObject)
+	if err != nil {
+		errs = append(errs, ValidationError{err.Error(), 1003, "makerAssetData"})
+	}
+	query, err = applyAssetDataFilter(query, "takerAssetData", "taker_asset_data", queryObject)
+	if err != nil {
+		errs = append(errs, ValidationError{err.Error(), 1003, "takerAssetData"})
+	}
+	query, err = applyAddressFilter(query, "makerAddress", "maker", queryObject)
+	if err != nil {
+		errs = append(errs, ValidationError{err.Error(), 1003, "maker"})
+	}
+	query, err = applyAddressFilter(query, "takerAddress", "taker", queryObject)
+	if err != nil {
+		errs = append(errs, ValidationError{err.Error(), 1003, "taker"})
+	}
+	query, err = applyAddressFilter(query, "feeRecipient", "fee_recipient", queryObject)
+	if err != nil {
+		errs = append(errs, ValidationError{err.Error(), 1003, "feeRecipient"})
+	}
+	query, err = applyStartsWithFilter(query, "makerAssetProxyId", "maker_asset_data", queryObject)
+	if err != nil {
+		errs = append(errs, ValidationError{err.Error(), 1003, "makerAssetProxyId"})
+	}
+	query, err = applyStartsWithFilter(query, "takerAssetProxyId", "taker_asset_data", queryObject)
+	if err != nil {
+		errs = append(errs, ValidationError{err.Error(), 1003, "takerAssetProxyId"})
+	}
+	query, err = applyOrFilter(query, "assetAddress", "maker_asset_address", "taker_asset_address", queryObject)
+	if err != nil {
+		errs = append(errs, ValidationError{err.Error(), 1003, "assetAddress"})
+	}
+	query, err = applyOrFilter(query, "assetData", "maker_address", "taker_address", queryObject)
+	if err != nil {
+		errs = append(errs, ValidationError{err.Error(), 1001, "assetData"})
+	}
+	query, err = applyOrFilter(query, "traderAddress", "maker", "taker", queryObject)
+	if err != nil {
+		errs = append(errs, ValidationError{err.Error(), 1003, "trader"})
+	}
+
+
+	query = query.Where("expiration_timestamp_in_sec > ?", getExpTime(queryObject))
+	return query, errs
+}
+
+func SearchHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request, types.Pool) {
 	exchangeLookup := dbModule.NewExchangeLookup(db)
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request, pool types.Pool) {
 		queryObject := r.URL.Query()
-		query := db.Model(&dbModule.Order{}).Where("status = ?", dbModule.StatusOpen)
+		query, errs := QueryFilter(db.Model(&dbModule.Order{}), queryObject)
+		query, err := pool.Filter(query)
+		if err != nil {
+			returnError(w, fmt.Errorf("Pool filter error: %v", err.Error()), 404)
+			return
+		}
 
-		errs := []ValidationError{}
-
-		query, err := filterByNetworkId(query, queryObject, exchangeLookup)
-
+		query, err = filterByNetworkId(query, queryObject, exchangeLookup)
 		if err != nil {
 			errs = append(errs, ValidationError{err.Error(), 1006, "networkId"})
-		}
-
-
-		query, err = applyAddressFilter(query, "exchangeContractAddress", "exchange_address", queryObject)
-		if err != nil {
-			errs = append(errs, ValidationError{err.Error(), 1003, "exchangeContractAddress"})
-		}
-		query, err = applyAddressFilter(query, "makerAssetAddress", "maker_asset_address", queryObject)
-		if err != nil {
-			errs = append(errs, ValidationError{err.Error(), 1003, "makerAssetAddress"})
-		}
-		query, err = applyAddressFilter(query, "takerAssetAddress", "taker_asset_address", queryObject)
-		if err != nil {
-			errs = append(errs, ValidationError{err.Error(), 1003, "takerAssetAddress"})
-		}
-		query, err = applyAssetDataFilter(query, "makerAssetData", "maker_asset_data", queryObject)
-		if err != nil {
-			errs = append(errs, ValidationError{err.Error(), 1003, "makerAssetData"})
-		}
-		query, err = applyAssetDataFilter(query, "takerAssetData", "taker_asset_data", queryObject)
-		if err != nil {
-			errs = append(errs, ValidationError{err.Error(), 1003, "takerAssetData"})
-		}
-		query, err = applyAddressFilter(query, "makerAddress", "maker", queryObject)
-		if err != nil {
-			errs = append(errs, ValidationError{err.Error(), 1003, "maker"})
-		}
-		query, err = applyAddressFilter(query, "takerAddress", "taker", queryObject)
-		if err != nil {
-			errs = append(errs, ValidationError{err.Error(), 1003, "taker"})
-		}
-		query, err = applyAddressFilter(query, "feeRecipient", "fee_recipient", queryObject)
-		if err != nil {
-			errs = append(errs, ValidationError{err.Error(), 1003, "feeRecipient"})
-		}
-		query, err = applyStartsWithFilter(query, "makerAssetProxyId", "maker_asset_data", queryObject)
-		if err != nil {
-			errs = append(errs, ValidationError{err.Error(), 1003, "makerAssetProxyId"})
-		}
-		query, err = applyStartsWithFilter(query, "takerAssetProxyId", "taker_asset_data", queryObject)
-		if err != nil {
-			errs = append(errs, ValidationError{err.Error(), 1003, "takerAssetProxyId"})
-		}
-		query, err = applyOrFilter(query, "assetAddress", "maker_asset_address", "taker_asset_address", queryObject)
-		if err != nil {
-			errs = append(errs, ValidationError{err.Error(), 1003, "assetAddress"})
-		}
-		query, err = applyAssetDataOrFilter(query, "assetData", "maker_asset_data", "taker_asset_data", queryObject)
-		if err != nil {
-			errs = append(errs, ValidationError{err.Error(), 1001, "assetData"})
-		}
-		query, err = applyOrFilter(query, "traderAddress", "maker", "taker", queryObject)
-		if err != nil {
-			errs = append(errs, ValidationError{err.Error(), 1003, "trader"})
 		}
 
 		pageInt, perPageInt, err := getPages(queryObject)
 		if err != nil {
 			errs = append(errs, ValidationError{err.Error(), 1001, "page"})
 		}
-		query = query.Where("expiration_timestamp_in_sec > ?", getExpTime(queryObject))
+
 		var count int
 		query.Count(&count)
 		query = query.Offset((pageInt - 1) * perPageInt).Limit(perPageInt)
