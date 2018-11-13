@@ -73,24 +73,20 @@ func TestBloom(t *testing.T) {
 	approvalTopic.SetString("8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925", 16)
 	proxyAddress := common.HexToAddress("0x1dc4c1cefef38a777b15aa20260a54e584b16c48").Big()
 	bloom := types.BytesToBloom(bloomBytes)
-	if !bloom.Test(approvalTopic) {
+	if !types.BloomLookup(bloom, approvalTopic) {
 		t.Errorf("Bloom filter didn't match approval")
 	}
-	if !bloom.Test(proxyAddress) {
+	if !types.BloomLookup(bloom, proxyAddress) {
 		t.Errorf("Bloom filter didn't match proxy")
 	}
-	if bloom.Test(&big.Int{}) {
+	if types.BloomLookup(bloom, &big.Int{}) {
 		t.Errorf("Bloom filter shouldn't have matched empty integer")
 	}
 }
 
 func TestAllowanceFromBlockMatch(t *testing.T) {
 	testLog := allowanceLog("0x1dc4c1cefef38a777b15aa20260a54e584b16c48")
-	bloom := types.Bloom{}
-	bloom.Add(new(big.Int).SetBytes(testLog.Address[:]))
-	for _, topic := range testLog.Topics {
-		bloom.Add(new(big.Int).SetBytes(topic[:]))
-	}
+	bloom := types.BytesToBloom(types.LogsBloom([]*types.Log{testLog}).Bytes())
 	mb := &blocks.MiniBlock{
 		common.Hash{},
 		big.NewInt(0),

@@ -31,6 +31,7 @@ import (
 	"context"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/monitor/blocks"
@@ -48,7 +49,7 @@ func (consumer *multisigBlockConsumer) Consume(delivery channels.Delivery) {
 	if err != nil {
 		log.Printf("Error parsing payload: %v\n", err.Error())
 	}
-	if block.Bloom.Test(consumer.multisigAddress) {
+	if types.BloomLookup(block.Bloom, consumer.multisigAddress) {
 		query := ethereum.FilterQuery{
 			FromBlock: block.Number,
 			ToBlock: block.Number,

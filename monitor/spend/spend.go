@@ -7,7 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-	// "github.com/ethereum/go-ethereum/core/types"
+	coreTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/notegio/openrelay/funds/balance"
 	"github.com/notegio/openrelay/channels"
 	orCommon "github.com/notegio/openrelay/common"
@@ -36,7 +36,7 @@ func (consumer *spendBlockConsumer) Consume(delivery channels.Delivery) {
 	if err != nil {
 		log.Printf("Error parsing payload: %v\n", err.Error())
 	}
-	if block.Bloom.Test(consumer.spendTopic) {
+	if coreTypes.BloomLookup(block.Bloom, consumer.spendTopic) {
 		log.Printf("Block %#x bloom filter indicates spend event", block.Hash)
 		query := ethereum.FilterQuery{
 			FromBlock: block.Number,
