@@ -7,7 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-	// "github.com/ethereum/go-ethereum/core/types"
+	coreTypes "github.com/ethereum/go-ethereum/core/types"
 	// "github.com/notegio/openrelay/funds"
 	"github.com/notegio/openrelay/fillbloom"
 	"github.com/notegio/openrelay/channels"
@@ -41,7 +41,7 @@ func (consumer *fillBlockConsumer) Consume(delivery channels.Delivery) {
 			log.Fatalf("Failed to initialize bloom filter: %v", err.Error())
 		}
 	}
-	if (block.Bloom.Test(consumer.fillTopic) || block.Bloom.Test(consumer.cancelTopic)) && block.Bloom.Test(consumer.exchangeAddress) {
+	if (coreTypes.BloomLookup(block.Bloom, consumer.fillTopic) || coreTypes.BloomLookup(block.Bloom, consumer.cancelTopic)) && coreTypes.BloomLookup(block.Bloom, consumer.exchangeAddress) {
 		log.Printf("Block %#x bloom filter indicates fill event for %#x", block.Hash, consumer.exchangeAddress)
 		query := ethereum.FilterQuery{
 			FromBlock: block.Number,

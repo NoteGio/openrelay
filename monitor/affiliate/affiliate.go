@@ -6,6 +6,7 @@ import (
 	"context"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
+	coreTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/types"
@@ -29,7 +30,7 @@ func (consumer *affiliateBlockConsumer) Consume(delivery channels.Delivery) {
 	}
 	affiliateTopic := &big.Int{}
 	affiliateTopic.SetString("60dad0d232381238c031553102e3a2d779bda5a9507ec806820542b3da2801eb", 16)
-	if block.Bloom.Test(consumer.affiliateSignupAddress) && block.Bloom.Test(affiliateTopic) {
+	if coreTypes.BloomLookup(block.Bloom, consumer.affiliateSignupAddress) && coreTypes.BloomLookup(block.Bloom, affiliateTopic) {
 		query := ethereum.FilterQuery{
 			FromBlock: block.Number,
 			ToBlock: block.Number,

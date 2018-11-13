@@ -60,11 +60,7 @@ func TestFillFromBlock(t *testing.T) {
 	os.Mkdir(directory, 0755)
 	itemURL := fmt.Sprintf("file://%v/test", directory)
 	testLog := fillLog()
-	bloom := types.Bloom{}
-	bloom.Add(new(big.Int).SetBytes(testLog.Address[:]))
-	for _, topic := range testLog.Topics {
-		bloom.Add(new(big.Int).SetBytes(topic[:]))
-	}
+	bloom := types.BytesToBloom(types.LogsBloom([]*types.Log{testLog}).Bytes())
 	mb := &blocks.MiniBlock{
 		common.Hash{},
 		big.NewInt(0),
