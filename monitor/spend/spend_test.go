@@ -60,21 +60,17 @@ func TestBloom(t *testing.T) {
 	spendTopic := &big.Int{}
 	spendTopic.SetString("ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", 16)
 	bloom := types.BytesToBloom(bloomBytes)
-	if !bloom.Test(spendTopic) {
+	if !types.BloomLookup(bloom, spendTopic) {
 		t.Errorf("Bloom filter didn't match spend")
 	}
-	if bloom.Test(&big.Int{}) {
+	if types.BloomLookup(bloom, &big.Int{}) {
 		t.Errorf("Bloom filter shouldn't have matched empty integer")
 	}
 }
 
 func TestSpendFromBlock(t *testing.T) {
 	testLog := spendLog()
-	bloom := types.Bloom{}
-	bloom.Add(new(big.Int).SetBytes(testLog.Address[:]))
-	for _, topic := range testLog.Topics {
-		bloom.Add(new(big.Int).SetBytes(topic[:]))
-	}
+	bloom := types.BytesToBloom(types.LogsBloom([]*types.Log{testLog}).Bytes())
 	mb := &blocks.MiniBlock{
 		common.Hash{},
 		big.NewInt(0),

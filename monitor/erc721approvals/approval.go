@@ -7,7 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-	// "github.com/ethereum/go-ethereum/core/types"
+	coreTypes "github.com/ethereum/go-ethereum/core/types"
 	// "github.com/notegio/openrelay/funds"
 	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/db"
@@ -36,7 +36,7 @@ func (consumer *approvalBlockConsumer) Consume(delivery channels.Delivery) {
 	if err != nil {
 		log.Printf("Error parsing payload: %v\n", err.Error())
 	}
-	if block.Bloom.Test(consumer.approvalTopic) || (block.Bloom.Test(consumer.approveAllTopic) && block.Bloom.Test(consumer.tokenProxyAddress)){
+	if coreTypes.BloomLookup(block.Bloom, consumer.approvalTopic) || (coreTypes.BloomLookup(block.Bloom, consumer.approveAllTopic) && coreTypes.BloomLookup(block.Bloom, consumer.tokenProxyAddress)){
 		// TODO: This test is errantly failing. Not sure why.
 		log.Printf("Block %#x bloom filter indicates approval event for %#x", block.Hash, consumer.tokenProxyAddress)
 		query := ethereum.FilterQuery{

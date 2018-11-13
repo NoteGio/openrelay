@@ -6,6 +6,7 @@ import (
 	"context"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
+	coreTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/db"
@@ -27,7 +28,7 @@ func (consumer *cancelBlockConsumer) Consume(delivery channels.Delivery) {
 	if err != nil {
 		log.Printf("Error parsing payload: %v\n", err.Error())
 	}
-	if (block.Bloom.Test(consumer.cancelUpToTopic)) && block.Bloom.Test(consumer.exchangeAddress) {
+	if (coreTypes.BloomLookup(block.Bloom, consumer.cancelUpToTopic)) && coreTypes.BloomLookup(block.Bloom, consumer.exchangeAddress) {
 		log.Printf("Block %#x bloom filter indicates cancelUpTo event for %#x", block.Hash, consumer.exchangeAddress)
 		query := ethereum.FilterQuery{
 			FromBlock: block.Number,
