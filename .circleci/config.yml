@@ -243,6 +243,16 @@ jobs:
           root: bin
           paths:
             - canceluptoindexer
+  golang_build_affiliatemonitor:
+    docker:
+      - image: circleci/golang:1.8
+    steps:
+      - checkout
+      - run: make bin/affiliatemonitor
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - affiliatemonitor
   golang_build_queuemonitor:
     docker:
       - image: circleci/golang:1.8
@@ -334,6 +344,7 @@ workflows:
       - golang_build_canceluptomonitor
       - golang_build_canceluptofilter
       - golang_build_canceluptoindexer
+      - golang_build_affiliatemonitor
       - golang_build_queuemonitor
       - golang_test
       - docker_build_deploy:
@@ -363,6 +374,7 @@ workflows:
             - golang_build_canceluptofilter
             - golang_build_canceluptoindexer
             - golang_build_queuemonitor
+            - golang_build_affiliatemonitor
           filters:
             branches:
               only:
