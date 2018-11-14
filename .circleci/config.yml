@@ -368,5 +368,5 @@ workflows:
               only:
                 - master
                 - support/0xv1
-                - 0xv2-support
+                - support/0xv2
                 - docker-push
