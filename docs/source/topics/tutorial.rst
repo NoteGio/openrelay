@@ -63,8 +63,36 @@ creating including it in an HTML application, add
     <script src='relative/path/to/bignumber.js'></script>
 
 
-Issue an Order on OpenRelay.xyz
--------------------------------
+Issue an Order on OpenRelay.xyz or locally
+------------------------------------------
+
+
+Running Local Instance of Openrelay
+...................................
+To run the local instance of openrelay we need to fetch openrelay to our local workspace via
+
+.. code-block:: bash 
+
+    git clone https://github.com/NoteGio/openrelay  
+   
+and navigate to openrelay folder.After navigating to openrelay folder we need to build docker stack via 
+
+.. code-block:: bash 
+    
+    docker-compose -f docker-compose-testrpc.yml build
+    
+After build is successfull run the docker container with 
+
+.. code-block:: bash 
+    
+    docker-compose -f docker-compose-testrpc.yml up
+
+To remove stopped service containers run 
+
+.. code-block:: bash 
+
+    docker-compose -f docker-compose-testrpc.yml rm
+For posting orders to open relay we utilize port 8081 on localhost and to fetch order we use port 8082
 
 Creating The Order
 ..................

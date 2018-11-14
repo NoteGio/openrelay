@@ -73,6 +73,9 @@ bin/canceluptofilter: $(BASE) cmd/canceluptofilter/main.go
 bin/canceluptoindexer: $(BASE) cmd/canceluptoindexer/main.go
 	cd "$(BASE)" && $(GOSTATIC) -o bin/canceluptoindexer cmd/canceluptoindexer/main.go
 
+bin/affiliatemonitor: $(BASE) cmd/affiliatemonitor/main.go
+	cd "$(BASE)" && $(GOSTATIC) -o bin/affiliatemonitor cmd/affiliatemonitor/main.go
+
 bin/spendmonitor: $(BASE) cmd/spendmonitor/main.go
 	cd "$(BASE)" && $(GOSTATIC) -o bin/spendmonitor cmd/spendmonitor/main.go
 
@@ -97,7 +100,7 @@ bin/searchapi: $(BASE) cmd/searchapi/main.go
 bin/queuemonitor: $(BASE) cmd/queuemonitor/main.go
 	cd "$(BASE)" && CGO_ENABLED=0 $(GOSTATIC) -o bin/queuemonitor cmd/queuemonitor/main.go
 
-bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate bin/indexer bin/fillindexer bin/automigrate bin/searchapi bin/exchangesplitter bin/blockmonitor bin/allowancemonitor bin/spendmonitor bin/fillmonitor bin/multisigmonitor bin/spendrecorder bin/queuemonitor bin/canceluptomonitor bin/canceluptofilter bin/canceluptoindexer bin/erc721approvalmonitor
+bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate bin/indexer bin/fillindexer bin/automigrate bin/searchapi bin/exchangesplitter bin/blockmonitor bin/allowancemonitor bin/spendmonitor bin/fillmonitor bin/multisigmonitor bin/spendrecorder bin/queuemonitor bin/canceluptomonitor bin/canceluptofilter bin/canceluptoindexer bin/erc721approvalmonitor bin/affiliatemonitor
 
 truffleCompile:
 	cd js ; node_modules/.bin/truffle compile
@@ -142,6 +145,8 @@ test-splitter: $(BASE)
 	cd "$(BASE)/splitter" && go test
 test-search: $(BASE)
 	cd "$(BASE)/search" && POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
+test-affiliate: $(BASE)
+	cd "$(BASE)/monitor/affiliate" && go test
 test-db: $(BASE)
 	cd "$(BASE)/db" &&  POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
 

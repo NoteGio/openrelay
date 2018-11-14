@@ -150,6 +150,20 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
+  affiliatemonitor:
+    build:
+      context: ./
+      dockerfile: Dockerfile.affiliatemonitor
+    image: "openrelay/affiliatemonitor:${TAG:-latest}"
+    command: ["/affiliatemonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://affiliateblocks", "0x4112f5fc3f737e813ca8cc1a48d1da3dc8719435"]
+    depends_on:
+      - redis
+      - ethnode
+    restart: on-failure
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
 
   pgfillindexer:
     build:
@@ -281,7 +295,7 @@ services:
       context: ./
       dockerfile: Dockerfile.simplerelay
     image: "openrelay/simplerelay:${TAG:-latest}"
-    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://ordersfilled=>queue://pgordersfilled=>topic://ordersfilled", "queue://newblocks=>queue://allowanceblocks=>queue://erc721approvalblocks=>queue://spendblocks=>topic://newblocks=>queue://fillblocks=>queue://canceluptoblocks"]
+    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://ordersfilled=>queue://pgordersfilled=>topic://ordersfilled", "queue://newblocks=>queue://allowanceblocks=>queue://erc721approvalblocks=>queue://spendblocks=>topic://newblocks=>queue://fillblocks=>queue://canceluptoblocks=>queue://affiliateblocks"]
     depends_on:
       - redis
       - corebuild
