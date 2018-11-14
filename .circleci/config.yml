@@ -287,7 +287,7 @@ jobs:
       - image: circleci/golang:1.8
     steps:
       - run: |
-        curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"Tests executed successfully!\"}" $WEBHOOK_URL
+          curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"Tests executed successfully!\"}" $WEBHOOK_URL
   docker_build_deploy:
     docker:
       # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
