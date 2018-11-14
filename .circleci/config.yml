@@ -323,7 +323,7 @@ jobs:
       - run: |
           [[ CIRCLE_BRANCH = 'master' ]] && docker-compose push --ignore-push-failures || true
       - run: |
-          curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"New Docker Build! Tags: $CIRCLE_BRANCH, $CIRCLE_SHA1, $(echo $CIRCLE_BRANCH)_$CIRCLE_SHA1\"}" $WEBHOOK_URL
+          curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"New Docker Build! Tags: $(echo "$CIRCLE_BRANCH" | sed 's^/^-^g'), $CIRCLE_SHA1, $(echo "$CIRCLE_BRANCH" | sed 's^/^-^g')_$CIRCLE_SHA1\"}" $WEBHOOK_URL
 workflows:
   version: 2
   build_and_test:
