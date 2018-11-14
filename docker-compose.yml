@@ -1,5 +1,10 @@
 version: "3"
 services:
+  corebuild:
+    image: corebuild
+    build:
+      context: ./
+      dockerfile: Dockerfile.composebase
   redis:
     image: redis:alpine
     ports:
@@ -8,28 +13,67 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
-  ethnode:
-    image: ethereum/client-go
+  postgres:
+    image: postgres
     ports:
-      - "8545"
-      - "30303/tcp"
-      - "30303/udp"
+      - "5432"
+    environment:
+      POSTGRES_PASSWORD: secret
     deploy:
       replicas: 1
       restart_policy:
         condition: on-failure
-    command: "--syncmode=light --rpc --rpcaddr 0.0.0.0"
-    volumes:
-      - light-chaindata:/root/.ethereum
+  ethnode:
+    build:
+      context: ./
+      dockerfile: Dockerfile.testrpc
+    ports:
+      - "18545:8545"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    # command: ["testrpc", "--networkId", "50", "--debug", "-p", "8545", "--db", "/testrpcdb", "-m", "concert load couple harbor equip island argue ramp clarify fence smart topic"]
   ingest:
     build:
       context: ./
       dockerfile: Dockerfile.ingest
+    image: "openrelay/ingest:${TAG:-latest}"
     ports:
-      - "8080"
-    command: ["/ingest", "${REDIS_HOST:-redis:6379}"]
+      - "8081:8080"
+    command: ["/ingest", "${REDIS_HOST:-redis:6379}", "C22d5b2951DB72B44CFb8089bb8CD374A3c354eA", "queue://ingest"]
     depends_on:
       - redis
+      - corebuild
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  exchangesplitter:
+    build:
+      context: ./
+      dockerfile: Dockerfile.exchangesplitter
+    image: "openrelay/exchangesplitter:${TAG:-latest}"
+    command: ["/exchangesplitter", "${REDIS_HOST:-redis:6379}", "queue://ingest", "testrpc"]
+    depends_on:
+      - redis
+      - corebuild
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  fillupdate:
+    build:
+      context: ./
+      dockerfile: Dockerfile.fillupdate
+    image: "openrelay/fillupdate:${TAG:-latest}"
+    command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "topic://ordersfilled", "file:///bloom/data/testdata", "queue://fillupdate=>queue://fundcheck", "queue://fillrecheck=>queue://fundrecheck"]
+    volumes:
+      - bloomdata:/bloom/data
+    depends_on:
+      - redis
+      - ethnode
+      - corebuild
     deploy:
       replicas: 1
       restart_policy:
@@ -38,96 +82,376 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.fundcheckrelay
-    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-ethnode:8545}", "queue://ingest", "topic://instant"]
+    image: "openrelay/fundcheckrelay:${TAG:-latest}"
+    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://fundcheck=>queue://delay1=>topic://instant-broadcast", "queue://fundrecheck=>queue://pgindexer", "--invalidation=topic://newblocks"]
     depends_on:
       - redis
       - ethnode
+      - corebuild
     deploy:
       replicas: 1
       restart_policy:
         condition: on-failure
-  simplerelay:
-    build:
-      context: ./
-      dockerfile: Dockerfile.simplerelay
-    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "topic://instant", "queue://delay1"]
-    depends_on:
-      - redis
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: on-failure
+    restart: on-failure
   delayrelay1:
     build:
       context: ./
       dockerfile: Dockerfile.delayrelay
-    command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "queue://delay1", "queue://delay2", "queue://delay1trigger"]
+    image: "openrelay/delayrelay:${TAG:-latest}"
+    command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "topic://delay1trigger,queue://delay1=>queue://delay2", "topic://newblocks,queue://delay2=>queue://cancelrecheck=>topic://released-broadcast;topic://delay1trigger"]
     depends_on:
       - redis
+      - corebuild
     deploy:
       replicas: 1
       restart_policy:
         condition: on-failure
-  delayrelay2:
+  # delayrelay2:
+  #   build:
+  #     context: ./
+  #     dockerfile: Dockerfile.delayrelay
+  #   image: "openrelay/delayrelay:${TAG:-latest}"
+  #   command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "queue://delay2", "queue://released", "topic://newblocks", "topic://delay1trigger"]
+  #   depends_on:
+  #     - redis
+  #   deploy:
+  #     replicas: 1
+  #     restart_policy:
+  #       condition: on-failure
+  fillmonitor:
     build:
       context: ./
-      dockerfile: Dockerfile.delayrelay
-    command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "queue://delay2", "topic://released", "topic://newblocks", "queue://delay1trigger"]
+      dockerfile: Dockerfile.fillmonitorng
+    image: "openrelay/fillmonitorng:${TAG:-latest}"
+    command: ["/fillmonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://fillblocks", "queue://ordersfilled", "file:///bloom/data/testdata", "0x48bacb9266a570d521063ef5dd96e61686dbe788"]
+    volumes:
+      - bloomdata:/bloom/data
     depends_on:
       - redis
+      - ethnode
+      - corebuild
+    restart: on-failure
     deploy:
       replicas: 1
       restart_policy:
         condition: on-failure
-  blockmonitor:
+  multisigmonitor:
     build:
       context: ./
-      dockerfile: Dockerfile.blockmonitor
-    command: ["./node_modules/.bin/truffle", "exec", "blockMonitor.js", "redis://${REDIS_HOST:-redis:6379}", "topic://newblocks", "--network", "testnet"]
+      dockerfile: Dockerfile.multisigmonitor
+    image: "openrelay/multisigmonitor:${TAG:-latest}"
+    command: ["/multisigmonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://multisigblocks", "0x48bacb9266a570d521063ef5dd96e61686dbe788"]
     depends_on:
+      - redis
       - ethnode
-  simplerelay2:
+      - corebuild
+    restart: on-failure
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  affiliatemonitor:
     build:
       context: ./
-      dockerfile: Dockerfile.simplerelay
-    image: 201322628656.dkr.ecr.us-east-2.amazonaws.com/openrelay-simplerelay
-    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "topic://released", "queue://recheck"]
-  fundcheckrelay2:
-    build:
-      context: ./
-      dockerfile: Dockerfile.fundcheckrelay
-    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://recheck", "queue://indexer"]
+      dockerfile: Dockerfile.affiliatemonitor
+    image: "openrelay/affiliatemonitor:${TAG:-latest}"
+    command: ["/affiliatemonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://affiliateblocks", "0x4112f5fc3f737e813ca8cc1a48d1da3dc8719435"]
     depends_on:
+      - redis
       - ethnode
-  dynamo:
-    image: cnadiminti/dynamodb-local
-  indexer:
-    build:
-      context: ./
-      dockerfile: Dockerfile.indexer
-    environment:
-      DYNAMODB_HOST: http://dynamo:8000
-      AWS_ACCESS_KEY_ID: x
-      AWS_SECRET_ACCESS_KEY: x
-    command: ["python", "/project/indexer.py", "${REDIS_HOST:-redis:6379}", "indexer", "--create"]
-    depends_on:
-      - dynamo
-  api:
-    build:
-      context: ./
-      dockerfile: Dockerfile.searchapi
-    environment:
-      DYNAMODB_HOST: http://dynamo:8000
-      AWS_ACCESS_KEY_ID: x
-      AWS_SECRET_ACCESS_KEY: x
-    command: ["python", "/project/api.py"]
+    restart: on-failure
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
 
+  pgfillindexer:
+    build:
+      context: ./
+      dockerfile: Dockerfile.pgfillindexer
+    image: "openrelay/pgfillindexer:${TAG:-latest}"
+    command: ["/fillindexer", "redis:6379", "queue://pgordersfilled", "postgres://postgres@postgres", "env://POSTGRES_PASSWORD"]
+    depends_on:
+      - redis
+      - postgres
+      - corebuild
+    environment:
+      POSTGRES_PASSWORD: secret
+    restart: on-failure
+
+  # simplerelayreleased:
+  #   build:
+  #     context: ./
+  #     dockerfile: Dockerfile.simplerelay
+  #   image: "openrelay/simplerelay:${TAG:-latest}"
+  #   command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://released", "queue://recheck", "topic://released-broadcast"]
+  #   depends_on:
+  #     - redis
+  #   deploy:
+  #     replicas: 1
+  #     restart_policy:
+  #       condition: on-failure
+  # fillupdate2:
+  #   build:
+  #     context: ./
+  #     dockerfile: Dockerfile.fillupdate
+  #   image: "openrelay/fillupdate:${TAG:-latest}"
+  #   command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://recheck", "topic://ordersfilled", "file:///bloom/data/testdata", "queue://recheck2"]
+  #   volumes:
+  #     - bloomdata:/bloom/data
+  #   depends_on:
+  #     - redis
+  #     - ethnode
+  #   deploy:
+  #     replicas: 1
+  #     restart_policy:
+  #       condition: on-failure
+  # fundcheckrelay2:
+  #   build:
+  #     context: ./
+  #     dockerfile: Dockerfile.fundcheckrelay
+  #   image: "openrelay/fundcheckrelay:${TAG:-latest}"
+  #   command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://recheck2", "queue://pgindexer", "--invalidation=topic://newblocks"]
+  #   depends_on:
+  #     - ethnode
+  #   restart: on-failure
   initialize:
     build:
       context: ./
       dockerfile: Dockerfile.initialize
+    image: "openrelay/initialize:${TAG:-latest}"
     command: ["/initialize", "${REDIS_HOST:-redis:6379}", "${ZRX_FEE:-500000000000000000}", "${RELAY_ADDRESS:-C22d5b2951DB72B44CFb8089bb8CD374A3c354eA}"]
     depends_on:
       - redis
+      - corebuild
+  contractinit:
+    build:
+      context: ./
+      dockerfile: Dockerfile.testinit
+    command: ["/project/setup.sh", "redis://${REDIS_HOST:-redis:6379}"]
+    environment:
+      ETHEREUM_URL: "http://ethnode:8545"
+    depends_on:
+      - redis
+      - corebuild
+  entrypoint:
+    build:
+      context: ./
+      dockerfile: Dockerfile.testinit
+    volumes:
+      - "./js:/project"
+    command: ["node", "/project/hang.js"]
+  pgindexer:
+    build:
+      context: ./
+      dockerfile: Dockerfile.pgindexer
+    image: "openrelay/pgindexer:${TAG:-latest}"
+    environment:
+      POSTGRES_PASSWORD: password
+    command: ["/indexer", "${REDIS_HOST:-redis:6379}", "queue://pgindexer", "postgres://indexer@postgres", "env://POSTGRES_PASSWORD"]
+    depends_on:
+      - postgres
+      - redis
+      - corebuild
+    restart: on-failure
+  pgautomigrate:
+    build:
+      context: ./
+      dockerfile: Dockerfile.automigrate
+    image: "openrelay/automigrate:${TAG:-latest}"
+    environment:
+      POSTGRES_PASSWORD: secret
+      INDEX_PASSWORD: password
+      SEARCH_PASSWORD: password
+      SPENDRECORDER_PASSWORD: password
+      CANCEL_FILTER_PASSWORD: password
+      CANCEL_INDEX_PASSWORD: password
+    # TODO: PROD config needs to reflect new roles
+    command: ["/automigrate", "postgres://postgres@postgres", "env://POSTGRES_PASSWORD", "indexer;env://INDEX_PASSWORD;orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE", "spendrecorder;env://SPENDRECORDER_PASSWORD;orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE", "search;env://SEARCH_PASSWORD;orderv2.SELECT,exchanges.SELECT", "cancelfilter;env://CANCEL_FILTER_PASSWORD;cancellations.SELECT", "cancelindexer;env://CANCEL_INDEX_PASSWORD;cancellations.SELECT,cancellations.INSERT,cancellations.UPDATE,orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE"]
+    depends_on:
+      - postgres
+      - corebuild
+    restart: on-failure
+  pgapi:
+    build:
+      context: ./
+      dockerfile: Dockerfile.pgsearchapi
+    image: "openrelay/pgsearchapi:${TAG:-latest}"
+    ports:
+      - "8082:8080"
+    command: ["/searchapi", "${REDIS_HOST:-redis:6379}", "topic://newblocks", "postgres://search@postgres", "env://POSTGRES_PASSWORD"]
+    environment:
+      POSTGRES_PASSWORD: password
+    depends_on:
+      - redis
+      - corebuild
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    restart: on-failure
+  simplerelay:
+    build:
+      context: ./
+      dockerfile: Dockerfile.simplerelay
+    image: "openrelay/simplerelay:${TAG:-latest}"
+    command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://ordersfilled=>queue://pgordersfilled=>topic://ordersfilled", "queue://newblocks=>queue://allowanceblocks=>queue://erc721approvalblocks=>queue://spendblocks=>topic://newblocks=>queue://fillblocks=>queue://canceluptoblocks=>queue://affiliateblocks"]
+    depends_on:
+      - redis
+      - corebuild
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  blockmonitorng:
+    build:
+      context: ./
+      dockerfile: Dockerfile.blockmonitorng
+    image: "openrelay/blockmonitorng:${TAG:-latest}"
+    command: ["/blockmonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://newblocks"]
+    environment:
+      ETHEREUM_URL: "http://ethnode:8545"
+    depends_on:
+      - redis
+      - ethnode
+      - corebuild
+    restart: on-failure
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  # simplerelaynewblocks:
+  #   build:
+  #     context: ./
+  #     dockerfile: Dockerfile.simplerelay
+  #   image: "openrelay/simplerelay:${TAG:-latest}"
+  #   command: ["/simplerelay", "${REDIS_HOST:-redis:6379}", "queue://newblocks", "queue://allowanceblocks", "queue://spendblocks", "topic://newblocks", "queue://fillblocks"]
+  #   depends_on:
+  #     - redis
+  #   deploy:
+  #     replicas: 1
+  #     restart_policy:
+  #       condition: on-failure
+  allowancemonitor:
+    build:
+      context: ./
+      dockerfile: Dockerfile.allowancemonitor
+    image: "openrelay/allowancemonitor:${TAG:-latest}"
+    command: ["/allowancemonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://allowanceblocks", "queue://recordspend", "0x48bacb9266a570d521063ef5dd96e61686dbe788"]
+    depends_on:
+      - redis
+      - ethnode
+      - corebuild
+    restart: on-failure
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  erc721approvalmonitor:
+    build:
+      context: ./
+      dockerfile: Dockerfile.erc721approvalmonitor
+    image: "openrelay/erc721approvalmonitor:${TAG:-latest}"
+    command: ["/erc721approvalmonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://erc721approvalblocks", "queue://recordspend", "0x48bacb9266a570d521063ef5dd96e61686dbe788"]
+    depends_on:
+      - redis
+      - ethnode
+      - corebuild
+    restart: on-failure
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  spendmonitor:
+    build:
+      context: ./
+      dockerfile: Dockerfile.spendmonitor
+    image: "openrelay/spendmonitor:${TAG:-latest}"
+    command: ["/spendmonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://spendblocks", "queue://recordspend", "0x48bacb9266a570d521063ef5dd96e61686dbe788"]
+    depends_on:
+      - redis
+      - ethnode
+      - corebuild
+    restart: on-failure
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  spendrecorder:
+    build:
+      context: ./
+      dockerfile: Dockerfile.spendrecorder
+    image: "openrelay/spendrecorder:${TAG:-latest}"
+    command: ["/spendrecorder", "${REDIS_HOST:-redis:6379}", "queue://recordspend", "postgres://spendrecorder@postgres", "env://POSTGRES_PASSWORD"]
+    environment:
+      POSTGRES_PASSWORD: password
+    depends_on:
+      - redis
+      - ethnode
+      - corebuild
+    restart: on-failure
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  canceluptomonitor:
+    build:
+      context: ./
+      dockerfile: Dockerfile.canceluptomonitor
+    image: "openrelay/canceluptomonitor:${TAG:-latest}"
+    command: ["/canceluptomonitor", "${REDIS_HOST:-redis:6379}", "http://ethnode:8545", "queue://canceluptoblocks", "queue://recordcancel", "0x48bacb9266a570d521063ef5dd96e61686dbe788"]
+    depends_on:
+      - redis
+      - ethnode
+      - corebuild
+    restart: on-failure
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  canceluptofilter:
+    build:
+      context: ./
+      dockerfile: Dockerfile.canceluptofilter
+    image: "openrelay/canceluptofilter:${TAG:-latest}"
+    command: ["/canceluptofilter", "${REDIS_HOST:-redis:6379}", "postgres://cancelfilter@postgres", "env://POSTGRES_PASSWORD", "queue://0x48bacb9266a570d521063ef5dd96e61686dbe788-testrpc=>queue://fillupdate", "queue://cancelrecheck=>queue://fillrecheck"]
+    environment:
+      POSTGRES_PASSWORD: password
+    depends_on:
+      - redis
+      - ethnode
+      - postgres
+      - corebuild
+    restart: on-failure
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  canceluptoindexer:
+    build:
+      context: ./
+      dockerfile: Dockerfile.canceluptoindexer
+    image: "openrelay/canceluptoindexer:${TAG:-latest}"
+    command: ["/canceluptoindexer", "redis:6379", "queue://recordcancel", "postgres://cancelindexer@postgres", "env://POSTGRES_PASSWORD"]
+    environment:
+      POSTGRES_PASSWORD: password
+    restart: on-failure
+
+  queuemonitor:
+    build:
+      context: ./
+      dockerfile: Dockerfile.queuemonitor
+    image: "openrelay/queuemonitor:${TAG:-latest}"
+    command: ["/queuemonitor", "${REDIS_HOST:-redis:6379}", "1", "newblocks-ropsten", "ordersfilled", "pgordersfilled", "newblocks", "released-ropsten", "fundcheck-ropsten", "allowanceblocks", "recheck-ropsten", "fillupdate-ropsten", "indexer", "preindexer", "spendblocks-ropsten", "recordspend", "ordersfilled-ropsten", "delay2-ropsten", "released", "fundcheck", "allowanceblocks-ropsten", "recheck2-ropsten", "fillupdate", "fillblocks-ropsten", "spendblocks", "recheck2", "delay1", "delay2", "ingest", "fillblocks", "pgindexer", "delay1-ropsten", "multisigblocks", "recheck", "canceluptoblocks", "recordcancel", "0x48bacb9266a570d521063ef5dd96e61686dbe788-testrpc"]
+    depends_on:
+      - redis
+      - corebuild
+    restart: on-failure
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
 volumes:
-  light-chaindata:
+  bloomdata:
