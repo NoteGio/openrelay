@@ -63,7 +63,7 @@ func applyAssetDataFilter(query *gorm.DB, queryField, dbField string, queryObjec
 			return query, err
 		}
 		whereClause := fmt.Sprintf("%v = ?", dbField)
-		filteredQuery := query.Where(whereClause, assetDataBytes)
+		filteredQuery := query.Where(whereClause, &assetDataBytes)
 		return filteredQuery, filteredQuery.Error
 	}
 	return query, nil
@@ -75,7 +75,7 @@ func applyAssetDataOrFilter(query *gorm.DB, queryField, dbField1, dbField2 strin
 			return query, err
 		}
 		whereClause := fmt.Sprintf("%v = ? or %v = ?", dbField1, dbField2)
-		filteredQuery := query.Where(whereClause, assetDataBytes, assetDataBytes)
+		filteredQuery := query.Where(whereClause, &assetDataBytes, &assetDataBytes)
 		return filteredQuery, filteredQuery.Error
 	}
 	return query, nil
@@ -252,7 +252,7 @@ func SearchHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 		if err != nil {
 			errs = append(errs, ValidationError{err.Error(), 1003, "assetAddress"})
 		}
-		query, err = applyOrFilter(query, "assetData", "maker_address", "taker_address", queryObject)
+		query, err = applyAssetDataOrFilter(query, "assetData", "maker_asset_data", "taker_asset_data", queryObject)
 		if err != nil {
 			errs = append(errs, ValidationError{err.Error(), 1001, "assetData"})
 		}

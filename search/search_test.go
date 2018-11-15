@@ -250,6 +250,15 @@ func TestFilterFeeRecipientTaker(t *testing.T) {
 	filterContractRequest("feeRecipient=0x0000000000000000000000000000000000000000", "feeRecipient=0x90fe2af704b34e0224bf2299c838e04d4dcf1300", t)
 }
 
+func TestFilterMakerAssetData(t *testing.T) {
+	// TODO: assetData searches are failing :(
+	filterContractRequest("makerAssetData=0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba", "makerAssetData=0xf47261b00000000000000000000000002dad4783cf3fe3085c1426157ab175a6119a04ba", t)
+}
+
+func TestFilterAssetData(t *testing.T) {
+	filterContractRequest("assetData=0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba", "assetData=0xf47261b00000000000000000000000002dad4783cf3fe3085c1426157ab175a6119a04ba", t)
+}
+
 func TestFilterMakerAssetProxyId(t *testing.T) {
 	filterContractRequest("makerAssetProxyId=0xf47261b0", "makerAssetProxyId=0x11111111", t)
 }
