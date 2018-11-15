@@ -91,7 +91,7 @@ func getTestOrderHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 func getTestOrderBookHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 	_, consumerChannel := channels.MockChannel()
 	blockHash := blockhash.NewChanneledBlockHash(consumerChannel)
-	return search.BlockHashDecorator(blockHash, search.OrderBookHandler(db))
+	return search.BlockHashDecorator(blockHash, mockPoolDecorator(search.OrderBookHandler(db)))
 }
 
 func getDb() (*gorm.DB, error) {

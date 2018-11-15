@@ -11,8 +11,8 @@ import (
 )
 
 func OrderHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
+	orderRegex := regexp.MustCompile(".*/order/0x([0-9a-fA-F]+)")
 	return func(w http.ResponseWriter, r *http.Request) {
-		orderRegex := regexp.MustCompile(".*/order/0x([0-9a-fA-F]+)")
 		pathMatch := orderRegex.FindStringSubmatch(r.URL.Path)
 		if len(pathMatch) == 0 {
 			returnError(w, errors.New("Malformed order hash"), 404)

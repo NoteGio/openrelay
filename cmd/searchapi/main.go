@@ -67,7 +67,7 @@ func main() {
 	blockHash := blockhash.NewChanneledBlockHash(blockChannelConsumer)
 	searchHandler := search.BlockHashDecorator(blockHash, pool.PoolDecorator(search.SearchHandler(db)))
 	orderHandler := search.BlockHashDecorator(blockHash, search.OrderHandler(db))
-	orderBookHandler := search.BlockHashDecorator(blockHash, search.OrderBookHandler(db))
+	orderBookHandler := search.BlockHashDecorator(blockHash, pool.PoolDecorator(search.OrderBookHandler(db)))
 	feeRecipientsHandler := search.BlockHashDecorator(blockHash, search.FeeRecipientHandler(affiliates.NewRedisAffiliateService(redisClient)))
 	pairHandler := search.PairHandler(db)
 
