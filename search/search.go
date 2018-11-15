@@ -242,7 +242,7 @@ func QueryFilter(query *gorm.DB, queryObject urlModule.Values) (*gorm.DB, []Vali
 	if err != nil {
 		errs = append(errs, ValidationError{err.Error(), 1003, "assetAddress"})
 	}
-	query, err = applyOrFilter(query, "assetData", "maker_address", "taker_address", queryObject)
+	query, err = applyAssetDataOrFilter(query, "assetData", "maker_asset_data", "taker_asset_data", queryObject)
 	if err != nil {
 		errs = append(errs, ValidationError{err.Error(), 1001, "assetData"})
 	}
