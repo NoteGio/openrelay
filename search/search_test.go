@@ -11,6 +11,7 @@ import (
 	"github.com/notegio/openrelay/common"
 	"github.com/notegio/openrelay/channels"
 	dbModule "github.com/notegio/openrelay/db"
+	"github.com/notegio/openrelay/pool"
 	"github.com/notegio/openrelay/search"
 	"github.com/notegio/openrelay/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -58,10 +59,27 @@ func saltedSampleOrder(t *testing.T) *dbModule.Order {
 
 // TODO: Mock pool injection
 
+// type Pool struct {
+// 	SearchTerms   string
+// 	Expiration    uint
+// 	Nonce         uint
+// 	FeeShare      uint
+// 	ID            []byte
+// 	SenderAddress *types.Address
+// 	FilterAddress *types.Address
+// 	conn          bind.ContractBackend
+// }
+
+func mockPoolDecorator(fn func(http.ResponseWriter, *http.Request, types.Pool)) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fn(w, r, &pool.Pool{SearchTerms: "", ID: []byte("default")})
+	}
+}
+
 func getTestSearchHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 	_, consumerChannel := channels.MockChannel()
 	blockHash := blockhash.NewChanneledBlockHash(consumerChannel)
-	return search.BlockHashDecorator(blockHash, search.SearchHandler(db))
+	return search.BlockHashDecorator(blockHash, mockPoolDecorator(search.SearchHandler(db)))
 }
 
 func getTestOrderHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
@@ -154,7 +172,7 @@ func TestFormatSingleResponseJson(t *testing.T) {
 func TestBlockhashRedirect(t *testing.T) {
 	_, consumerChannel := channels.MockChannel()
 	blockHash := blockhash.NewChanneledBlockHash(consumerChannel)
-	handler := search.BlockHashDecorator(blockHash, search.SearchHandler(nil))
+	handler := search.BlockHashDecorator(blockHash, mockPoolDecorator(search.SearchHandler(nil)))
 	request, _ := http.NewRequest("GET", "/v0/orders?makertoken=0x627306090abab3a6e1400e9345bc60c78a8bef57", nil)
 	recorder := httptest.NewRecorder()
 	handler(recorder, request)
@@ -175,7 +193,7 @@ func filterContractRequest(queryString, emptyQueryString string, t *testing.T) {
 		t.Errorf(err.Error())
 		return
 	}
-	tx := db.Begin().Debug()
+	tx := db.Begin()
 	defer func() {
 		tx.Rollback()
 		db.Close()

@@ -149,6 +149,8 @@ test-affiliate: $(BASE)
 	cd "$(BASE)/monitor/affiliate" && go test
 test-db: $(BASE)
 	cd "$(BASE)/db" &&  POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
+test-pool: $(BASE)
+	cd "$(BASE)/pool" &&  POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
 
 docker-cfg/ca-certificates.crt:
 	cp /etc/ssl/certs/ca-certificates.crt docker-cfg/ca-certificates.crt
