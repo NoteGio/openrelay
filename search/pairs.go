@@ -12,8 +12,8 @@ import (
 func PairHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		queryObject := r.URL.Query()
-		tokenAString := queryObject.Get("assetA")
-		tokenBString := queryObject.Get("assetB")
+		tokenAString := queryObject.Get("assetDataA")
+		tokenBString := queryObject.Get("assetDataB")
 		networkID, err := strconv.Atoi(queryObject.Get("networkId"))
 		if err != nil {
 			networkID = 1
