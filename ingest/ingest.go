@@ -9,6 +9,7 @@ import (
 	affiliatesModule "github.com/notegio/openrelay/affiliates"
 	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/types"
+	poolModule "github.com/notegio/openrelay/pool"
 	"io"
 	"log"
 	"math/big"
@@ -48,7 +49,7 @@ func returnError(w http.ResponseWriter, errResp IngestError, status int) {
 	w.Write(errBytes)
 }
 
-func Handler(publisher channels.Publisher, accounts accountsModule.AccountService, affiliates affiliatesModule.AffiliateService) func(http.ResponseWriter, *http.Request) {
+func Handler(publisher channels.Publisher, accounts accountsModule.AccountService, affiliates affiliatesModule.AffiliateService) func(http.ResponseWriter, *http.Request, *poolModule.Pool) {
 	var contentType string
 	ValidExchangeAddresses := []types.Address{}
 	addrBytes := &types.Address{}
@@ -66,7 +67,7 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 		copy(addrBytes[:], addr)
 		ValidExchangeAddresses = append(ValidExchangeAddresses, *addrBytes)
 	}
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request, pool *poolModule.Pool) {
 		if r.Method == "GET" {
 			// Health checks
 			w.WriteHeader(200)
@@ -163,6 +164,19 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 					"exchangeContractAddress",
 					1002,
 					"Unknown exchangeContractAddress",
+				}},
+			}, 400)
+			return
+		}
+		emptyAddress := types.Address{}
+		if !bytes.Equal(pool.SenderAddress[:], emptyAddress[:]) && !bytes.Equal(pool.SenderAddress[:], order.SenderAddress[:]) {
+			returnError(w, IngestError{
+				100,
+				"Validation Failed",
+				[]ValidationError{ValidationError{
+					"senderAddress",
+					1002,
+					"Invalid sender for this order pool",
 				}},
 			}, 400)
 			return
@@ -274,13 +288,25 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 			}, 402)
 			return
 		}
+		poolFee, err := pool.Fee()
+		if err != nil {
+			returnError(w, IngestError{
+				100,
+				"Validation Failed",
+				[]ValidationError{ValidationError{
+					"pool",
+					1002,
+					err.Error(),
+				}},
+			}, 500)
+			return
+		}
 		account := <-makerChan
 		minFee := new(big.Int)
-		// A fee recipient's Fee() value is the base fee for that recipient. A
-		// maker's Discount() is the discount that recipient gets from the base
-		// fee. Thus, the minimum fee required is feeRecipient.Fee() -
-		// maker.Discount()
-		minFee.Sub(feeRecipient.Fee(), account.Discount())
+		// A pool's Fee() value is the base fee for that pool. A maker's Discount()
+		// is the discount that recipient gets from the base fee. Thus, the minimum
+		// fee required is pool.Fee() - maker.Discount()
+		minFee.Sub(poolFee, account.Discount())
 		if totalFee.Cmp(minFee) < 0 {
 			returnError(w, IngestError{
 				100,
@@ -304,6 +330,7 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 			fmt.Fprintf(w, "")
 			return
 		}
+		order.PoolID = pool.ID
 		w.WriteHeader(202)
 		fmt.Fprintf(w, "")
 		orderBytes := order.Bytes()

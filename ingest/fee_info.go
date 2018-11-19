@@ -6,6 +6,7 @@ import (
 	affiliatesModule "github.com/notegio/openrelay/affiliates"
 	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/types"
+	poolModule "github.com/notegio/openrelay/pool"
 	"io"
 	"log"
 	"math/big"
@@ -30,9 +31,9 @@ type FeeResponse struct {
 	TakerToSpecify string `json:"takerToSpecify"`
 }
 
-func FeeHandler(publisher channels.Publisher, accounts accountsModule.AccountService, affiliates affiliatesModule.AffiliateService, defaultFeeRecipient [20]byte) func(http.ResponseWriter, *http.Request) {
+func FeeHandler(publisher channels.Publisher, accounts accountsModule.AccountService, affiliates affiliatesModule.AffiliateService, defaultFeeRecipient [20]byte) func(http.ResponseWriter, *http.Request, *poolModule.Pool) {
 	emptyBytes := &types.Address{}
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request, pool *poolModule.Pool) {
 		var data [1024]byte
 		feeInput := &FeeInputPayload{}
 
@@ -117,15 +118,28 @@ func FeeHandler(publisher channels.Publisher, accounts accountsModule.AccountSer
 			}, 402)
 			return
 		}
+		poolFee, err := pool.Fee()
+		if err != nil {
+			returnError(w, IngestError{
+				100,
+				"Validation Failed",
+				[]ValidationError{ValidationError{
+					"pool",
+					1002,
+					"Pool error",
+				}},
+			}, 500)
+			return
+		}
 		account := <-makerChan
 		minFee := new(big.Int)
+
 		// A fee recipient's Fee() value is the base fee for that recipient. A
 		// maker's Discount() is the discount that recipient gets from the base
-		// fee. Thus, the minimum fee required is feeRecipient.Fee() -
-		// maker.Discount()
-		minFee.Sub(feeRecipient.Fee(), account.Discount())
+		// fee. Thus, the minimum fee required is pool.Fee() - maker.Discount()
+		minFee.Sub(poolFee, account.Discount())
 		takerToSpecify := fmt.Sprintf("%#x", emptyBytes[:])
-		senderToSpecify := fmt.Sprintf("%#x", emptyBytes[:])
+		senderToSpecify := fmt.Sprintf("%#x", pool.SenderAddress[:])
 		if feeInput.Taker != "" {
 			takerToSpecify = feeInput.Taker
 		}
