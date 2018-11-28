@@ -177,3 +177,51 @@ func TestCheckTerms(t *testing.T) {
 		}
 	}
 }
+
+func TestCheckAddress(t *testing.T) {
+	tm, revert, err := getTermsManager()
+	if err != nil {
+		t.Fatalf("Could not get db: %v", err.Error())
+	}
+	defer revert()
+	if err := tm.UpdateTerms("en", "Don't break the law"); err != nil {
+		t.Fatalf("Error setting terms: '%v'", err.Error())
+	}
+	terms, err := tm.GetTerms("en")
+	if err != nil {
+		t.Fatalf("Error getting terms: '%v'", err.Error())
+	}
+	mask, _, err := tm.GetNewHashMask(terms)
+	if err != nil {
+		t.Fatalf("Error creating mask: '%v'", err.Error())
+	}
+	timestamp := "1543351413"
+	nonce := <-dbModule.FindValidNonce(terms, timestamp, mask)
+	termsSha := sha3.NewKeccak256()
+	termsSha.Write([]byte(fmt.Sprintf("%v\n%v\n%#x", terms.Text, timestamp, nonce)))
+	hash := termsSha.Sum(nil)
+
+	key, _ := ecdsa.GenerateKey(crypto.S256(), rand.Reader)
+	address := crypto.PubkeyToAddress(key.PublicKey)
+	signer := &types.Address{}
+	copy(signer[:], address[:])
+
+	hashedBytes := append([]byte("\x19Ethereum Signed Message:\n32"), hash[:]...)
+	signedBytes := crypto.Keccak256(hashedBytes)
+
+	sig, _ := crypto.Sign(signedBytes, key)
+	signature := make(types.Signature, 66)
+	signature[0] = sig[64] + 27
+	copy(signature[1:33], sig[0:32])
+	copy(signature[33:65], sig[32:64])
+	signature[65] = types.SigTypeEthSign
+
+	if err := tm.SaveSig(terms.ID, &signature, signer, timestamp, "0.0.0.0", nonce, mask); err != nil {
+		if err != nil {
+			t.Errorf("Error saving signature: '%v'", err.Error())
+		}
+	}
+	if ok, err := tm.CheckAddress(signer); !ok {
+		t.Errorf("Error checking address: '%v'", err.Error())
+	}
+}
