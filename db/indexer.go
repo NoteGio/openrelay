@@ -45,7 +45,10 @@ func (indexer *Indexer) RecordFill(fillRecord *FillRecord) error {
 	}
 	dbOrder := &Order{}
 	dbOrder.Initialize()
-	indexer.db.Model(&Order{}).Where("order_hash = ?", hashBytes).First(dbOrder)
+	if indexer.db.Model(&Order{}).Where("order_hash = ?", hashBytes).First(dbOrder).RecordNotFound() {
+		// Not our order
+		return nil
+	}
 	totalFilled := dbOrder.TakerAssetAmountFilled.Big()
 	copy(dbOrder.TakerAssetAmountFilled[:], abi.U256(totalFilled.Add(totalFilled, amountFilled)))
 	dbOrder.Cancelled = dbOrder.Cancelled || fillRecord.Cancel
