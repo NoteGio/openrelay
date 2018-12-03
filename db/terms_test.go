@@ -221,7 +221,7 @@ func TestCheckAddress(t *testing.T) {
 			t.Errorf("Error saving signature: '%v'", err.Error())
 		}
 	}
-	if ok, err := tm.CheckAddress(signer); !ok {
-		t.Errorf("Error checking address: '%v'", err.Error())
+	if ok := <-tm.CheckAddress(signer); !ok {
+		t.Errorf("Error checking address")
 	}
 }

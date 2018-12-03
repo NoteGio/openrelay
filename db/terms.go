@@ -195,16 +195,21 @@ func CheckMask(mask, hash []byte) bool {
 }
 
 // Check ensures that a given address has signed the terms
-func (tm *TermsManager) CheckAddress(address *types.Address) (bool, error) {
-	if _, ok := tm.signers[address.String()]; ok {
-		return true, nil
-	}
-	var count int
-	err := tm.db.Table("terms_sigs").Joins("LEFT JOIN terms ON terms.id = terms_sigs.terms_id").Where("terms_sigs.signer = ? AND terms.valid = ? AND terms_sigs.banned = ?", address, true, false).Count(&count).Error
-	if err != nil {
-		tm.signers[address.String()] = struct{}{}
-	}
-	return (count >= 1), err
+func (tm *TermsManager) CheckAddress(address *types.Address) (<-chan bool) {
+	result := make(chan bool)
+	go func(address *types.Address, result chan bool) {
+		if _, ok := tm.signers[address.String()]; ok {
+			result <- ok
+			return
+		}
+		var count int
+		err := tm.db.Table("terms_sigs").Joins("LEFT JOIN terms ON terms.id = terms_sigs.terms_id").Where("terms_sigs.signer = ? AND terms.valid = ? AND terms_sigs.banned = ?", address, true, false).Count(&count).Error
+		if err != nil && (count >= 1) {
+			tm.signers[address.String()] = struct{}{}
+		}
+		result <- (count >= 1)
+	}(address, result)
+	return result
 }
 
 // UpdateTerms creates a new Terms object in the database, deprecating the old

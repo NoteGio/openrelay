@@ -44,6 +44,15 @@ func (lookup *ExchangeLookup) GetNetworkByExchange(address *types.Address) (int6
 	return exchange.Network, nil
 }
 
+func (lookup *ExchangeLookup) ExchangeIsKnown(address *types.Address) (<-chan bool) {
+	result := make(chan bool)
+	go func(address *types.Address, result chan bool) {
+		_, err := lookup.GetNetworkByExchange(address)
+		result <- (err != nil)
+	}(address, result)
+	return result
+}
+
 func NewExchangeLookup(db *gorm.DB) (*ExchangeLookup) {
 	return &ExchangeLookup{
 		make(map[types.Address]int64),
