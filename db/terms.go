@@ -33,6 +33,7 @@ type TermsSig struct {
 	Timestamp string
 	IP        string
 	Nonce     []byte
+	Banned    bool
 	Signature *types.Signature
 	TermsID   uint
 }
@@ -52,9 +53,10 @@ type HashMask struct {
 // several interfaces for interacting with the Terms of Service in the
 // database.
 type TermsManager struct {
-	db      *gorm.DB
-	isTx    bool
-	signers map[string]struct{}
+	db           *gorm.DB
+	isTx          bool
+	signers       map[string]struct{}
+	hashMaskCache map[uint]*HashMask
 }
 
 // OnesCount returns how many 1s appear in the binary representation of a
@@ -92,16 +94,23 @@ func (tm *TermsManager) GetTerms(language string) (*Terms, error) {
 // difficulty for those Terms. It saves the HashMask in the database, and
 // returns the Bytes along with the byte string.
 func (tm *TermsManager) GetNewHashMask(terms *Terms) ([]byte, uint, error) {
+	hashMask, ok := tm.hashMaskCache[terms.ID]
+	if ok && hashMask.Expiration.Before(time.Now().Add(time.Hour / 2)) {
+		return hashMask.Mask, hashMask.ID, nil
+	}
 	mask := new(big.Int)
 	rand.Seed(time.Now().UTC().UnixNano())
 	for OnesCount(mask.Bytes()) < terms.Difficulty {
 		mask = mask.Or(mask, new(big.Int).Exp(big.NewInt(2), big.NewInt(rand.Int63n(255)), nil))
 	}
-	hashMask := &HashMask{
+	hashMask = &HashMask{
 		Mask: mask.Bytes(),
 		Expiration: time.Now().Add(time.Hour),
 	}
 	err := tm.db.Model(&HashMask{}).Create(hashMask).Error
+	if err != nil {
+		tm.hashMaskCache[terms.ID] = hashMask
+	}
 	return mask.Bytes(), hashMask.ID, err
 }
 
@@ -153,6 +162,7 @@ func (tm *TermsManager) SaveSig(id uint, sig *types.Signature, address *types.Ad
 		Nonce: nonce,
 		Signature: sig,
 		TermsID: terms.ID,
+		Banned: false,
 	}
 	return tm.db.Model(&TermsSig{}).Create(terms_sig).Error
 }
@@ -190,7 +200,7 @@ func (tm *TermsManager) CheckAddress(address *types.Address) (bool, error) {
 		return true, nil
 	}
 	var count int
-	err := tm.db.Table("terms_sigs").Joins("LEFT JOIN terms ON terms.id = terms_sigs.terms_id").Where("terms_sigs.signer = ? AND terms.valid = ?", address, true).Count(&count).Error
+	err := tm.db.Table("terms_sigs").Joins("LEFT JOIN terms ON terms.id = terms_sigs.terms_id").Where("terms_sigs.signer = ? AND terms.valid = ? AND terms_sigs.banned = ?", address, true, false).Count(&count).Error
 	if err != nil {
 		tm.signers[address.String()] = struct{}{}
 	}
@@ -234,9 +244,9 @@ func (tm *TermsManager) UpdateTerms(lang, text string) error {
 }
 
 func NewTermsManager(db *gorm.DB) (*TermsManager) {
-	return &TermsManager{db, false, make(map[string]struct{})}
+	return &TermsManager{db, false, make(map[string]struct{}), make(map[uint]*HashMask)}
 }
 
 func NewTxTermsManager(db *gorm.DB) (*TermsManager) {
-	return &TermsManager{db, true, make(map[string]struct{})}
+	return &TermsManager{db, true, make(map[string]struct{}), make(map[uint]*HashMask)}
 }

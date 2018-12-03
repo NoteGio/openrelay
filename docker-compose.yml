@@ -67,7 +67,7 @@ services:
       context: ./
       dockerfile: Dockerfile.fillupdate
     image: "openrelay/fillupdate:${TAG:-latest}"
-    command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "topic://ordersfilled", "file:///bloom/data/testdata", "queue://fillupdate=>queue://fundcheck", "queue://fillrecheck=>queue://fundrecheck"]
+    command: ["/fillupdate", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "topic://ordersfilled", "file:///bloom/data/testdata", "queue://fillupdate=>queue://fundcheck"]
     volumes:
       - bloomdata:/bloom/data
     depends_on:
@@ -83,7 +83,7 @@ services:
       context: ./
       dockerfile: Dockerfile.fundcheckrelay
     image: "openrelay/fundcheckrelay:${TAG:-latest}"
-    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://fundcheck=>queue://delay1=>topic://instant-broadcast", "queue://fundrecheck=>queue://pgindexer", "--invalidation=topic://newblocks"]
+    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://fundcheck=>queue://pgindexer=>topic://instant-broadcast", "--invalidation=topic://newblocks"]
     depends_on:
       - redis
       - ethnode
@@ -93,31 +93,6 @@ services:
       restart_policy:
         condition: on-failure
     restart: on-failure
-  delayrelay1:
-    build:
-      context: ./
-      dockerfile: Dockerfile.delayrelay
-    image: "openrelay/delayrelay:${TAG:-latest}"
-    command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "topic://delay1trigger,queue://delay1=>queue://delay2", "topic://newblocks,queue://delay2=>queue://cancelrecheck=>topic://released-broadcast;topic://delay1trigger"]
-    depends_on:
-      - redis
-      - corebuild
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: on-failure
-  # delayrelay2:
-  #   build:
-  #     context: ./
-  #     dockerfile: Dockerfile.delayrelay
-  #   image: "openrelay/delayrelay:${TAG:-latest}"
-  #   command: ["/delayrelay", "${REDIS_HOST:-redis:6379}", "queue://delay2", "queue://released", "topic://newblocks", "topic://delay1trigger"]
-  #   depends_on:
-  #     - redis
-  #   deploy:
-  #     replicas: 1
-  #     restart_policy:
-  #       condition: on-failure
   fillmonitor:
     build:
       context: ./
@@ -266,8 +241,10 @@ services:
       SPENDRECORDER_PASSWORD: password
       CANCEL_FILTER_PASSWORD: password
       CANCEL_INDEX_PASSWORD: password
+      TOS_PASSWORD: password
+      TOS_MGR_PASSWORD: password
     # TODO: PROD config needs to reflect new roles
-    command: ["/automigrate", "postgres://postgres@postgres", "env://POSTGRES_PASSWORD", "indexer;env://INDEX_PASSWORD;orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE", "spendrecorder;env://SPENDRECORDER_PASSWORD;orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE", "search;env://SEARCH_PASSWORD;orderv2.SELECT,exchanges.SELECT", "cancelfilter;env://CANCEL_FILTER_PASSWORD;cancellations.SELECT", "cancelindexer;env://CANCEL_INDEX_PASSWORD;cancellations.SELECT,cancellations.INSERT,cancellations.UPDATE,orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE"]
+    command: ["/automigrate", "postgres://postgres@postgres", "env://POSTGRES_PASSWORD", "indexer;env://INDEX_PASSWORD;orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE", "spendrecorder;env://SPENDRECORDER_PASSWORD;orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE", "search;env://SEARCH_PASSWORD;orderv2.SELECT,exchanges.SELECT", "cancelfilter;env://CANCEL_FILTER_PASSWORD;cancellations.SELECT", "cancelindexer;env://CANCEL_INDEX_PASSWORD;cancellations.SELECT,cancellations.INSERT,cancellations.UPDATE,orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE", "tos;env://TOS_PASSWORD;terms.SELECT,terms_sigs.SELECT,terms_sigs.INSERT,hash_masks.SELECT,hash_masks.INSERT", "tosmgr;env://TOS_MGR_PASSWORD;terms.SELECT,terms.INSERT,terms.UPDATE,terms_sigs.SELECT,terms_sigs.INSERT,terms_sigs.UPDATE,hash_masks.SELECT,hash_masks.INSERT,hash_masks.DELETE"]
     depends_on:
       - postgres
       - corebuild
@@ -280,6 +257,24 @@ services:
     ports:
       - "8082:8080"
     command: ["/searchapi", "${REDIS_HOST:-redis:6379}", "topic://newblocks", "postgres://search@postgres", "env://POSTGRES_PASSWORD"]
+    environment:
+      POSTGRES_PASSWORD: password
+    depends_on:
+      - redis
+      - corebuild
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    restart: on-failure
+  termsapi:
+    build:
+      context: ./
+      dockerfile: Dockerfile.termsapi
+    image: "openrelay/pgsearchapi:${TAG:-latest}"
+    ports:
+      - "8083:8080"
+    command: ["/terms", "postgres://tos@postgres", "env://POSTGRES_PASSWORD"]
     environment:
       POSTGRES_PASSWORD: password
     depends_on:
@@ -414,7 +409,7 @@ services:
       context: ./
       dockerfile: Dockerfile.canceluptofilter
     image: "openrelay/canceluptofilter:${TAG:-latest}"
-    command: ["/canceluptofilter", "${REDIS_HOST:-redis:6379}", "postgres://cancelfilter@postgres", "env://POSTGRES_PASSWORD", "queue://0x48bacb9266a570d521063ef5dd96e61686dbe788-testrpc=>queue://fillupdate", "queue://cancelrecheck=>queue://fillrecheck"]
+    command: ["/canceluptofilter", "${REDIS_HOST:-redis:6379}", "postgres://cancelfilter@postgres", "env://POSTGRES_PASSWORD", "queue://0x48bacb9266a570d521063ef5dd96e61686dbe788-testrpc=>queue://fillupdate"]
     environment:
       POSTGRES_PASSWORD: password
     depends_on:
