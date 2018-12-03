@@ -21,7 +21,16 @@ func main() {
 		log.Fatalf("Error migrating cancellation table: %v", err.Error())
 	}
 	if err := db.AutoMigrate(&dbModule.Exchange{}).Error; err != nil {
-		log.Fatalf("Error migrating cancellation table: %v", err.Error())
+		log.Fatalf("Error migrating exchange table: %v", err.Error())
+	}
+	if err := db.AutoMigrate(&dbModule.Terms{}).Error; err != nil {
+		log.Fatalf("Error migrating terms table: %v", err.Error())
+	}
+	if err := db.AutoMigrate(&dbModule.TermsSig{}).Error; err != nil {
+		log.Fatalf("Error migrating term_sigs table: %v", err.Error())
+	}
+	if err := db.AutoMigrate(&dbModule.HashMask{}).Error; err != nil {
+		log.Fatalf("Error migrating hash_masks table: %v", err.Error())
 	}
 	kovanAddress, _ := common.HexToAddress("0x35dd2932454449b14cee11a94d3674a936d5d7b2")
 	db.Where(
@@ -34,8 +43,12 @@ func main() {
 	mainnetAddress, _ := common.HexToAddress("0x4f833a24e1f95d70f028921e27040ca56e09ab0b")
 	db.Where(
 		&dbModule.Exchange{Network: 1},
-	).FirstOrCreate(&dbModule.Exchange{Network: 50, Address: mainnetAddress })
-
+	).FirstOrCreate(&dbModule.Exchange{Network: 1, Address: mainnetAddress })
+	if db.Model(&Terms{}).First(&Terms{}).RecordNotFound() {
+		if err := dbModule.NewTermsManager(db).UpdateTerms("en", "don't break the law"); err != nil {
+			log.Fatalf("Error setting terms: %v", err.Error())
+		}
+	}
 	if err := db.Model(&dbModule.Order{}).AddIndex("idx_order_maker_asset_taker_asset_data", "maker_asset_data", "taker_asset_data").Error; err != nil {
 		log.Fatalf("Error adding token pair index: %v", err.Error())
 	}
@@ -69,6 +82,9 @@ func main() {
 				if err = db.Exec(fmt.Sprintf("GRANT %v ON TABLE %v TO %v", permission, table, username)).Error; err != nil {
 					log.Printf(err.Error())
 				}
+			}
+			if err = db.Exec(fmt.Sprintf("GRANT USAGE, SELECT on ALL SEQUENCES in SCHEMA public to %v", username)).Error; err != nil {
+				log.Printf(err.Error())
 			}
 		} else if dialect == "mysql" {
 			if err := db.Exec(fmt.Sprintf("CREATE USER '%v' IDENTIFIED BY '%v'", username, password)).Error; err != nil {

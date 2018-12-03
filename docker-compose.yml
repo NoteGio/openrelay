@@ -271,7 +271,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile.termsapi
-    image: "openrelay/pgsearchapi:${TAG:-latest}"
+    image: "openrelay/termsapi:${TAG:-latest}"
     ports:
       - "8083:8080"
     command: ["/terms", "postgres://tos@postgres", "env://POSTGRES_PASSWORD"]
