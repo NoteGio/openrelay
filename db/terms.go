@@ -95,7 +95,7 @@ func (tm *TermsManager) GetTerms(language string) (*Terms, error) {
 // returns the Bytes along with the byte string.
 func (tm *TermsManager) GetNewHashMask(terms *Terms) ([]byte, uint, error) {
 	hashMask, ok := tm.hashMaskCache[terms.ID]
-	if ok && hashMask.Expiration.Before(time.Now().Add(time.Hour / 2)) {
+	if ok && hashMask.Expiration.After(time.Now().Add(time.Hour / 2)) {
 		return hashMask.Mask, hashMask.ID, nil
 	}
 	mask := new(big.Int)
