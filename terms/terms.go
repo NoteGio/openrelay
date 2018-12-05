@@ -72,7 +72,7 @@ func TermsHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 				Mask: &types.Uint256{},
 				MaskID: mask_id,
 			}
-			copy(tf.Mask[:], mask[:])
+			copy(tf.Mask[32 - len(mask):], mask[:])
 			data, err := json.Marshal(tf)
 			if err != nil {
 				returnError(w, IngestError{101, err.Error()}, 500)
@@ -153,6 +153,7 @@ func TermsHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 				}, 400)
 				return
 			}
+			log.Printf("Saved Signature from: %v", payload.Address)
 			w.WriteHeader(202)
 		} else {
 			returnError(w, IngestError{100, fmt.Sprintf("Unsupported Method: %v", r.Method)}, 405)

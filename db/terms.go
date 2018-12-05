@@ -108,7 +108,7 @@ func (tm *TermsManager) GetNewHashMask(terms *Terms) ([]byte, uint, error) {
 		Expiration: time.Now().Add(time.Hour),
 	}
 	err := tm.db.Model(&HashMask{}).Create(hashMask).Error
-	if err != nil {
+	if err == nil {
 		tm.hashMaskCache[terms.ID] = hashMask
 	}
 	return mask.Bytes(), hashMask.ID, err
@@ -137,7 +137,7 @@ func (terms *Terms) CheckSig(sig *types.Signature, address *types.Address, times
 	termsSha.Write([]byte(fmt.Sprintf("%v\n%v\n%#x", terms.Text, timestamp, nonce)))
 	hash := termsSha.Sum(nil)
 	if !CheckMask(mask, hash) {
-		return false, fmt.Errorf("Hash must match mask: %v", mask)
+		return false, fmt.Errorf("Hash must match mask: %#x, got %#x", mask, hash)
 	}
 	return sig.Verify(address, hash), nil
 }

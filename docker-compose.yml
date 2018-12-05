@@ -41,10 +41,12 @@ services:
     image: "openrelay/ingest:${TAG:-latest}"
     ports:
       - "8081:8080"
-    command: ["/ingest", "${REDIS_HOST:-redis:6379}", "C22d5b2951DB72B44CFb8089bb8CD374A3c354eA", "queue://ingest"]
+    command: ["/ingest", "postgres://ingest@postgres", "env://POSTGRES_PASSWORD", "${REDIS_HOST:-redis:6379}", "C22d5b2951DB72B44CFb8089bb8CD374A3c354eA", "queue://ingest"]
     depends_on:
       - redis
       - corebuild
+    environment:
+      POSTGRES_PASSWORD: password
     deploy:
       replicas: 1
       restart_policy:
@@ -145,13 +147,13 @@ services:
       context: ./
       dockerfile: Dockerfile.pgfillindexer
     image: "openrelay/pgfillindexer:${TAG:-latest}"
-    command: ["/fillindexer", "redis:6379", "queue://pgordersfilled", "postgres://postgres@postgres", "env://POSTGRES_PASSWORD"]
+    command: ["/fillindexer", "redis:6379", "queue://pgordersfilled", "postgres://indexer@postgres", "env://POSTGRES_PASSWORD"]
     depends_on:
       - redis
       - postgres
       - corebuild
     environment:
-      POSTGRES_PASSWORD: secret
+      POSTGRES_PASSWORD: password
     restart: on-failure
 
   # simplerelayreleased:
@@ -243,8 +245,22 @@ services:
       CANCEL_INDEX_PASSWORD: password
       TOS_PASSWORD: password
       TOS_MGR_PASSWORD: password
+      INGEST_PASSWORD: password
     # TODO: PROD config needs to reflect new roles
-    command: ["/automigrate", "postgres://postgres@postgres", "env://POSTGRES_PASSWORD", "indexer;env://INDEX_PASSWORD;orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE", "spendrecorder;env://SPENDRECORDER_PASSWORD;orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE", "search;env://SEARCH_PASSWORD;orderv2.SELECT,exchanges.SELECT", "cancelfilter;env://CANCEL_FILTER_PASSWORD;cancellations.SELECT", "cancelindexer;env://CANCEL_INDEX_PASSWORD;cancellations.SELECT,cancellations.INSERT,cancellations.UPDATE,orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE", "tos;env://TOS_PASSWORD;terms.SELECT,terms_sigs.SELECT,terms_sigs.INSERT,hash_masks.SELECT,hash_masks.INSERT", "tosmgr;env://TOS_MGR_PASSWORD;terms.SELECT,terms.INSERT,terms.UPDATE,terms_sigs.SELECT,terms_sigs.INSERT,terms_sigs.UPDATE,hash_masks.SELECT,hash_masks.INSERT,hash_masks.DELETE"]
+    command:
+      - "/automigrate"
+      - "postgres://postgres@postgres"
+      - "env://POSTGRES_PASSWORD"
+      - "indexer;env://INDEX_PASSWORD;orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE"
+      - "spendrecorder;env://SPENDRECORDER_PASSWORD;orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE"
+      - "search;env://SEARCH_PASSWORD;orderv2.SELECT,exchanges.SELECT"
+      - "cancelfilter;env://CANCEL_FILTER_PASSWORD;cancellations.SELECT"
+      - "cancelindexer;env://CANCEL_INDEX_PASSWORD;cancellations.SELECT,cancellations.INSERT,cancellations.UPDATE,orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE"
+      - "tos;env://TOS_PASSWORD;terms.SELECT,terms_sigs.SELECT,terms_sigs.INSERT,hash_masks.SELECT,hash_masks.INSERT"
+      - "ingest;env://INGEST_PASSWORD;terms.SELECT,terms_sigs.SELECT,terms_sigs.INSERT"
+      - "tosmgr;env://TOS_MGR_PASSWORD;terms.SELECT,terms.INSERT,terms.UPDATE,terms_sigs.SELECT,terms_sigs.INSERT,terms_sigs.UPDATE,hash_masks.SELECT,hash_masks.INSERT,hash_masks.DELETE"
+
+
     depends_on:
       - postgres
       - corebuild
