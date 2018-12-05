@@ -169,9 +169,9 @@ func (tm *TermsManager) SaveSig(id uint, sig *types.Signature, address *types.Ad
 
 // FindValidNonce finds a valid hash for a given hash mask, Terms, and
 // Timestamp, and returns the Nonce used to generate thas hashmask.
-func FindValidNonce(terms *Terms, timestamp string, mask []byte) (<-chan []byte) {
+func FindValidNonce(text, timestamp string, mask []byte) (<-chan []byte) {
 	ch := make(chan []byte)
-	go func(terms *Terms, timestamp string, mask []byte, ch chan []byte) {
+	go func(text, timestamp string, mask []byte, ch chan []byte) {
 		rand.Seed(time.Now().UTC().UnixNano())
 		hash := []byte{}
 		nonce := make([]byte, 32)
@@ -179,11 +179,11 @@ func FindValidNonce(terms *Terms, timestamp string, mask []byte) (<-chan []byte)
 			nonce = make([]byte, 32)
 			rand.Read(nonce[:])
 			termsSha := sha3.NewKeccak256()
-			termsSha.Write([]byte(fmt.Sprintf("%v\n%v\n%#x", terms.Text, timestamp, nonce)))
+			termsSha.Write([]byte(fmt.Sprintf("%v\n%v\n%#x", text, timestamp, nonce)))
 			hash = termsSha.Sum(nil)
 		}
 		ch <- nonce
-	}(terms, timestamp, mask, ch)
+	}(text, timestamp, mask, ch)
 	return ch
 }
 

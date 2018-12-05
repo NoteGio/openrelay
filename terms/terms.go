@@ -23,12 +23,12 @@ type TermsFormat struct {
 }
 
 type TermsSigPayload struct {
-	TermsID   uint
-	MaskID    uint
-	Signature *types.Signature
-	Address   *types.Address
-	Timestamp string
-	Nonce     string
+	TermsID   uint              `json:"terms_id"`
+	MaskID    uint              `json:"mask_id"`
+	Signature *types.Signature  `json:"sig"`
+	Address   *types.Address    `json:"address"`
+	Timestamp string            `json:"timestamp"`
+	Nonce     string            `json:"nonce"`
 }
 
 type IngestError struct {

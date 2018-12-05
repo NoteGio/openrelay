@@ -196,7 +196,7 @@ func TestCheckAddress(t *testing.T) {
 		t.Fatalf("Error creating mask: '%v'", err.Error())
 	}
 	timestamp := "1543351413"
-	nonce := <-dbModule.FindValidNonce(terms, timestamp, mask)
+	nonce := <-dbModule.FindValidNonce(terms.Text, timestamp, mask)
 	termsSha := sha3.NewKeccak256()
 	termsSha.Write([]byte(fmt.Sprintf("%v\n%v\n%#x", terms.Text, timestamp, nonce)))
 	hash := termsSha.Sum(nil)

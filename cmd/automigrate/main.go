@@ -9,6 +9,23 @@ import (
 	"strings"
 )
 
+const terms = `
+In signing this statement and using OpenRelay, I agree to abide by all terms outlined in the OpenRelay Terms of Use.
+As a required condition before I am permitted to trade on OpenRelay, I explicitly acknowledge:
+1. OpenRelay is a U.S. company not registered as an exchange with the U.S. Securities and Exchange Commission, and
+2. OpenRelay is not exempt from registration requirements under any valid exemption,
+And I agree not use OpenRelay's services to trade:
+1. any asset that the SEC has declared a security, or
+2. any asset that I have (or should have) reason to believe could be classifed as a sercurity, or
+3. any asset that may violate any other law or regulation of the United States.
+I understand that if I am discovered to be in (intentional or accidental) violation of these terms,
+OpenRelay may take any action necessary to maintain lawful operations,
+Up to and Including (but not limited to):
+1. Removing my orders from the order book,
+2. Temporarily or permanently banning me or my accounts from access to OpenRelay,
+3. Reporting my actions and any available identifying information to any relevant investigatory or enforcement authority, or
+4. Seeking any appropriate legal or equitable remedy that may be available to OpenRelay resulting from any violation of these terms.`
+
 func main() {
 	db, err := dbModule.GetDB(os.Args[1], os.Args[2])
 	if err != nil {
@@ -44,8 +61,8 @@ func main() {
 	db.Where(
 		&dbModule.Exchange{Network: 1},
 	).FirstOrCreate(&dbModule.Exchange{Network: 1, Address: mainnetAddress })
-	if db.Model(&Terms{}).First(&Terms{}).RecordNotFound() {
-		if err := dbModule.NewTermsManager(db).UpdateTerms("en", "don't break the law"); err != nil {
+	if db.Model(&dbModule.Terms{}).First(&dbModule.Terms{}).RecordNotFound() {
+		if err := dbModule.NewTermsManager(db).UpdateTerms("en", terms); err != nil {
 			log.Fatalf("Error setting terms: %v", err.Error())
 		}
 	}
