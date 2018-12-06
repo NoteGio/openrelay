@@ -24,6 +24,7 @@ func main() {
 		}
 	}
 	mux := http.NewServeMux()
+	mux.HandleFunc("/v2/_tos/", terms.TermsCheckHandler(db))
 	mux.HandleFunc("/v2/_tos", terms.TermsHandler(db))
 	mux.HandleFunc("/_hc", terms.HealthCheckHandler(db))
 	corsHandler := cors.Default().Handler(mux)

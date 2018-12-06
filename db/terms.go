@@ -133,13 +133,14 @@ func (tm *TermsManager) CheckTerms(id uint, sig *types.Signature, address *types
 
 // CheckSig verifies that a signature is valid for a given Terms of use object
 func (terms *Terms) CheckSig(sig *types.Signature, address *types.Address, timestamp string, nonce []byte, mask []byte) (bool, error) {
+	signedMessage := []byte(fmt.Sprintf("%v\n%v\n%#x", terms.Text, timestamp, nonce))
 	termsSha := sha3.NewKeccak256()
-	termsSha.Write([]byte(fmt.Sprintf("%v\n%v\n%#x", terms.Text, timestamp, nonce)))
+	termsSha.Write(signedMessage)
 	hash := termsSha.Sum(nil)
 	if !CheckMask(mask, hash) {
 		return false, fmt.Errorf("Hash must match mask: %#x, got %#x", mask, hash)
 	}
-	return sig.Verify(address, hash), nil
+	return sig.Verify(address, signedMessage), nil
 }
 
 // SaveSig verifies that a signature is valid for a given Terms, then saves it

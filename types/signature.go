@@ -10,6 +10,7 @@ import (
 	"log"
 	// "reflect"
 	"bytes"
+	"fmt"
 )
 
 const (
@@ -93,7 +94,7 @@ func (sig Signature) verifyEthSign(address *Address, hash []byte) bool {
 	if v < 27 {
 		return false
 	}
-	hashedBytes := append([]byte("\x19Ethereum Signed Message:\n32"), hash[:]...)
+	hashedBytes := append([]byte(fmt.Sprintf("\x19Ethereum Signed Message:\n%v", len(hash[:]))), hash[:]...)
 	signedBytes := crypto.Keccak256(hashedBytes)
 	pub, err := crypto.Ecrecover(signedBytes, append(append(r, s...), v - 27))
 	if err != nil {

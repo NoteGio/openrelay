@@ -11,6 +11,7 @@ import (
 	"time"
 	"io"
 	"log"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -155,6 +156,35 @@ func TermsHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 			}
 			log.Printf("Saved Signature from: %v", payload.Address)
 			w.WriteHeader(202)
+		} else {
+			returnError(w, IngestError{100, fmt.Sprintf("Unsupported Method: %v", r.Method)}, 405)
+		}
+	}
+}
+
+func TermsCheckHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
+	tm := dbModule.NewTermsManager(db)
+	orderRegex := regexp.MustCompile(".*/_tos/0x([0-9a-fA-F]+)")
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {
+			pathMatch := orderRegex.FindStringSubmatch(r.URL.Path)
+			if len(pathMatch) == 0 {
+				returnError(w, IngestError{100, "Malformed address"}, 404)
+				return
+			}
+			hashHex := pathMatch[1]
+			hashBytes, err := hex.DecodeString(hashHex)
+			if err != nil {
+				returnError(w, IngestError{100, err.Error()}, 404)
+				return
+			}
+			address := &types.Address{}
+			copy(address[:], hashBytes[:])
+			if <-tm.CheckAddress(address) {
+				w.WriteHeader(204)
+			} else {
+				w.WriteHeader(404)
+			}
 		} else {
 			returnError(w, IngestError{100, fmt.Sprintf("Unsupported Method: %v", r.Method)}, 405)
 		}

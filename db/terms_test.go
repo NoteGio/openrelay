@@ -153,16 +153,14 @@ func TestCheckTerms(t *testing.T) {
 	}
 	timestamp := "1543351413"
 	nonce := <-dbModule.FindValidNonce(terms.Text, timestamp, mask)
-	termsSha := sha3.NewKeccak256()
-	termsSha.Write([]byte(fmt.Sprintf("%v\n%v\n%#x", terms.Text, timestamp, nonce)))
-	hash := termsSha.Sum(nil)
+	signedData := []byte(fmt.Sprintf("%v\n%v\n%#x", terms.Text, timestamp, nonce))
 
 	key, _ := ecdsa.GenerateKey(crypto.S256(), rand.Reader)
 	address := crypto.PubkeyToAddress(key.PublicKey)
 	signer := &types.Address{}
 	copy(signer[:], address[:])
 
-	hashedBytes := append([]byte("\x19Ethereum Signed Message:\n32"), hash[:]...)
+	hashedBytes := append([]byte(fmt.Sprintf("\x19Ethereum Signed Message:\n%v", len(signedData[:]))), signedData[:]...)
 	signedBytes := crypto.Keccak256(hashedBytes)
 
 	sig, _ := crypto.Sign(signedBytes, key)
@@ -200,16 +198,14 @@ func TestCheckAddress(t *testing.T) {
 	}
 	timestamp := "1543351413"
 	nonce := <-dbModule.FindValidNonce(terms.Text, timestamp, mask)
-	termsSha := sha3.NewKeccak256()
-	termsSha.Write([]byte(fmt.Sprintf("%v\n%v\n%#x", terms.Text, timestamp, nonce)))
-	hash := termsSha.Sum(nil)
+	signedData := []byte(fmt.Sprintf("%v\n%v\n%#x", terms.Text, timestamp, nonce))
 
 	key, _ := ecdsa.GenerateKey(crypto.S256(), rand.Reader)
 	address := crypto.PubkeyToAddress(key.PublicKey)
 	signer := &types.Address{}
 	copy(signer[:], address[:])
 
-	hashedBytes := append([]byte("\x19Ethereum Signed Message:\n32"), hash[:]...)
+	hashedBytes := append([]byte(fmt.Sprintf("\x19Ethereum Signed Message:\n%v", len(signedData[:]))), signedData[:]...)
 	signedBytes := crypto.Keccak256(hashedBytes)
 
 	sig, _ := crypto.Sign(signedBytes, key)
