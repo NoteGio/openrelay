@@ -27,7 +27,7 @@ func FormatResponse(orders []dbModule.Order, format string, total, page, perPage
 	} else {
 		orderList := []FormattedOrder{}
 		for _, order := range orders {
-			orderList = append(orderList, *GetFormattedOrder(&order))
+			orderList = append(orderList, *GetFormattedOrder(order))
 		}
 		result, err := json.Marshal(GetPagedResult(total, page, perPage, orderList))
 		return result, "application/json", err
@@ -39,7 +39,7 @@ func FormatSingleResponse(order *dbModule.Order, format string) ([]byte, string,
 		result := order.Bytes()
 		return result[:], "application/octet-stream", nil
 	}
-	result, err := json.Marshal(GetFormattedOrder(order))
+	result, err := json.Marshal(GetFormattedOrder(*order))
 	return result, "application/json", err
 }
 

@@ -1,6 +1,7 @@
 package search_test
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/ecdsa"
 	"encoding/hex"
@@ -309,6 +310,9 @@ func TestPagination(t *testing.T) {
 	orders := pagedResult.Records
 	if length := len(orders); length != 20 {
 			t.Errorf("Expected 20 items, got '%v'", (length))
+	}
+	if bytes.Equal(orders[0].Order.Signature[:],  orders[1].Order.Signature[:]) {
+		t.Errorf("Different orders should have different signatures")
 	}
 	// if length := recorder.Body.Len(); length != (20 * 441) {
 	// 	t.Errorf("Expected 20 items, got '%v'", (length / 441))
