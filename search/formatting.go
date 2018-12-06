@@ -19,7 +19,7 @@ type OrderMetadata struct {
 	TakerAssetAmountRemaining string `json:"takerAssetAmountRemaining"`
 }
 
-func GetFormattedOrder(order *dbModule.Order) (*FormattedOrder) {
+func GetFormattedOrder(order dbModule.Order) (*FormattedOrder) {
 	return &FormattedOrder{
 		&order.Order,
 		&OrderMetadata{
