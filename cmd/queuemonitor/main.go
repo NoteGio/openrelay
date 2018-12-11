@@ -30,6 +30,7 @@ func main() {
 			log.Printf("Initial Queue: %v - %v", k, counts[k])
 		}
 	}
+	counter := 0
 	for {
 		time.Sleep(20 * time.Second)
 		for k, v := range counts {
@@ -41,7 +42,11 @@ func main() {
 				log.Printf("Queue Increasing: %v - %v", k, counts[k])
 			} else if (counts[k] / threshold) < (v / threshold) {
 				log.Printf("Queue Decreasing: %v - %v", k, counts[k])
+			} else if counter % 3 == 0 && counts[k] > threshold {
+				// Print all the queues once a minute
+				log.Printf("Queue Steady: %v - %v", k, counts[k])
 			}
 		}
+		counter++
 	}
 }

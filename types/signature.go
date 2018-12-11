@@ -3,13 +3,15 @@ package types
 import (
 	// "github.com/jinzhu/gorm"
 	// "database/sql/driver"
-	// "encoding/json"
+	"encoding/hex"
 	// "errors"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"log"
 	// "reflect"
 	"bytes"
+	"fmt"
+	"strings"
 )
 
 const (
@@ -93,7 +95,7 @@ func (sig Signature) verifyEthSign(address *Address, hash []byte) bool {
 	if v < 27 {
 		return false
 	}
-	hashedBytes := append([]byte("\x19Ethereum Signed Message:\n32"), hash[:]...)
+	hashedBytes := append([]byte(fmt.Sprintf("\x19Ethereum Signed Message:\n%v", len(hash[:]))), hash[:]...)
 	signedBytes := crypto.Keccak256(hashedBytes)
 	pub, err := crypto.Ecrecover(signedBytes, append(append(r, s...), v - 27))
 	if err != nil {
@@ -120,4 +122,21 @@ func (sig Signature) verifyValidator(address *Address, hash []byte) bool {
 	// can monitor for events that would invalidate an order in a scalable
 	// manner.
 	return false
+}
+
+func (sig Signature) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("\"%#x\"", sig)), nil
+}
+
+func (sig Signature) UnmarshalJSON(b []byte) error {
+	data := strings.Trim(string(b), "\"")
+	sigBytes, err := hex.DecodeString(strings.TrimPrefix(data, "0x"))
+	if err != nil {
+		return err
+	}
+	if len(sig) != len(sigBytes) {
+		return fmt.Errorf("Unmarshalling to signature requires len(sig) == len(data)")
+	}
+	copy(sig[:], sigBytes[:])
+	return nil
 }
