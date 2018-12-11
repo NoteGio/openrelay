@@ -81,10 +81,15 @@ func TermsHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 			}
 			w.WriteHeader(200)
 			w.Header().Set("Content-Type", "application/json")
+			// The hashmask we're returning will in 30 - 60 minutes. Setting a max
+			// age of 25 minutes ensures anything served from cloudfront is good for
+			// at least 5 minutes.
+			w.Header().Set("Cache-Control", "max-age=1500, public")
 			w.Write(data)
 		} else if r.Method == "POST" {
 			var data [1024]byte
-			payload := &TermsSigPayload{}
+			sig := make(types.Signature, 66)
+			payload := &TermsSigPayload{Signature: &sig}
 			jsonLength, err := r.Body.Read(data[:])
 			if err != nil && err != io.EOF {
 				log.Printf(err.Error())
