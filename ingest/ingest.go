@@ -48,7 +48,7 @@ func returnError(w http.ResponseWriter, errResp IngestError, status int) {
 	w.Write(errBytes)
 }
 
-func Handler(publisher channels.Publisher, accounts accountsModule.AccountService, affiliates affiliatesModule.AffiliateService, tm TermsManager, exchangeLookup ExchangeLookup) func(http.ResponseWriter, *http.Request) {
+func Handler(publisher channels.Publisher, accounts accountsModule.AccountService, affiliates affiliatesModule.AffiliateService, enforceTerms bool, tm TermsManager, exchangeLookup ExchangeLookup) func(http.ResponseWriter, *http.Request) {
 	var contentType string
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
@@ -115,7 +115,16 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 			return
 		}
 		knownExchange := exchangeLookup.ExchangeIsKnown(order.ExchangeAddress)
-		signedMaker := tm.CheckAddress(order.Maker)
+		var signedMaker <-chan bool
+		if(enforceTerms) {
+			signedMaker = tm.CheckAddress(order.Maker)
+		} else {
+			signedMaker = func() (<-chan bool){
+				result := make(chan bool)
+				go func() {result <- true}()
+				return result
+			}()
+		}
 		// At this point we've errored out, or we have an Order object
 		if !order.MakerAssetData.SupportedType() {
 			returnError(w, IngestError{

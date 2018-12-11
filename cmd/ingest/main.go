@@ -43,8 +43,9 @@ func main() {
 	affiliateService := affiliates.NewRedisAffiliateService(redisClient)
 	accountService := accounts.NewRedisAccountService(redisClient)
 	publisher, err := channels.PublisherFromURI(dstChannel, redisClient)
+	enforceTerms := os.Getenv("OR_ENFORCE_TERMS") != "false"
 	if err != nil { log.Fatalf(err.Error()) }
-	handler := ingest.Handler(publisher, accountService, affiliateService, dbModule.NewTermsManager(db), dbModule.NewExchangeLookup(db))
+	handler := ingest.Handler(publisher, accountService, affiliateService, enforceTerms, dbModule.NewTermsManager(db), dbModule.NewExchangeLookup(db))
 	feeHandler := ingest.FeeHandler(publisher, accountService, affiliateService, defaultFeeRecipientBytes)
 
 	mux := http.NewServeMux()
