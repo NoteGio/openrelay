@@ -39,8 +39,8 @@ func valInList(val *types.Address, list []types.Address) bool {
 }
 
 func returnError(w http.ResponseWriter, errResp IngestError, status int) {
-	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
 	errBytes, err := json.Marshal(errResp)
 	if err != nil {
 		log.Printf(err.Error())
@@ -53,8 +53,8 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
 			// Health checks
-			w.WriteHeader(200)
 			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(200)
 			fmt.Fprintf(w, "{\"ok\": true}")
 			return
 		}
