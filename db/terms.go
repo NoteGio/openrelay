@@ -18,7 +18,7 @@ type Terms struct {
 	gorm.Model
 	Current    bool
 	Lang       string
-	Text       string
+	Text       string   `sql:"type:text;"`
 	Valid      bool
 	Difficulty int
 }
