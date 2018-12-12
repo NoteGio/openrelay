@@ -39,9 +39,9 @@ type IngestError struct {
 
 
 func returnError(w http.ResponseWriter, errResp IngestError, status int) {
-	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	w.WriteHeader(status)
 	errBytes, err := json.Marshal(errResp)
 	if err != nil {
 		log.Printf(err.Error())
@@ -80,12 +80,12 @@ func TermsHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 				returnError(w, IngestError{101, err.Error()}, 500)
 				return
 			}
-			w.WriteHeader(200)
 			w.Header().Set("Content-Type", "application/json")
 			// The hashmask we're returning will in 30 - 60 minutes. Setting a max
 			// age of 25 minutes ensures anything served from cloudfront is good for
 			// at least 5 minutes.
 			w.Header().Set("Cache-Control", "max-age=1500, public")
+			w.WriteHeader(200)
 			w.Write(data)
 		} else if r.Method == "POST" {
 			var data [1024]byte

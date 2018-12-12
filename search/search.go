@@ -111,15 +111,15 @@ func applyOrFilter(query *gorm.DB, queryField, dbField1, dbField2 string, queryO
 }
 
 func returnError(w http.ResponseWriter, err error, code int) {
-	w.WriteHeader(code)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
 	w.Write([]byte(fmt.Sprintf("{\"code\":100,\"reason\":\"%v\"}", err.Error())))
 }
 
 func returnErrorList(w http.ResponseWriter, errs []ValidationError) {
-	w.WriteHeader(400)
 	apiError := ApiError{100, "Validation Failed", errs}
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
 	data, err := json.Marshal(apiError)
 	if err == nil {
 		w.Write(data)
@@ -306,7 +306,6 @@ func SearchHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 		}
 		response, contentType, err := FormatResponse(orders, acceptHeader, count, pageInt, perPageInt)
 		if err == nil {
-			w.WriteHeader(200)
 
 
 			url := *r.URL
@@ -315,6 +314,7 @@ func SearchHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 
 			w.Header().Set("Link", fmt.Sprintf("<%v>; rel=\"next\"", (&url).RequestURI()))
 			w.Header().Set("Content-Type", contentType)
+			w.WriteHeader(200)
 			w.Write(response)
 		} else {
 			returnError(w, err, 500)

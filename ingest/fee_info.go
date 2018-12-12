@@ -139,8 +139,8 @@ func FeeHandler(publisher channels.Publisher, accounts accountsModule.AccountSer
 			senderToSpecify,
 			takerToSpecify,
 		}
-		w.WriteHeader(200)
 		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(200)
 		feeBytes, err := json.Marshal(feeResponse)
 		if err != nil {
 			log.Printf(err.Error())
