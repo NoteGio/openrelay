@@ -41,6 +41,7 @@ type IngestError struct {
 func returnError(w http.ResponseWriter, errResp IngestError, status int) {
 	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 	errBytes, err := json.Marshal(errResp)
 	if err != nil {
 		log.Printf(err.Error())
