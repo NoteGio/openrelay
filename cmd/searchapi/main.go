@@ -13,6 +13,7 @@ import (
 	"log"
 	"github.com/rs/cors"
 	"strconv"
+	"regexp"
 )
 
 type route struct {
@@ -65,9 +66,9 @@ func main() {
 		log.Fatalf("Error establishing block channel: %v", err.Error())
 	}
 	blockHash := blockhash.NewChanneledBlockHash(blockChannelConsumer)
-	searchHandler := search.BlockHashDecorator(blockHash, pool.PoolDecorator(search.SearchHandler(db)))
+	searchHandler := search.BlockHashDecorator(blockHash, pool.PoolDecorator(db, search.SearchHandler(db)))
 	orderHandler := search.BlockHashDecorator(blockHash, search.OrderHandler(db))
-	orderBookHandler := search.BlockHashDecorator(blockHash, pool.PoolDecorator(search.OrderBookHandler(db)))
+	orderBookHandler := search.BlockHashDecorator(blockHash, pool.PoolDecorator(db, search.OrderBookHandler(db)))
 	feeRecipientsHandler := search.BlockHashDecorator(blockHash, search.FeeRecipientHandler(affiliates.NewRedisAffiliateService(redisClient)))
 	pairHandler := search.PairHandler(db)
 

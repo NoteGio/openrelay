@@ -66,7 +66,7 @@ func (pool Pool) Fee() (*big.Int, error) {
 
 var poolRegex = regexp.MustCompile("^(/[^/]*)?/v2/")
 
-func PoolDecorator(db *gorm.DB, fn func(http.ResponseWriter, *http.Request, *Pool)) func(http.ResponseWriter, *http.Request) {
+func PoolDecorator(db *gorm.DB, fn func(http.ResponseWriter, *http.Request, types.Pool)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		match := poolRegex.FindStringSubmatch(r.URL.Path)
 		if len(match) == 2 {
@@ -95,8 +95,29 @@ func PoolDecorator(db *gorm.DB, fn func(http.ResponseWriter, *http.Request, *Poo
 
 func PoolDecoratorBaseFee(db *gorm.DB, redisClient *redis.Client, fn func(http.ResponseWriter, *http.Request, *Pool)) func(http.ResponseWriter, *http.Request) {
 	baseFee := config.NewBaseFee(redisClient)
-	return PoolDecorator(db, func(w http.ResponseWriter, r *http.Request, pool *Pool) {
-		pool.baseFee = baseFee
-		fn(w, r, pool)
-	})
+	return func(w http.ResponseWriter, r *http.Request) {
+		match := poolRegex.FindStringSubmatch(r.URL.Path)
+		if len(match) == 2 {
+			poolName := strings.TrimPrefix(match[1], "/")
+			pool :=  &Pool{}
+			if q := db.Model(&Pool{}).Where("ID = ?", sha3.NewKeccak256().Sum([]byte(poolName))).First(pool); q.Error != nil {
+				if poolName != "" {
+					w.WriteHeader(404)
+					w.Header().Set("Content-Type", "application/json")
+					w.Write([]byte(fmt.Sprintf("{\"code\":100,\"reason\":\"Pool Not Found: %v\"}", q.Error.Error())))
+					return
+				}
+				// If no pool was specified and no default pool is in the database,
+				// just use an empty pool
+			}
+			pool.baseFee = baseFee
+			fn(w, r, pool)
+		} else {
+			// Routing regex shouldn't get here
+			w.WriteHeader(404)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write([]byte(fmt.Sprintf("{\"code\":100,\"reason\":\"Not Found\"}")))
+			return
+		}
+	}
 }

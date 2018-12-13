@@ -5,6 +5,7 @@ import (
 	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/affiliates"
 	"github.com/notegio/openrelay/accounts"
+	"github.com/notegio/openrelay/pool"
 	dbModule "github.com/notegio/openrelay/db"
 	"encoding/hex"
 	"net/http"
@@ -74,13 +75,13 @@ func main() {
 	publisher, err := channels.PublisherFromURI(dstChannel, redisClient)
 	enforceTerms := os.Getenv("OR_ENFORCE_TERMS") != "false"
 	if err != nil { log.Fatalf(err.Error()) }
-	handler := ingest.Handler(publisher, accountService, affiliateService, enforceTerms, dbModule.NewTermsManager(db), dbModule.NewExchangeLookup(db))
-	feeHandler := ingest.FeeHandler(publisher, accountService, affiliateService, defaultFeeRecipientBytes)
+	handler := pool.PoolDecoratorBaseFee(db, redisClient, ingest.Handler(publisher, accountService, affiliateService, enforceTerms, dbModule.NewTermsManager(db), dbModule.NewExchangeLookup(db)))
+	feeHandler := pool.PoolDecoratorBaseFee(db, redisClient, ingest.FeeHandler(publisher, accountService, affiliateService, defaultFeeRecipientBytes))
 
 	mux := &regexpHandler{[]*route{}}
 	mux.HandleFunc(regexp.MustCompile("^(/[^/]+)?/v2/order$"), handler)
 	mux.HandleFunc(regexp.MustCompile("^(/[^/]+)?/v2/order_config$"), feeHandler)
-	mux.HandleFunc(regex.MustCompile("^/_hc$"), ingest.HealthCheckHandler(redisClient))
+	mux.HandleFunc(regexp.MustCompile("^/_hc$"), ingest.HealthCheckHandler(redisClient))
 	corsHandler := cors.Default().Handler(mux)
 	log.Printf("Order Ingest Serving on :%v", port)
 	http.ListenAndServe(":"+port, corsHandler)
