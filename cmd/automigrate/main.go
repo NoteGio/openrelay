@@ -19,7 +19,7 @@ As a required condition before I am permitted to trade on OpenRelay, I explicitl
 And I agree not use OpenRelay's services to trade:
 
 1. any asset that the SEC has declared a security, or
-2. any asset that I have (or should have) reason to believe could be classifed as a sercurity, or
+2. any asset that I have (or should have) reason to believe could be classified as a security, or
 3. any asset intended to induce another to trade by means of deception or fraud, including but not limited to assets named or marketed to look like a different asset of greater value.
 4. any asset that may violate any other law or regulation of the United States, including state and local laws and regulations.
 
