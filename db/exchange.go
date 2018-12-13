@@ -37,7 +37,7 @@ func (lookup *ExchangeLookup) GetNetworkByExchange(address *types.Address) (int6
 		return network, nil
 	}
 	exchange := &Exchange{}
-	if err := lookup.db.Model(&Exchange{}).Where("address = ?", address[:]).First(exchange).Error; err != nil {
+	if err := lookup.db.Model(&Exchange{}).Where("address = ?", address).First(exchange).Error; err != nil {
 		return 0, err
 	}
 	lookup.byAddressCache[*address] = exchange.Network
@@ -48,7 +48,7 @@ func (lookup *ExchangeLookup) ExchangeIsKnown(address *types.Address) (<-chan bo
 	result := make(chan bool)
 	go func(address *types.Address, result chan bool) {
 		_, err := lookup.GetNetworkByExchange(address)
-		result <- (err != nil)
+		result <- (err == nil)
 	}(address, result)
 	return result
 }
