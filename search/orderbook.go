@@ -66,10 +66,10 @@ func OrderBookHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request, type
 		formattedAsks := []FormattedOrder{}
 		formattedBids := []FormattedOrder{}
 		for _, order := range asks {
-			formattedAsks = append(formattedAsks, *GetFormattedOrder(&order))
+			formattedAsks = append(formattedAsks, *GetFormattedOrder(order))
 		}
 		for _, order := range bids {
-			formattedBids = append(formattedBids, *GetFormattedOrder(&order))
+			formattedBids = append(formattedBids, *GetFormattedOrder(order))
 		}
 		orderBook := &OrderBook{
 			GetPagedResult(askCount, pageInt, perPageInt, formattedAsks),
