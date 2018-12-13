@@ -253,11 +253,11 @@ services:
       - "env://POSTGRES_PASSWORD"
       - "indexer;env://INDEX_PASSWORD;orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE"
       - "spendrecorder;env://SPENDRECORDER_PASSWORD;orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE"
-      - "search;env://SEARCH_PASSWORD;orderv2.SELECT,exchanges.SELECT"
+      - "search;env://SEARCH_PASSWORD;orderv2.SELECT,exchanges.SELECT,pools.SELECT"
       - "cancelfilter;env://CANCEL_FILTER_PASSWORD;cancellations.SELECT"
       - "cancelindexer;env://CANCEL_INDEX_PASSWORD;cancellations.SELECT,cancellations.INSERT,cancellations.UPDATE,orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE"
       - "tos;env://TOS_PASSWORD;terms.SELECT,terms_sigs.SELECT,terms_sigs.INSERT,hash_masks.SELECT,hash_masks.INSERT"
-      - "ingest;env://INGEST_PASSWORD;terms.SELECT,terms_sigs.SELECT,terms_sigs.INSERT"
+      - "ingest;env://INGEST_PASSWORD;terms.SELECT,terms_sigs.SELECT,terms_sigs.INSERT,pools.SELECT,exchanges.SELECT"
       - "tosmgr;env://TOS_MGR_PASSWORD;terms.SELECT,terms.INSERT,terms.UPDATE,terms_sigs.SELECT,terms_sigs.INSERT,terms_sigs.UPDATE,hash_masks.SELECT,hash_masks.INSERT,hash_masks.DELETE"
 
 

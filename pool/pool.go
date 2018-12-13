@@ -72,7 +72,9 @@ func PoolDecorator(db *gorm.DB, fn func(http.ResponseWriter, *http.Request, type
 		if len(match) == 2 {
 			poolName := strings.TrimPrefix(match[1], "/")
 			pool :=  &Pool{}
-			if q := db.Model(&Pool{}).Where("ID = ?", sha3.NewKeccak256().Sum([]byte(poolName))).First(pool); q.Error != nil {
+			poolHash := sha3.NewKeccak256()
+			poolHash.Write([]byte(poolName))
+			if q := db.Model(&Pool{}).Where("ID = ?", poolHash.Sum(nil)).First(pool); q.Error != nil {
 				if poolName != "" {
 					w.WriteHeader(404)
 					w.Header().Set("Content-Type", "application/json")
@@ -100,7 +102,9 @@ func PoolDecoratorBaseFee(db *gorm.DB, redisClient *redis.Client, fn func(http.R
 		if len(match) == 2 {
 			poolName := strings.TrimPrefix(match[1], "/")
 			pool :=  &Pool{}
-			if q := db.Model(&Pool{}).Where("ID = ?", sha3.NewKeccak256().Sum([]byte(poolName))).First(pool); q.Error != nil {
+			poolHash := sha3.NewKeccak256()
+			poolHash.Write([]byte(poolName))
+			if q := db.Model(&Pool{}).Where("ID = ?", poolHash.Sum(nil)).First(pool); q.Error != nil {
 				if poolName != "" {
 					w.WriteHeader(404)
 					w.Header().Set("Content-Type", "application/json")
@@ -111,6 +115,7 @@ func PoolDecoratorBaseFee(db *gorm.DB, redisClient *redis.Client, fn func(http.R
 				// just use an empty pool
 			}
 			pool.baseFee = baseFee
+			fmt.Printf("Pool: %v", pool)
 			fn(w, r, pool)
 		} else {
 			// Routing regex shouldn't get here

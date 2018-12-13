@@ -2,6 +2,7 @@ package main
 
 import (
 	dbModule "github.com/notegio/openrelay/db"
+	"github.com/notegio/openrelay/pool"
 	"github.com/notegio/openrelay/common"
 	"log"
 	"os"
@@ -52,6 +53,9 @@ func main() {
 	}
 	if err := db.AutoMigrate(&dbModule.HashMask{}).Error; err != nil {
 		log.Fatalf("Error migrating hash_masks table: %v", err.Error())
+	}
+	if err := db.AutoMigrate(&pool.Pool{}).Error; err != nil {
+		log.Fatalf("Error migrating pools table: %v", err.Error())
 	}
 	kovanAddress, _ := common.HexToAddress("0x35dd2932454449b14cee11a94d3674a936d5d7b2")
 	db.Where(

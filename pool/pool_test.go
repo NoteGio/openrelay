@@ -56,20 +56,22 @@ func TestDecorator(t *testing.T) {
 	if err := tx.AutoMigrate(&poolModule.Pool{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	poolID := sha3.NewKeccak256().Sum([]byte("testPool"))
+	poolHash := sha3.NewKeccak256()
+	poolHash.Write([]byte("testPool"))
+	poolID := poolHash.Sum(nil)
 	tx.Create(&poolModule.Pool{ID: poolID, SenderAddress: &types.Address{}, FilterAddress: &types.Address{}})
 
-	handler := poolModule.PoolDecorator(tx, func(w http.ResponseWriter, r *http.Request, pool *poolModule.Pool) {
-		if !bytes.Equal(pool.ID, []byte("")) {
-			t.Errorf("Unexpected pool id: '%#x'", pool.ID)
+	handler := poolModule.PoolDecorator(tx, func(w http.ResponseWriter, r *http.Request, pool types.Pool) {
+		if !bytes.Equal(pool.(*poolModule.Pool).ID, []byte("")) {
+			t.Errorf("Unexpected pool id: '%#x'", pool.(*poolModule.Pool).ID)
 		}
 	})
-	handler2 := poolModule.PoolDecorator(tx, func(w http.ResponseWriter, r *http.Request, pool *poolModule.Pool) {
-		if !bytes.Equal(pool.ID, poolID) {
-			t.Errorf("Unexpected pool id '%#x' != %#x", pool.ID, poolID)
+	handler2 := poolModule.PoolDecorator(tx, func(w http.ResponseWriter, r *http.Request, pool types.Pool) {
+		if !bytes.Equal(pool.(*poolModule.Pool).ID, poolID) {
+			t.Errorf("Unexpected pool id '%#x' != %#x", pool.(*poolModule.Pool).ID, poolID)
 		}
 	})
-	handler3 := poolModule.PoolDecorator(tx, func(w http.ResponseWriter, r *http.Request, pool *poolModule.Pool) {
+	handler3 := poolModule.PoolDecorator(tx, func(w http.ResponseWriter, r *http.Request, pool types.Pool) {
 		t.Errorf("This should not be reached")
 	})
 
@@ -110,15 +112,19 @@ func TestPoolFilter(t *testing.T) {
 	order := sampleOrder(t)
 	order.Save(tx, dbModule.StatusOpen)
 
-	poolID := sha3.NewKeccak256().Sum([]byte("testPool"))
-	poolID2 := sha3.NewKeccak256().Sum([]byte("testPool2"))
+	poolHash := sha3.NewKeccak256()
+	poolHash.Write([]byte("testPool"))
+	poolID := poolHash.Sum(nil)
+	poolHash2 := sha3.NewKeccak256()
+	poolHash2.Write([]byte("testPool2"))
+	poolID2 := poolHash2.Sum(nil)
 	tx.Create(&poolModule.Pool{ID: poolID, SenderAddress: &types.Address{}, FilterAddress: &types.Address{}, SearchTerms: "makerAssetData=0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba"})
 	tx.Create(&poolModule.Pool{ID: poolID2, SenderAddress: &types.Address{}, FilterAddress: &types.Address{}, SearchTerms: "takerAssetData=0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba"})
 
 	var poolCount int
 	tx.Model(&poolModule.Pool{}).Count(&poolCount)
 
-	handler := poolModule.PoolDecorator(tx, func(w http.ResponseWriter, r *http.Request, pool *poolModule.Pool) {
+	handler := poolModule.PoolDecorator(tx, func(w http.ResponseWriter, r *http.Request, pool types.Pool) {
 		query := tx.Model(&dbModule.Order{})
 		query, err := pool.Filter(query)
 		if err != nil {
@@ -131,7 +137,7 @@ func TestPoolFilter(t *testing.T) {
 		}
 		w.WriteHeader(200)
 	})
-	emptyHandler := poolModule.PoolDecorator(tx, func(w http.ResponseWriter, r *http.Request, pool *poolModule.Pool) {
+	emptyHandler := poolModule.PoolDecorator(tx, func(w http.ResponseWriter, r *http.Request, pool types.Pool) {
 		query := tx.Model(&dbModule.Order{})
 		query, err := pool.Filter(query)
 		if err != nil {
