@@ -687,11 +687,10 @@
 			"tree": true
 		},
 		{
-			"checksumSHA1": "LjPdvMphElL0GOVNQCsmZMVgWIw=",
-			"origin": "github.com/ethereum/go-ethereum/vendor/github.com/rs/cors",
+			"checksumSHA1": "CSdpq4Y4l5W8p/W72imktcBYM3I=",
 			"path": "github.com/rs/cors",
-			"revision": "17ce0a37de5a2712a8bf9d58df705e718b3b2cd6",
-			"revisionTime": "2017-08-08T17:10:09Z",
+			"revision": "a3460e445dd310dbefee993fe449f2ff9c08ae71",
+			"revisionTime": "2018-10-11T18:27:59Z",
 			"tree": true
 		},
 		{

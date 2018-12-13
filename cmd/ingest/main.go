@@ -5,6 +5,7 @@ import (
 	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/affiliates"
 	"github.com/notegio/openrelay/accounts"
+	dbModule "github.com/notegio/openrelay/db"
 	"encoding/hex"
 	"net/http"
 	"gopkg.in/redis.v3"
@@ -43,12 +44,16 @@ func (h *regexpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	redisURL := os.Args[1]
-	defaultFeeRecipientString := os.Args[2]
-	dstChannel := os.Args[3]
+	db, err := dbModule.GetDB(os.Args[1], os.Args[2])
+	if err != nil {
+		log.Fatalf("Could not open database connection: %v", err.Error())
+	}
+	redisURL := os.Args[3]
+	defaultFeeRecipientString := os.Args[4]
+	dstChannel := os.Args[5]
 	var port string
-	if len(os.Args) >= 5 {
-		port = os.Args[4]
+	if len(os.Args) >= 7 {
+		port = os.Args[6]
 	} else {
 		port = "8080"
 	}
@@ -67,8 +72,9 @@ func main() {
 	affiliateService := affiliates.NewRedisAffiliateService(redisClient)
 	accountService := accounts.NewRedisAccountService(redisClient)
 	publisher, err := channels.PublisherFromURI(dstChannel, redisClient)
+	enforceTerms := os.Getenv("OR_ENFORCE_TERMS") != "false"
 	if err != nil { log.Fatalf(err.Error()) }
-	handler := ingest.Handler(publisher, accountService, affiliateService)
+	handler := ingest.Handler(publisher, accountService, affiliateService, enforceTerms, dbModule.NewTermsManager(db), dbModule.NewExchangeLookup(db))
 	feeHandler := ingest.FeeHandler(publisher, accountService, affiliateService, defaultFeeRecipientBytes)
 
 	mux := &regexpHandler{[]*route{}}

@@ -40,8 +40,8 @@ func valInList(val *types.Address, list []types.Address) bool {
 }
 
 func returnError(w http.ResponseWriter, errResp IngestError, status int) {
-	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
 	errBytes, err := json.Marshal(errResp)
 	if err != nil {
 		log.Printf(err.Error())
@@ -49,29 +49,13 @@ func returnError(w http.ResponseWriter, errResp IngestError, status int) {
 	w.Write(errBytes)
 }
 
-func Handler(publisher channels.Publisher, accounts accountsModule.AccountService, affiliates affiliatesModule.AffiliateService) func(http.ResponseWriter, *http.Request, *poolModule.Pool) {
+func Handler(publisher channels.Publisher, accounts accountsModule.AccountService, affiliates affiliatesModule.AffiliateService, enforceTerms bool, tm TermsManager, exchangeLookup ExchangeLookup) func(http.ResponseWriter, *http.Request, *poolModule.Pool) {
 	var contentType string
-	ValidExchangeAddresses := []types.Address{}
-	addrBytes := &types.Address{}
-	// TODO: Look this up from the database
-	knownExchanges := []string{
-		"4f833a24e1f95d70f028921e27040ca56e09ab0b",
-		"35dd2932454449b14cee11a94d3674a936d5d7b2",
-		"a458ec0709468996ef2ef668f5e52f37ceb66627",
-		"b65619b82c4d385de0c5b4005452c2fdee0f86d1",
-		"48bacb9266a570d521063ef5dd96e61686dbe788",
-		"90fe2af704b34e0224bf2299c838e04d4dcf1364",
-	}
-	for _, addrString := range knownExchanges {
-		addr, _ := hex.DecodeString(addrString)
-		copy(addrBytes[:], addr)
-		ValidExchangeAddresses = append(ValidExchangeAddresses, *addrBytes)
-	}
 	return func(w http.ResponseWriter, r *http.Request, pool *poolModule.Pool) {
 		if r.Method == "GET" {
 			// Health checks
-			w.WriteHeader(200)
 			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(200)
 			fmt.Fprintf(w, "{\"ok\": true}")
 			return
 		}
@@ -131,6 +115,17 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 			}, 415)
 			return
 		}
+		knownExchange := exchangeLookup.ExchangeIsKnown(order.ExchangeAddress)
+		var signedMaker <-chan bool
+		if(enforceTerms) {
+			signedMaker = tm.CheckAddress(order.Maker)
+		} else {
+			signedMaker = func() (<-chan bool){
+				result := make(chan bool)
+				go func() {result <- true}()
+				return result
+			}()
+		}
 		// At this point we've errored out, or we have an Order object
 		if !order.MakerAssetData.SupportedType() {
 			returnError(w, IngestError{
@@ -152,18 +147,6 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 					"takerAssetData",
 					1006,
 					fmt.Sprintf("Unsupported asset type: %#x", order.TakerAssetData.ProxyId()),
-				}},
-			}, 400)
-			return
-		}
-		if !valInList(order.ExchangeAddress, ValidExchangeAddresses) {
-			returnError(w, IngestError{
-				100,
-				"Validation Failed",
-				[]ValidationError{ValidationError{
-					"exchangeContractAddress",
-					1002,
-					"Unknown exchangeContractAddress",
 				}},
 			}, 400)
 			return
@@ -269,6 +252,30 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 			}
 		}()
 		go func() { makerChan <- accounts.Get(order.Maker) }()
+		if !(<-signedMaker) {
+			returnError(w, IngestError{
+				100,
+				"Validation Failed",
+				[]ValidationError{ValidationError{
+					"makerAddress",
+					1002,
+					"makerAddress must sign terms of service",
+				}},
+			}, 401)
+			return
+		}
+		if !(<-knownExchange) {
+			returnError(w, IngestError{
+				100,
+				"Validation Failed",
+				[]ValidationError{ValidationError{
+					"exchangeContractAddress",
+					1002,
+					"Unknown exchangeContractAddress",
+				}},
+			}, 400)
+			return
+		}
 		makerFee := new(big.Int)
 		takerFee := new(big.Int)
 		totalFee := new(big.Int)
