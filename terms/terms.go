@@ -189,6 +189,7 @@ func TermsCheckHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 			if <-tm.CheckAddress(address) {
 				w.WriteHeader(204)
 			} else {
+				w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 				w.WriteHeader(404)
 			}
 		} else {
