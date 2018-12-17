@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/jinzhu/gorm"
+	"github.com/ethereum/go-ethereum/crypto/sha3"
 	"github.com/notegio/openrelay/blockhash"
 	"github.com/notegio/openrelay/common"
 	dbModule "github.com/notegio/openrelay/db"
@@ -105,6 +106,31 @@ func applyOrFilter(query *gorm.DB, queryField, dbField1, dbField2 string, queryO
 		}
 		whereClause := fmt.Sprintf("%v = ? or %v = ?", dbField1, dbField2)
 		filteredQuery := query.Where(whereClause, common.BytesToOrAddress(addressBytes), common.BytesToOrAddress(addressBytes))
+		return filteredQuery, filteredQuery.Error
+	}
+	return query, nil
+}
+
+func applyBytesFilter(query *gorm.DB, queryField, dbField string, queryObject urlModule.Values) (*gorm.DB, error) {
+	if data := queryObject.Get(queryField); data != "" {
+		dataBytes, err := hex.DecodeString(strings.TrimPrefix(data, "0x"))
+		if err != nil {
+			return query, err
+		}
+		whereClause := fmt.Sprintf("%v = ?", dbField)
+		filteredQuery := query.Where(whereClause, dataBytes[:])
+		return filteredQuery, filteredQuery.Error
+	}
+	return query, nil
+}
+
+func applyHashFilter(query *gorm.DB, queryField, dbField string, queryObject urlModule.Values) (*gorm.DB, error) {
+	if preimage := queryObject.Get(queryField); preimage != "" {
+		termsSha := sha3.NewKeccak256()
+		termsSha.Write([]byte(preimage))
+		hash := termsSha.Sum(nil)
+		whereClause := fmt.Sprintf("%v = ?", dbField)
+		filteredQuery := query.Where(whereClause, hash[:])
 		return filteredQuery, filteredQuery.Error
 	}
 	return query, nil
@@ -248,7 +274,15 @@ func QueryFilter(query *gorm.DB, queryObject urlModule.Values) (*gorm.DB, []Vali
 	}
 	query, err = applyOrFilter(query, "traderAddress", "maker", "taker", queryObject)
 	if err != nil {
-		errs = append(errs, ValidationError{err.Error(), 1003, "trader"})
+		errs = append(errs, ValidationError{err.Error(), 1003, "traderAddress"})
+	}
+	query, err = applyBytesFilter(query, "_poolId", "pool_id", queryObject)
+	if err != nil {
+		errs = append(errs, ValidationError{err.Error(), 1003, "_poolId"})
+	}
+	query, err = applyHashFilter(query, "_poolName", "pool_id", queryObject)
+	if err != nil {
+		errs = append(errs, ValidationError{err.Error(), 1003, "_poolName"})
 	}
 
 

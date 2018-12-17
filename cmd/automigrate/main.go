@@ -77,6 +77,24 @@ func main() {
 	if err := db.Model(&dbModule.Order{}).AddIndex("idx_order_maker_asset_taker_asset_data", "maker_asset_data", "taker_asset_data").Error; err != nil {
 		log.Fatalf("Error adding token pair index: %v", err.Error())
 	}
+
+	poolHash := sha3.NewKeccak256()
+	poolHash.Write([]byte(""))
+
+	pool := &poolModule.Pool{
+		SearchTerms: "",
+		Expiration: 1744733652,
+		Nonce: 0,
+		FeeShare: "1000000000000000000",
+		ID: poolHash.Sum(nil),
+		SenderAddress: &types.Address{},
+		FilterAddress: &types.Address{},
+	}
+
+	err = db.Model(&poolModule.Pool{}).Where("id = ?", pool.ID).Assign(pool).FirstOrCreate(pool).Error
+
+
+
 	for _, credString := range(os.Args[3:]) {
 		creds := strings.Split(credString, ";")
 		if len(creds) != 3 {

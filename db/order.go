@@ -17,6 +17,11 @@ const (
 	StatusCancelled = int64(3)
 )
 
+func DefaultSha3() []byte {
+	// sha3("nil")
+	return []byte{167, 216, 239, 244, 2, 111, 37, 45, 181, 185, 12, 120, 228, 61, 209, 145, 223, 230, 229, 95, 203, 152, 84, 138, 95, 56, 250, 240, 212, 227, 235, 57}
+}
+
 type Order struct {
 	types.Order
 	CreatedAt time.Time
@@ -70,6 +75,9 @@ func (order *Order) Populate() {
 
 	if thresholdAmount.Cmp(big.NewInt(0)) <= 0 {
 		order.Status = StatusFilled
+	}
+	if len(order.PoolID) == 0 {
+		order.PoolID = DefaultSha3()
 	}
 }
 

@@ -286,6 +286,12 @@ func TestFilterMakerAssetProxyId(t *testing.T) {
 func TestFilterTakerAssetProxyId(t *testing.T) {
 	filterContractRequest("takerAssetProxyId=0xf47261b0", "takerAssetProxyId=0x11111111", t)
 }
+func TestFilterPoolName(t *testing.T) {
+	filterContractRequest("_poolName=nil", "_poolName=doesnotexist", t)
+}
+func TestFilterPoolId(t *testing.T) {
+	filterContractRequest("_poolId=0xa7d8eff4026f252db5b90c78e43dd191dfe6e55fcb98548a5f38faf0d4e3eb39", "_poolId=0x0000000000000000000000000000000000000000000000000000000000000000", t)
+}
 
 func TestPagination(t *testing.T) {
 	db, err := getDb()
