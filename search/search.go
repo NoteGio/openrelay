@@ -10,6 +10,7 @@ import (
 	"github.com/notegio/openrelay/common"
 	dbModule "github.com/notegio/openrelay/db"
 	"github.com/notegio/openrelay/types"
+	"math/big"
 	"net/http"
 	urlModule "net/url"
 	"strconv"
@@ -131,6 +132,19 @@ func applyHashFilter(query *gorm.DB, queryField, dbField string, queryObject url
 		hash := termsSha.Sum(nil)
 		whereClause := fmt.Sprintf("%v = ?", dbField)
 		filteredQuery := query.Where(whereClause, hash[:])
+		return filteredQuery, filteredQuery.Error
+	}
+	return query, nil
+}
+
+func applyUint256Filter(query *gorm.DB, queryField, dbField string, queryObject urlModule.Values) (*gorm.DB, error) {
+	if value := queryObject.Get(queryField); value != "" {
+		intValue, ok := new(big.Int).SetString(value, 10)
+		if !ok {
+			return nil, fmt.Errorf("Invalid number: %v", value)
+		}
+		whereClause := fmt.Sprintf("%v = ?", dbField)
+		filteredQuery := query.Where(whereClause, common.BigToUint256(intValue))
 		return filteredQuery, filteredQuery.Error
 	}
 	return query, nil
@@ -283,6 +297,10 @@ func QueryFilter(query *gorm.DB, queryObject urlModule.Values) (*gorm.DB, []Vali
 	query, err = applyHashFilter(query, "_poolName", "pool_id", queryObject)
 	if err != nil {
 		errs = append(errs, ValidationError{err.Error(), 1003, "_poolName"})
+	}
+	query, err = applyUint256Filter(query, "_takerFee", "taker_fee", queryObject)
+	if err != nil {
+		errs = append(errs, ValidationError{err.Error(), 1003, "_takerFee"})
 	}
 
 
