@@ -48,7 +48,7 @@ func (lookup *ExchangeLookup) ExchangeIsKnown(address *types.Address) (<-chan bo
 	result := make(chan bool)
 	go func(address *types.Address, result chan bool) {
 		_, err := lookup.GetNetworkByExchange(address)
-		result <- (err != nil)
+		result <- (err == nil)
 	}(address, result)
 	return result
 }
