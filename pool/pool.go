@@ -26,7 +26,7 @@ type Pool struct {
 	ID            []byte
 	SenderAddress *types.Address
 	FilterAddress *types.Address
-	conn          bind.ContractBackend
+	conn          bind.ContractCaller
 	baseFee       config.BaseFee
 }
 
@@ -36,6 +36,13 @@ func (pool *Pool) SetConn(conn bind.ContractBackend) {
 
 func (pool *Pool) SetBaseFee(baseFee config.BaseFee) {
 	pool.baseFee = baseFee
+}
+
+func (pool *Pool) CheckFilter(order *types.Order) (bool, error) {
+	if pool.conn == nil {
+		return false, fmt.Errorf("No connection set on pool")
+	}
+	return NewFilterContract(pool.FilterAddress, pool.conn).Filter(pool.ID, order)
 }
 
 func (pool Pool) Filter(query *gorm.DB) (*gorm.DB, error) {
