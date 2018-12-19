@@ -3,6 +3,7 @@ package pool
 import (
 	"net/http"
 	"github.com/notegio/openrelay/config"
+	dbModule "github.com/notegio/openrelay/db"
 	"github.com/notegio/openrelay/types"
 	"github.com/notegio/openrelay/search"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -20,10 +21,11 @@ var feeBaseUnits = big.NewInt(1000000000000000000)
 
 type Pool struct {
 	SearchTerms   string
-	Expiration    uint
+	Expiration    uint64
 	Nonce         uint
 	FeeShare      string
 	ID            []byte
+	Limit         uint
 	SenderAddress *types.Address
 	FilterAddress *types.Address
 	conn          bind.ContractCaller
@@ -61,7 +63,7 @@ func (pool Pool) Count(db *gorm.DB) (<-chan uint) {
 	result := make(chan uint)
 	var value uint
 	go func() {
-		db.Model(&types.Order{}).Where("pool_id = ?", pool.ID).Count(&value)
+		db.Model(&dbModule.Order{}).Where("pool_id = ?", pool.ID).Where("status = ?", dbModule.StatusOpen).Count(&value)
 		result <- value
 	}()
 	return result
@@ -95,7 +97,7 @@ func PoolDecorator(db *gorm.DB, fn func(http.ResponseWriter, *http.Request, type
 				if poolName != "" {
 					w.WriteHeader(404)
 					w.Header().Set("Content-Type", "application/json")
-					w.Write([]byte(fmt.Sprintf("{\"code\":100,\"reason\":\"Pool Not Found: %v\"}", q.Error.Error())))
+					w.Write([]byte(fmt.Sprintf("{\"code\":102,\"reason\":\"Pool Not Found: %v\"}", q.Error.Error())))
 					return
 				}
 				// If no pool was specified and no default pool is in the database,
@@ -106,7 +108,7 @@ func PoolDecorator(db *gorm.DB, fn func(http.ResponseWriter, *http.Request, type
 			// Routing regex shouldn't get here
 			w.WriteHeader(404)
 			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(fmt.Sprintf("{\"code\":100,\"reason\":\"Not Found\"}")))
+			w.Write([]byte(fmt.Sprintf("{\"code\":102,\"reason\":\"Not Found\"}")))
 			return
 		}
 	}
@@ -125,7 +127,7 @@ func PoolDecoratorBaseFee(db *gorm.DB, redisClient *redis.Client, fn func(http.R
 				if poolName != "" {
 					w.WriteHeader(404)
 					w.Header().Set("Content-Type", "application/json")
-					w.Write([]byte(fmt.Sprintf("{\"code\":100,\"reason\":\"Pool Not Found: %v\"}", q.Error.Error())))
+					w.Write([]byte(fmt.Sprintf("{\"code\":102,\"reason\":\"Pool Not Found: %v\"}", q.Error.Error())))
 					return
 				}
 				// If no pool was specified and no default pool is in the database,
@@ -138,7 +140,7 @@ func PoolDecoratorBaseFee(db *gorm.DB, redisClient *redis.Client, fn func(http.R
 			// Routing regex shouldn't get here
 			w.WriteHeader(404)
 			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(fmt.Sprintf("{\"code\":100,\"reason\":\"Not Found\"}")))
+			w.Write([]byte(fmt.Sprintf("{\"code\":102,\"reason\":\"Not Found\"}")))
 			return
 		}
 	}

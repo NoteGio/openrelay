@@ -276,6 +276,14 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 			}, 400)
 			return
 		}
+		if pool.Expiration > 0 && pool.Expiration < bigTime.Uint64() {
+			returnError(w, IngestError{
+				102,
+				"Order Pool Expired",
+				[]ValidationError{},
+			}, 400)
+			return
+		}
 		makerFee := new(big.Int)
 		takerFee := new(big.Int)
 		totalFee := new(big.Int)
