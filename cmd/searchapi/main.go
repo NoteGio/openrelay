@@ -10,9 +10,16 @@ import (
 	"gopkg.in/redis.v3"
 	"os"
 	"log"
-	"github.com/rs/cors"
+	// "github.com/rs/cors"
 	"strconv"
 )
+
+func corsDecorator(fn func(w http.ResponseWriter, r *http.Request)) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		fn(w, r)
+	}
+}
 
 func main() {
 	redisURL := os.Args[1]
@@ -36,11 +43,11 @@ func main() {
 		log.Fatalf("Error establishing block channel: %v", err.Error())
 	}
 	blockHash := blockhash.NewChanneledBlockHash(blockChannelConsumer)
-	searchHandler := search.BlockHashDecorator(blockHash, search.SearchHandler(db))
-	orderHandler := search.BlockHashDecorator(blockHash, search.OrderHandler(db))
-	orderBookHandler := search.BlockHashDecorator(blockHash, search.OrderBookHandler(db))
-	feeRecipientsHandler := search.BlockHashDecorator(blockHash, search.FeeRecipientHandler(affiliates.NewRedisAffiliateService(redisClient)))
-	pairHandler := search.PairHandler(db)
+	searchHandler := corsDecorator(search.BlockHashDecorator(blockHash, search.SearchHandler(db)))
+	orderHandler := corsDecorator(search.BlockHashDecorator(blockHash, search.OrderHandler(db)))
+	orderBookHandler := corsDecorator(search.BlockHashDecorator(blockHash, search.OrderBookHandler(db)))
+	feeRecipientsHandler := corsDecorator(search.BlockHashDecorator(blockHash, search.FeeRecipientHandler(affiliates.NewRedisAffiliateService(redisClient))))
+	pairHandler := corsDecorator(search.PairHandler(db))
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v2/orders", searchHandler)
@@ -49,7 +56,6 @@ func main() {
 	mux.HandleFunc("/v2/orderbook", orderBookHandler)
 	mux.HandleFunc("/v2/fee_recipients", feeRecipientsHandler)
 	mux.HandleFunc("/_hc", search.HealthCheckHandler(db, blockHash))
-	corsHandler := cors.Default().Handler(mux)
 	log.Printf("Order Search Serving on :%v", port)
-	http.ListenAndServe(":"+port, corsHandler)
+	http.ListenAndServe(":"+port, mux)
 }

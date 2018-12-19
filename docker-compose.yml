@@ -60,6 +60,7 @@ services:
     depends_on:
       - redis
       - corebuild
+    restart: on-failure
     deploy:
       replicas: 1
       restart_policy:
