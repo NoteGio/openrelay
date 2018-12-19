@@ -57,6 +57,16 @@ func (pool Pool) Filter(query *gorm.DB) (*gorm.DB, error) {
 	return query, nil
 }
 
+func (pool Pool) Count(db *gorm.DB) (<-chan uint) {
+	result := make(chan uint)
+	var value uint
+	go func() {
+		db.Model(&types.Order{}).Where("pool_id = ?", pool.ID).Count(&value)
+		result <- value
+	}()
+	return result
+}
+
 func (pool Pool) Fee() (*big.Int, error) {
 	baseFee, err := pool.baseFee.Get()
 	if err != nil {
