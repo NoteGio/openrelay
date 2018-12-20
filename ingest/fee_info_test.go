@@ -3,6 +3,7 @@ package ingest_test
 import (
 	"github.com/notegio/openrelay/ingest"
 	"github.com/notegio/openrelay/common"
+	"github.com/notegio/openrelay/types"
 	poolModule "github.com/notegio/openrelay/pool"
 	"math/big"
 	"net/http"
@@ -32,7 +33,7 @@ func mockPoolDecorator(fn func(http.ResponseWriter, *http.Request, *poolModule.P
 	baseFee := &mockBaseFee{big.NewInt(0)}
 	return func(w http.ResponseWriter, r *http.Request) {
 		sender, _:= common.HexToAddress("0x0000000000000000000000000000000000000000")
-		pool := &poolModule.Pool{SearchTerms: "", ID: []byte("default"), SenderAddress: sender}
+		pool := &poolModule.Pool{SearchTerms: "", ID: []byte("default"), SenderAddresses: types.NetworkAddressMap{1: sender}}
 		pool.SetBaseFee(baseFee)
 		fn(w, r, pool)
 	}
@@ -40,7 +41,7 @@ func mockPoolDecorator(fn func(http.ResponseWriter, *http.Request, *poolModule.P
 
 func TestFeeRecipientAndMakerProvided(t *testing.T) {
 	publisher := TestPublisher{}
-	handler := mockPoolDecorator(ingest.FeeHandler(&publisher, &TestAccountService{false, new(big.Int)}, &TestAffiliateService{new(big.Int), nil}, [20]byte{}))
+	handler := mockPoolDecorator(ingest.FeeHandler(&publisher, &TestAccountService{false, new(big.Int)}, &TestAffiliateService{new(big.Int), nil}, [20]byte{}, &TestExchangeLookup{1}))
 	reader := TestReader{
 		[]byte("{\"maker\": \"0x0000000000000000000000000000000000000000\", \"feeRecipientAddress\": \"0000000000000000000000000000000000000000\", \"takerTokenAmount\": \"100\", \"makerTokenAmount\": \"100\"}"),
 		nil,
@@ -60,7 +61,7 @@ func TestFeeRecipientAndMakerProvided(t *testing.T) {
 }
 func TestFeeRecipientAndMakerDefault(t *testing.T) {
 	publisher := TestPublisher{}
-	handler := mockPoolDecorator(ingest.FeeHandler(&publisher, &TestAccountService{false, new(big.Int)}, &TestAffiliateService{new(big.Int), nil}, [20]byte{}))
+	handler := mockPoolDecorator(ingest.FeeHandler(&publisher, &TestAccountService{false, new(big.Int)}, &TestAffiliateService{new(big.Int), nil}, [20]byte{}, &TestExchangeLookup{1}))
 	reader := TestReader{
 		[]byte("{\"takerTokenAmount\": \"100\", \"makerTokenAmount\": \"100\"}"),
 		nil,

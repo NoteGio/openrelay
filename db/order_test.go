@@ -22,6 +22,9 @@ func sampleOrder(t *testing.T) *types.Order {
 			t.Fatalf(err.Error())
 		}
 	}
+	if len(order.PoolID) == 0 {
+		order.PoolID = dbModule.DefaultSha3()
+	}
 	return order
 }
 

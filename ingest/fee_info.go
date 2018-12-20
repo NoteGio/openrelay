@@ -18,6 +18,7 @@ import (
 // Everything else will be ignored.
 type FeeInputPayload struct {
 	Maker        string `json:"maker"`
+	Exchange     string `json:"exchangeAddress"`
 	FeeRecipient string `json:"feeRecipientAddress"`
 	Taker        string `json:"taker"`
 	Sender       string `json:"senderAddress"`
@@ -31,7 +32,7 @@ type FeeResponse struct {
 	TakerToSpecify string `json:"takerToSpecify"`
 }
 
-func FeeHandler(publisher channels.Publisher, accounts accountsModule.AccountService, affiliates affiliatesModule.AffiliateService, defaultFeeRecipient [20]byte) func(http.ResponseWriter, *http.Request, *poolModule.Pool) {
+func FeeHandler(publisher channels.Publisher, accounts accountsModule.AccountService, affiliates affiliatesModule.AffiliateService, defaultFeeRecipient [20]byte, exchangeLookup ExchangeLookup) func(http.ResponseWriter, *http.Request, *poolModule.Pool) {
 	emptyBytes := &types.Address{}
 	return func(w http.ResponseWriter, r *http.Request, pool *poolModule.Pool) {
 		var data [1024]byte
@@ -86,6 +87,24 @@ func FeeHandler(publisher channels.Publisher, accounts accountsModule.AccountSer
 			}, 400)
 			return
 		}
+		exchangeAddressSlice, err := types.HexStringToBytes(feeInput.Exchange)
+		if err != nil && feeInput.FeeRecipient != "" {
+			log.Printf("%v: '%v'", err.Error(), string(data[:]))
+			returnError(w, IngestError{
+				100,
+				"Validation failed",
+				[]ValidationError{ValidationError{
+					"exchangeAddress",
+					1001,
+					"Invalid address format",
+				},
+				},
+			}, 400)
+			return
+		}
+		exchangeAddress := &types.Address{}
+		copy(exchangeAddress[:], exchangeAddressSlice[:])
+		networkIDChan := exchangeLookup.ExchangeIsKnown(exchangeAddress)
 		makerAddress := &types.Address{}
 		copy(makerAddress[:], makerSlice[:])
 		feeRecipientAddress := &types.Address{}
@@ -139,7 +158,18 @@ func FeeHandler(publisher channels.Publisher, accounts accountsModule.AccountSer
 		// fee. Thus, the minimum fee required is pool.Fee() - maker.Discount()
 		minFee.Sub(poolFee, account.Discount())
 		takerToSpecify := fmt.Sprintf("%#x", emptyBytes[:])
-		senderToSpecify := fmt.Sprintf("%#x", pool.SenderAddress[:])
+		networkID := <-networkIDChan
+		if networkID == 0 {
+			networkID = 1
+		}
+		var senderToSpecify string
+		senderAddress, ok := pool.SenderAddresses[networkID]
+		if ok {
+			senderToSpecify = fmt.Sprintf("%#x", senderAddress[:])
+		} else {
+			senderToSpecify = fmt.Sprintf("%#x", emptyBytes[:])
+
+		}
 		if feeInput.Taker != "" {
 			takerToSpecify = feeInput.Taker
 		}

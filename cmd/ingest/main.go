@@ -75,8 +75,9 @@ func main() {
 	publisher, err := channels.PublisherFromURI(dstChannel, redisClient)
 	enforceTerms := os.Getenv("OR_ENFORCE_TERMS") != "false"
 	if err != nil { log.Fatalf(err.Error()) }
-	handler := pool.PoolDecoratorBaseFee(db, redisClient, ingest.Handler(publisher, accountService, affiliateService, enforceTerms, dbModule.NewTermsManager(db), dbModule.NewExchangeLookup(db)))
-	feeHandler := pool.PoolDecoratorBaseFee(db, redisClient, ingest.FeeHandler(publisher, accountService, affiliateService, defaultFeeRecipientBytes))
+	exchangeLookup := dbModule.NewExchangeLookup(db)
+	handler := pool.PoolDecoratorBaseFee(db, redisClient, ingest.Handler(publisher, accountService, affiliateService, enforceTerms, dbModule.NewTermsManager(db), exchangeLookup))
+	feeHandler := pool.PoolDecoratorBaseFee(db, redisClient, ingest.FeeHandler(publisher, accountService, affiliateService, defaultFeeRecipientBytes, exchangeLookup))
 
 	mux := &regexpHandler{[]*route{}}
 	mux.HandleFunc(regexp.MustCompile("^(/[^/]+)?/v2/order$"), handler)

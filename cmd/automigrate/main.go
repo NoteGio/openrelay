@@ -2,8 +2,10 @@ package main
 
 import (
 	dbModule "github.com/notegio/openrelay/db"
-	"github.com/notegio/openrelay/pool"
+	poolModule "github.com/notegio/openrelay/pool"
 	"github.com/notegio/openrelay/common"
+	"github.com/notegio/openrelay/types"
+	"github.com/ethereum/go-ethereum/crypto/sha3"
 	"log"
 	"os"
 	"fmt"
@@ -54,7 +56,7 @@ func main() {
 	if err := db.AutoMigrate(&dbModule.HashMask{}).Error; err != nil {
 		log.Fatalf("Error migrating hash_masks table: %v", err.Error())
 	}
-	if err := db.AutoMigrate(&pool.Pool{}).Error; err != nil {
+	if err := db.AutoMigrate(&poolModule.Pool{}).Error; err != nil {
 		log.Fatalf("Error migrating pools table: %v", err.Error())
 	}
 	kovanAddress, _ := common.HexToAddress("0x35dd2932454449b14cee11a94d3674a936d5d7b2")
@@ -87,8 +89,8 @@ func main() {
 		Nonce: 0,
 		FeeShare: "1000000000000000000",
 		ID: poolHash.Sum(nil),
-		SenderAddress: &types.Address{},
-		FilterAddress: &types.Address{},
+		SenderAddresses: types.NetworkAddressMap{},
+		FilterAddresses: types.NetworkAddressMap{},
 	}
 
 	err = db.Model(&poolModule.Pool{}).Where("id = ?", pool.ID).Assign(pool).FirstOrCreate(pool).Error

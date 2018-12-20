@@ -21,6 +21,8 @@ func corsDecorator(fn func(w http.ResponseWriter, r *http.Request)) func(http.Re
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		fn(w, r)
 	}
+}
+
 type route struct {
     pattern *regexp.Regexp
     handler http.Handler

@@ -9,5 +9,5 @@ type TermsManager interface {
 }
 
 type ExchangeLookup interface {
-	ExchangeIsKnown(*types.Address) (<-chan bool)
+	ExchangeIsKnown(*types.Address) (<-chan uint)
 }

@@ -23,7 +23,7 @@ func mockPoolDecoratorFee(fee *big.Int, fn func(http.ResponseWriter, *http.Reque
 	baseFee := &mockBaseFee{fee}
 	return func(w http.ResponseWriter, r *http.Request) {
 		sender, _:= common.HexToAddress("0x0000000000000000000000000000000000000000")
-		pool := &poolModule.Pool{SearchTerms: "", ID: []byte("default"), SenderAddress: sender}
+		pool := &poolModule.Pool{SearchTerms: "", ID: []byte("default"), SenderAddresses: types.NetworkAddressMap{1: sender}}
 		pool.SetBaseFee(baseFee)
 		fn(w, r, pool)
 	}
@@ -120,17 +120,17 @@ func (tm *TestTermsManager) CheckAddress(*types.Address) (<-chan bool) {
 }
 
 type TestExchangeLookup struct {
-	result bool
+	result uint
 }
-func (tm *TestExchangeLookup) ExchangeIsKnown(*types.Address) (<-chan bool) {
-	result := make(chan bool)
+func (tm *TestExchangeLookup) ExchangeIsKnown(*types.Address) (<-chan uint) {
+	result := make(chan uint)
 	go func() {result <- tm.result}()
 	return result
 }
 
 func TestBadRead(t *testing.T) {
 	publisher := TestPublisher{}
-	handler := mockPoolDecorator(ingest.Handler(&publisher, &TestAccountService{}, &TestAffiliateService{}, true, &TestTermsManager{true}, &TestExchangeLookup{true}))
+	handler := mockPoolDecorator(ingest.Handler(&publisher, &TestAccountService{}, &TestAffiliateService{}, true, &TestTermsManager{true}, &TestExchangeLookup{1}))
 	reader := TestReader{
 		[]byte("00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"),
 		errors.New("Fail!"),
@@ -155,7 +155,7 @@ func TestBadRead(t *testing.T) {
 }
 func TestBadJSON(t *testing.T) {
 	publisher := TestPublisher{}
-	handler := mockPoolDecorator(ingest.Handler(&publisher, &TestAccountService{}, &TestAffiliateService{}, true, &TestTermsManager{true}, &TestExchangeLookup{true}))
+	handler := mockPoolDecorator(ingest.Handler(&publisher, &TestAccountService{}, &TestAffiliateService{}, true, &TestTermsManager{true}, &TestExchangeLookup{1}))
 	reader := TestReader{
 		[]byte("bad json"),
 		nil,
@@ -180,7 +180,7 @@ func TestBadJSON(t *testing.T) {
 }
 func TestJSONBadRead(t *testing.T) {
 	publisher := TestPublisher{}
-	handler := mockPoolDecorator(ingest.Handler(&publisher, &TestAccountService{}, &TestAffiliateService{}, true, &TestTermsManager{true}, &TestExchangeLookup{true}))
+	handler := mockPoolDecorator(ingest.Handler(&publisher, &TestAccountService{}, &TestAffiliateService{}, true, &TestTermsManager{true}, &TestExchangeLookup{1}))
 	reader := TestReader{
 		[]byte("bad json"),
 		errors.New("Sample Error"),
@@ -205,7 +205,7 @@ func TestJSONBadRead(t *testing.T) {
 }
 func TestNoContentType(t *testing.T) {
 	publisher := TestPublisher{}
-	handler := mockPoolDecorator(ingest.Handler(&publisher, &TestAccountService{}, &TestAffiliateService{}, true, &TestTermsManager{true}, &TestExchangeLookup{true}))
+	handler := mockPoolDecorator(ingest.Handler(&publisher, &TestAccountService{}, &TestAffiliateService{}, true, &TestTermsManager{true}, &TestExchangeLookup{1}))
 	reader := TestReader{
 		[]byte(""),
 		nil,
@@ -229,7 +229,7 @@ func TestNoContentType(t *testing.T) {
 }
 func TestBadSignature(t *testing.T) {
 	publisher := TestPublisher{}
-	handler := mockPoolDecorator(ingest.Handler(&publisher, &TestAccountService{}, &TestAffiliateService{}, true, &TestTermsManager{true}, &TestExchangeLookup{true}))
+	handler := mockPoolDecorator(ingest.Handler(&publisher, &TestAccountService{}, &TestAffiliateService{}, true, &TestTermsManager{true}, &TestExchangeLookup{1}))
 	data, _ := hex.DecodeString("f9020a94627306090abab3a6e1400e9345bc60c78a8bef57940000000000000000000000000000000000000000941dad4783cf3fe3085c1426157ab175a6119a04ba9405d090b51c40b020eab3bfcb6a2dff130df22e9ca4f47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04baa4f47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c9400000000000000000000000000000000000000009490fe2af704b34e0224bf2299c838e04d4dcf1364940000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000002b5e3af16b1880000a00000000000000000000000000000000000000000000000000de0b6b3a7640000a00000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000159938ac4a0000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222bb8421c34f27415dc0177bc4016d48c3ec7eb19ee31124bcf4ca2eb3aba767c24e4712043bf8e49d1e28c6efa5a5e8b6824886700f356a403e0e66c75621e56b184b47b03a000000000000000000000000000000000000000000000000000000000000000008080")
 	reader := TestReader{
 		data,
@@ -257,7 +257,7 @@ func TestInsufficientFee(t *testing.T) {
 	publisher := TestPublisher{}
 	fee := new(big.Int)
 	fee.SetInt64(1000)
-	handler := mockPoolDecoratorFee(fee, ingest.Handler(&publisher, &TestAccountService{false, new(big.Int)}, &TestAffiliateService{fee, nil}, true, &TestTermsManager{true}, &TestExchangeLookup{true}))
+	handler := mockPoolDecoratorFee(fee, ingest.Handler(&publisher, &TestAccountService{false, new(big.Int)}, &TestAffiliateService{fee, nil}, true, &TestTermsManager{true}, &TestExchangeLookup{1}))
 	data, _ := hex.DecodeString("f9020a94627306090abab3a6e1400e9345bc60c78a8bef57940000000000000000000000000000000000000000941dad4783cf3fe3085c1426157ab175a6119a04ba9405d090b51c40b020eab3bfcb6a2dff130df22e9ca4f47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04baa4f47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c9400000000000000000000000000000000000000009490fe2af704b34e0224bf2299c838e04d4dcf1364940000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000002b5e3af16b1880000a00000000000000000000000000000000000000000000000000de0b6b3a7640000a00000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000159938ac4a0000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222bb8421ba0ebab93c67e7cdf45e50c83b3a47681918c3f47f220935eb92b7338788024c82a0329105e2259b128ec811b69eb9eee253027089d544c37a1cc33b433ab9b8e03a000000000000000000000000000000000000000000000000000000000000000008080")
 	reader := TestReader{
 		data,
@@ -283,7 +283,7 @@ func TestInsufficientFee(t *testing.T) {
 }
 func TestBlacklisted(t *testing.T) {
 	publisher := TestPublisher{}
-	handler := mockPoolDecorator(ingest.Handler(&publisher, &TestAccountService{true, new(big.Int)}, &TestAffiliateService{new(big.Int), nil}, true, &TestTermsManager{true}, &TestExchangeLookup{true}))
+	handler := mockPoolDecorator(ingest.Handler(&publisher, &TestAccountService{true, new(big.Int)}, &TestAffiliateService{new(big.Int), nil}, true, &TestTermsManager{true}, &TestExchangeLookup{1}))
 	data, _ := hex.DecodeString("f9020a94627306090abab3a6e1400e9345bc60c78a8bef57940000000000000000000000000000000000000000941dad4783cf3fe3085c1426157ab175a6119a04ba9405d090b51c40b020eab3bfcb6a2dff130df22e9ca4f47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04baa4f47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c9400000000000000000000000000000000000000009490fe2af704b34e0224bf2299c838e04d4dcf1364940000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000002b5e3af16b1880000a00000000000000000000000000000000000000000000000000de0b6b3a7640000a00000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000159938ac4a0000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222bb8421ba0ebab93c67e7cdf45e50c83b3a47681918c3f47f220935eb92b7338788024c82a0329105e2259b128ec811b69eb9eee253027089d544c37a1cc33b433ab9b8e03a000000000000000000000000000000000000000000000000000000000000000008080")
 	reader := TestReader{
 		data,
@@ -302,7 +302,7 @@ func TestBlacklisted(t *testing.T) {
 }
 func TestNotFeeRecipient(t *testing.T) {
 	publisher := TestPublisher{}
-	handler := mockPoolDecorator(ingest.Handler(&publisher, &TestAccountService{true, new(big.Int)}, &TestAffiliateService{nil, errors.New("Fee Recipient must be an authorized address")}, true, &TestTermsManager{true}, &TestExchangeLookup{true}))
+	handler := mockPoolDecorator(ingest.Handler(&publisher, &TestAccountService{true, new(big.Int)}, &TestAffiliateService{nil, errors.New("Fee Recipient must be an authorized address")}, true, &TestTermsManager{true}, &TestExchangeLookup{1}))
 	data, _ := hex.DecodeString("f9020a94627306090abab3a6e1400e9345bc60c78a8bef57940000000000000000000000000000000000000000941dad4783cf3fe3085c1426157ab175a6119a04ba9405d090b51c40b020eab3bfcb6a2dff130df22e9ca4f47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04baa4f47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c9400000000000000000000000000000000000000009490fe2af704b34e0224bf2299c838e04d4dcf1364940000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000002b5e3af16b1880000a00000000000000000000000000000000000000000000000000de0b6b3a7640000a00000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000159938ac4a0000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222bb8421ba0ebab93c67e7cdf45e50c83b3a47681918c3f47f220935eb92b7338788024c82a0329105e2259b128ec811b69eb9eee253027089d544c37a1cc33b433ab9b8e03a000000000000000000000000000000000000000000000000000000000000000008080")
 	reader := TestReader{
 		data,
@@ -325,7 +325,7 @@ func TestNotFeeRecipient(t *testing.T) {
 }
 func TestValid(t *testing.T) {
 	publisher := TestPublisher{}
-	handler := mockPoolDecorator(ingest.Handler(&publisher, &TestAccountService{false, new(big.Int)}, &TestAffiliateService{new(big.Int), nil}, true, &TestTermsManager{true}, &TestExchangeLookup{true}))
+	handler := mockPoolDecorator(ingest.Handler(&publisher, &TestAccountService{false, new(big.Int)}, &TestAffiliateService{new(big.Int), nil}, true, &TestTermsManager{true}, &TestExchangeLookup{1}))
 	data, _ := hex.DecodeString("f9021194627306090abab3a6e1400e9345bc60c78a8bef57940000000000000000000000000000000000000000941dad4783cf3fe3085c1426157ab175a6119a04ba9405d090b51c40b020eab3bfcb6a2dff130df22e9ca4f47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04baa4f47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c9400000000000000000000000000000000000000009490fe2af704b34e0224bf2299c838e04d4dcf1364940000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000002b5e3af16b1880000a00000000000000000000000000000000000000000000000000de0b6b3a7640000a00000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000159938ac4a0000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222bb8421ba0ebab93c67e7cdf45e50c83b3a47681918c3f47f220935eb92b7338788024c82a0329105e2259b128ec811b69eb9eee253027089d544c37a1cc33b433ab9b8e03a00000000000000000000000000000000000000000000000000000000000000000808764656661756c74")
 	reader := TestReader{
 		data,
@@ -349,7 +349,7 @@ func TestValid(t *testing.T) {
 }
 func TestBadExchange(t *testing.T) {
 	publisher := TestPublisher{}
-	handler := mockPoolDecorator(ingest.Handler(&publisher, &TestAccountService{false, new(big.Int)}, &TestAffiliateService{new(big.Int), nil}, true, &TestTermsManager{true}, &TestExchangeLookup{false}))
+	handler := mockPoolDecorator(ingest.Handler(&publisher, &TestAccountService{false, new(big.Int)}, &TestAffiliateService{new(big.Int), nil}, true, &TestTermsManager{true}, &TestExchangeLookup{0}))
 	data, _ := hex.DecodeString("f9020a94627306090abab3a6e1400e9345bc60c78a8bef57940000000000000000000000000000000000000000941dad4783cf3fe3085c1426157ab175a6119a04ba9405d090b51c40b020eab3bfcb6a2dff130df22e9ca4f47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04baa4f47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c9400000000000000000000000000000000000000009490fe2af704b34e0224bf2299c838e04d4dcf1364940000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000002b5e3af16b1880000a00000000000000000000000000000000000000000000000000de0b6b3a7640000a00000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000159938ac4a0000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222bb8421ba0ebab93c67e7cdf45e50c83b3a47681918c3f47f220935eb92b7338788024c82a0329105e2259b128ec811b69eb9eee253027089d544c37a1cc33b433ab9b8e03a000000000000000000000000000000000000000000000000000000000000000008080")
 	reader := TestReader{
 		data,
@@ -373,7 +373,7 @@ func TestBadExchange(t *testing.T) {
 }
 func TestUnsignedMaker(t *testing.T) {
 	publisher := TestPublisher{}
-	handler := mockPoolDecorator(ingest.Handler(&publisher, &TestAccountService{false, new(big.Int)}, &TestAffiliateService{new(big.Int), nil}, true, &TestTermsManager{false}, &TestExchangeLookup{true}))
+	handler := mockPoolDecorator(ingest.Handler(&publisher, &TestAccountService{false, new(big.Int)}, &TestAffiliateService{new(big.Int), nil}, true, &TestTermsManager{false}, &TestExchangeLookup{1}))
 	data, _ := hex.DecodeString("f9020a94627306090abab3a6e1400e9345bc60c78a8bef57940000000000000000000000000000000000000000941dad4783cf3fe3085c1426157ab175a6119a04ba9405d090b51c40b020eab3bfcb6a2dff130df22e9ca4f47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04baa4f47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c9400000000000000000000000000000000000000009490fe2af704b34e0224bf2299c838e04d4dcf1364940000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000002b5e3af16b1880000a00000000000000000000000000000000000000000000000000de0b6b3a7640000a00000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000159938ac4a0000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222bb8421ba0ebab93c67e7cdf45e50c83b3a47681918c3f47f220935eb92b7338788024c82a0329105e2259b128ec811b69eb9eee253027089d544c37a1cc33b433ab9b8e03a000000000000000000000000000000000000000000000000000000000000000008080")
 	reader := TestReader{
 		data,

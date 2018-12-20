@@ -79,11 +79,11 @@ func TestExchangeIsKnown(t *testing.T) {
 	}
 	address := &types.Address{}
 	lookup := dbModule.NewExchangeLookup(tx)
-	if (<-lookup.ExchangeIsKnown(address)) {
+	if (<-lookup.ExchangeIsKnown(address) != 0) {
 		t.Errorf("Expected exchange to be unknown")
 	}
 	tx.Model(&dbModule.Exchange{}).Create(&dbModule.Exchange{address, 1})
-	if !(<-lookup.ExchangeIsKnown(address)) {
+	if (<-lookup.ExchangeIsKnown(address) == 0) {
 		t.Errorf("Expected exchange to be known")
 	}
 }

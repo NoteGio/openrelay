@@ -115,7 +115,7 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 			}, 415)
 			return
 		}
-		knownExchange := exchangeLookup.ExchangeIsKnown(order.ExchangeAddress)
+		networkIDChan := exchangeLookup.ExchangeIsKnown(order.ExchangeAddress)
 		var signedMaker <-chan bool
 		if(enforceTerms) {
 			signedMaker = tm.CheckAddress(order.Maker)
@@ -152,18 +152,6 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 			return
 		}
 		emptyAddress := types.Address{}
-		if !bytes.Equal(pool.SenderAddress[:], emptyAddress[:]) && !bytes.Equal(pool.SenderAddress[:], order.SenderAddress[:]) {
-			returnError(w, IngestError{
-				100,
-				"Validation Failed",
-				[]ValidationError{ValidationError{
-					"senderAddress",
-					1002,
-					"Invalid sender for this order pool",
-				}},
-			}, 400)
-			return
-		}
 		if !order.Signature.Supported() {
 			returnError(w, IngestError{
 				100,
@@ -264,7 +252,8 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 			}, 401)
 			return
 		}
-		if !(<-knownExchange) {
+		networkID := <-networkIDChan
+		if networkID == 0 {
 			returnError(w, IngestError{
 				100,
 				"Validation Failed",
@@ -272,6 +261,18 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 					"exchangeContractAddress",
 					1002,
 					"Unknown exchangeContractAddress",
+				}},
+			}, 400)
+			return
+		}
+		if len(pool.SenderAddresses) != 0 && !bytes.Equal(pool.SenderAddresses[networkID][:], emptyAddress[:]) && !bytes.Equal(pool.SenderAddresses[networkID][:], order.SenderAddress[:]) {
+			returnError(w, IngestError{
+				100,
+				"Validation Failed",
+				[]ValidationError{ValidationError{
+					"senderAddress",
+					1002,
+					"Invalid sender for this order pool / network",
 				}},
 			}, 400)
 			return

@@ -1,6 +1,7 @@
 package pool
 
 import (
+	"bytes"
 	"net/http"
 	"github.com/notegio/openrelay/config"
 	dbModule "github.com/notegio/openrelay/db"
@@ -20,19 +21,19 @@ import (
 var feeBaseUnits = big.NewInt(1000000000000000000)
 
 type Pool struct {
-	SearchTerms   string
-	Expiration    uint64
-	Nonce         uint
-	FeeShare      string
-	ID            []byte
-	Limit         uint
-	SenderAddress *types.Address
-	FilterAddress *types.Address
-	conn          bind.ContractCaller
-	baseFee       config.BaseFee
+	SearchTerms     string
+	Expiration      uint64
+	Nonce           uint
+	FeeShare        string
+	ID              []byte
+	Limit           uint
+	SenderAddresses types.NetworkAddressMap
+	FilterAddresses types.NetworkAddressMap
+	conn            bind.ContractCaller
+	baseFee         config.BaseFee
 }
 
-func (pool *Pool) SetConn(conn bind.ContractBackend) {
+func (pool *Pool) SetConn(conn bind.ContractCaller) {
 	pool.conn = conn
 }
 
@@ -40,11 +41,23 @@ func (pool *Pool) SetBaseFee(baseFee config.BaseFee) {
 	pool.baseFee = baseFee
 }
 
-func (pool *Pool) CheckFilter(order *types.Order) (bool, error) {
+func (pool *Pool) CheckFilter(order *types.Order, networkid uint) (bool, error) {
+	if len(pool.FilterAddresses) == 0 {
+		return true, nil
+	}
+	filterAddress, ok := pool.FilterAddresses[networkid]
+	if !ok {
+		// networkid is not supported by this pool, so neither is this order
+		return false, nil
+	}
+	if bytes.Equal(filterAddress[:], make([]byte, 20)) {
+		// If no filter contract is specified, everything is valid
+		return true, nil
+	}
 	if pool.conn == nil {
 		return false, fmt.Errorf("No connection set on pool")
 	}
-	return NewFilterContract(pool.FilterAddress, pool.conn).Filter(pool.ID, order)
+	return NewFilterContract(filterAddress, pool.conn).Filter(pool.ID, order)
 }
 
 func (pool Pool) Filter(query *gorm.DB) (*gorm.DB, error) {

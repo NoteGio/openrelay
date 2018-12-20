@@ -86,7 +86,7 @@ services:
       context: ./
       dockerfile: Dockerfile.fundcheckrelay
     image: "openrelay/fundcheckrelay:${TAG:-latest}"
-    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://fundcheck=>queue://pgindexer=>topic://instant-broadcast", "--invalidation=topic://newblocks"]
+    command: ["/fundcheckrelay", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://fundcheck=>queue://poolfilter", "--invalidation=topic://newblocks"]
     depends_on:
       - redis
       - ethnode
@@ -244,6 +244,7 @@ services:
       SPENDRECORDER_PASSWORD: password
       CANCEL_FILTER_PASSWORD: password
       CANCEL_INDEX_PASSWORD: password
+      POOL_FILTER_PASSWORD: password
       TOS_PASSWORD: password
       TOS_MGR_PASSWORD: password
       INGEST_PASSWORD: password
@@ -256,6 +257,7 @@ services:
       - "spendrecorder;env://SPENDRECORDER_PASSWORD;orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE"
       - "search;env://SEARCH_PASSWORD;orderv2.SELECT,exchanges.SELECT,pools.SELECT"
       - "cancelfilter;env://CANCEL_FILTER_PASSWORD;cancellations.SELECT"
+      - "poolfilter;env://POOL_FILTER_PASSWORD;pools.SELECT,exchanges.SELECT"
       - "cancelindexer;env://CANCEL_INDEX_PASSWORD;cancellations.SELECT,cancellations.INSERT,cancellations.UPDATE,orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE"
       - "tos;env://TOS_PASSWORD;terms.SELECT,terms_sigs.SELECT,terms_sigs.INSERT,hash_masks.SELECT,hash_masks.INSERT"
       - "ingest;env://INGEST_PASSWORD;terms.SELECT,terms_sigs.SELECT,terms_sigs.INSERT,pools.SELECT,exchanges.SELECT"
@@ -449,6 +451,25 @@ services:
     environment:
       POSTGRES_PASSWORD: password
     restart: on-failure
+
+  poolfilter:
+    build:
+      context: ./
+      dockerfile: Dockerfile.poolfilter
+    image: "openrelay/poolfilter:${TAG:-latest}"
+    command: ["/poolfilter", "postgres://poolfilter@postgres", "env://POSTGRES_PASSWORD", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://poolfilter=>queue://pgindexer=>topic://instant-broadcast"]
+    environment:
+      POSTGRES_PASSWORD: password
+    depends_on:
+      - redis
+      - ethnode
+      - postgres
+      - corebuild
+    restart: on-failure
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
 
   queuemonitor:
     build:

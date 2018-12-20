@@ -44,11 +44,11 @@ func (lookup *ExchangeLookup) GetNetworkByExchange(address *types.Address) (int6
 	return exchange.Network, nil
 }
 
-func (lookup *ExchangeLookup) ExchangeIsKnown(address *types.Address) (<-chan bool) {
-	result := make(chan bool)
-	go func(address *types.Address, result chan bool) {
-		_, err := lookup.GetNetworkByExchange(address)
-		result <- (err == nil)
+func (lookup *ExchangeLookup) ExchangeIsKnown(address *types.Address) (<-chan uint) {
+	result := make(chan uint)
+	go func(address *types.Address, result chan uint) {
+		networkid, _ := lookup.GetNetworkByExchange(address)
+		result <- uint(networkid)
 	}(address, result)
 	return result
 }
