@@ -17,7 +17,16 @@ import (
 func corsDecorator(fn func(w http.ResponseWriter, r *http.Request)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		fn(w, r)
+		w.Header().Set("Access-Control-Allow-Methods", "GET")
+		if r.Method == "OPTIONS" {
+			if h := r.Header.Get("Access-Control-Request-Headers"); h != "" {
+				w.Header().Set("Access-Control-Allow-Headers", h)
+				w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+				w.WriteHeader(200)
+			}
+		} else {
+			fn(w, r)
+		}
 	}
 }
 
