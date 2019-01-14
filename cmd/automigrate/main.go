@@ -110,6 +110,12 @@ func main() {
 		} else if dialect == "mysql" {
 			if err := db.Exec(fmt.Sprintf("CREATE USER '%v' IDENTIFIED BY '%v'", username, password)).Error; err != nil {
 				log.Printf(err.Error())
+				// Maybe the user already exists?
+				//SET PASSWORD FOR %s = %s
+				if err := db.Exec(fmt.Sprintf("SET PASSWORD FOR '%v' = '%v'", username, password)).Error; err != nil {
+					log.Printf(err.Error())
+					// Maybe the user already exists?
+				}
 			}
 			result := make(map[string]string)
 			if err := db.Exec("SELECT DATABASE()").Row().Scan(result); err != nil {
