@@ -12,6 +12,7 @@ import (
 	"github.com/notegio/openrelay/common"
 	"github.com/notegio/openrelay/channels"
 	dbModule "github.com/notegio/openrelay/db"
+	"github.com/notegio/openrelay/pool"
 	"github.com/notegio/openrelay/search"
 	"github.com/notegio/openrelay/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -57,10 +58,29 @@ func saltedSampleOrder(t *testing.T) *dbModule.Order {
 	return order
 }
 
+// TODO: Mock pool injection
+
+// type Pool struct {
+// 	SearchTerms   string
+// 	Expiration    uint
+// 	Nonce         uint
+// 	FeeShare      uint
+// 	ID            []byte
+// 	SenderAddress *types.Address
+// 	FilterAddress *types.Address
+// 	conn          bind.ContractBackend
+// }
+
+func mockPoolDecorator(fn func(http.ResponseWriter, *http.Request, types.Pool)) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fn(w, r, &pool.Pool{SearchTerms: "", ID: []byte("default")})
+	}
+}
+
 func getTestSearchHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 	_, consumerChannel := channels.MockChannel()
 	blockHash := blockhash.NewChanneledBlockHash(consumerChannel)
-	return search.BlockHashDecorator(blockHash, search.SearchHandler(db))
+	return search.BlockHashDecorator(blockHash, mockPoolDecorator(search.SearchHandler(db)))
 }
 
 func getTestOrderHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
@@ -72,7 +92,7 @@ func getTestOrderHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 func getTestOrderBookHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 	_, consumerChannel := channels.MockChannel()
 	blockHash := blockhash.NewChanneledBlockHash(consumerChannel)
-	return search.BlockHashDecorator(blockHash, search.OrderBookHandler(db))
+	return search.BlockHashDecorator(blockHash, mockPoolDecorator(search.OrderBookHandler(db)))
 }
 
 func getDb() (*gorm.DB, error) {
@@ -153,7 +173,7 @@ func TestFormatSingleResponseJson(t *testing.T) {
 func TestBlockhashRedirect(t *testing.T) {
 	_, consumerChannel := channels.MockChannel()
 	blockHash := blockhash.NewChanneledBlockHash(consumerChannel)
-	handler := search.BlockHashDecorator(blockHash, search.SearchHandler(nil))
+	handler := search.BlockHashDecorator(blockHash, mockPoolDecorator(search.SearchHandler(nil)))
 	request, _ := http.NewRequest("GET", "/v0/orders?makertoken=0x627306090abab3a6e1400e9345bc60c78a8bef57", nil)
 	recorder := httptest.NewRecorder()
 	handler(recorder, request)
@@ -265,6 +285,15 @@ func TestFilterMakerAssetProxyId(t *testing.T) {
 }
 func TestFilterTakerAssetProxyId(t *testing.T) {
 	filterContractRequest("takerAssetProxyId=0xf47261b0", "takerAssetProxyId=0x11111111", t)
+}
+func TestFilterPoolName(t *testing.T) {
+	filterContractRequest("_poolName=nil", "_poolName=doesnotexist", t)
+}
+func TestFilterPoolId(t *testing.T) {
+	filterContractRequest("_poolId=0xa7d8eff4026f252db5b90c78e43dd191dfe6e55fcb98548a5f38faf0d4e3eb39", "_poolId=0x0000000000000000000000000000000000000000000000000000000000000000", t)
+}
+func TestFilterTakerFee(t *testing.T) {
+	filterContractRequest("_takerFee=0", "_takerFee=1000", t)
 }
 
 func TestPagination(t *testing.T) {

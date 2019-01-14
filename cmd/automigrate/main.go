@@ -2,7 +2,10 @@ package main
 
 import (
 	dbModule "github.com/notegio/openrelay/db"
+	poolModule "github.com/notegio/openrelay/pool"
 	"github.com/notegio/openrelay/common"
+	"github.com/notegio/openrelay/types"
+	"github.com/ethereum/go-ethereum/crypto/sha3"
 	"log"
 	"os"
 	"fmt"
@@ -53,6 +56,9 @@ func main() {
 	if err := db.AutoMigrate(&dbModule.HashMask{}).Error; err != nil {
 		log.Fatalf("Error migrating hash_masks table: %v", err.Error())
 	}
+	if err := db.AutoMigrate(&poolModule.Pool{}).Error; err != nil {
+		log.Fatalf("Error migrating pools table: %v", err.Error())
+	}
 	kovanAddress, _ := common.HexToAddress("0x35dd2932454449b14cee11a94d3674a936d5d7b2")
 	db.Where(
 		&dbModule.Exchange{Network: 42},
@@ -73,6 +79,24 @@ func main() {
 	if err := db.Model(&dbModule.Order{}).AddIndex("idx_order_maker_asset_taker_asset_data", "maker_asset_data", "taker_asset_data").Error; err != nil {
 		log.Fatalf("Error adding token pair index: %v", err.Error())
 	}
+
+	poolHash := sha3.NewKeccak256()
+	poolHash.Write([]byte(""))
+
+	pool := &poolModule.Pool{
+		SearchTerms: "",
+		Expiration: 1744733652,
+		Nonce: 0,
+		FeeShare: "1000000000000000000",
+		ID: poolHash.Sum(nil),
+		SenderAddresses: types.NetworkAddressMap{},
+		FilterAddresses: types.NetworkAddressMap{},
+	}
+
+	err = db.Model(&poolModule.Pool{}).Where("id = ?", pool.ID).Assign(pool).FirstOrCreate(pool).Error
+
+
+
 	for _, credString := range(os.Args[3:]) {
 		creds := strings.Split(credString, ";")
 		if len(creds) != 3 {

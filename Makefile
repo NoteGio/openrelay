@@ -103,7 +103,10 @@ bin/queuemonitor: $(BASE) cmd/queuemonitor/main.go
 bin/terms: $(BASE) cmd/terms/main.go
 	cd "$(BASE)" && $(GOSTATIC) -o bin/terms cmd/terms/main.go
 
-bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate bin/indexer bin/fillindexer bin/automigrate bin/searchapi bin/exchangesplitter bin/blockmonitor bin/allowancemonitor bin/spendmonitor bin/fillmonitor bin/multisigmonitor bin/spendrecorder bin/queuemonitor bin/canceluptomonitor bin/canceluptofilter bin/canceluptoindexer bin/erc721approvalmonitor bin/affiliatemonitor bin/terms
+bin/poolfilter: $(BASE) cmd/poolfilter/main.go
+	cd "$(BASE)" && $(GOSTATIC) -o bin/poolfilter cmd/poolfilter/main.go
+
+bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate bin/indexer bin/fillindexer bin/automigrate bin/searchapi bin/exchangesplitter bin/blockmonitor bin/allowancemonitor bin/spendmonitor bin/fillmonitor bin/multisigmonitor bin/spendrecorder bin/queuemonitor bin/canceluptomonitor bin/canceluptofilter bin/canceluptoindexer bin/erc721approvalmonitor bin/affiliatemonitor bin/terms bin/poolfilter
 
 truffleCompile:
 	cd js ; node_modules/.bin/truffle compile
@@ -152,6 +155,8 @@ test-affiliate: $(BASE)
 	cd "$(BASE)/monitor/affiliate" && go test
 test-db: $(BASE)
 	cd "$(BASE)/db" &&  POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
+test-pool: $(BASE)
+	cd "$(BASE)/pool" &&  POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
 
 docker-cfg/ca-certificates.crt:
 	cp /etc/ssl/certs/ca-certificates.crt docker-cfg/ca-certificates.crt
@@ -166,9 +171,9 @@ newvendor:
 	govendor add +external
 
 0x-testrpc-snapshot.tar.gz:
-	wget https://s3.amazonaws.com/testrpc-shapshots/2c62504b79315099346665225d3637662ff87db6.zip -O testrpc-db.zip
+	wget https://s3.amazonaws.com/testrpc-shapshots/965d6098294beb22292090c461151274ee6f9a26.zip -O testrpc-db.zip
 	mkdir -p /tmp/testrpc-snapshot
 	unzip testrpc-db.zip -d /tmp/testrpc-snapshot
-	tar -czf 0x-testrpc-snapshot.tar.gz -C /tmp/testrpc-snapshot/ .
+	tar -czf 0x-testrpc-snapshot.tar.gz -C /tmp/testrpc-snapshot/0x_ganache_snapshot .
 	rm testrpc-db.zip
 	rm -rf /tmp/testrpc-snapshot

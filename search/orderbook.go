@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/jinzhu/gorm"
 	"github.com/notegio/openrelay/common"
+	"github.com/notegio/openrelay/types"
 	dbModule "github.com/notegio/openrelay/db"
 	"net/http"
 	// "log"
@@ -15,8 +16,8 @@ type OrderBook struct {
 	Bids *PagedResult `json:"bids"`
 }
 
-func OrderBookHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
+func OrderBookHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request, types.Pool) {
+	return func(w http.ResponseWriter, r *http.Request, pool types.Pool) {
 		queryObject := r.URL.Query()
 		errs := []ValidationError{}
 		pageInt, perPageInt, err := getPages(queryObject)
@@ -37,25 +38,30 @@ func OrderBookHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 		if err != nil {
 			errs = append(errs, ValidationError{err.Error(), 1001, "quoteAssetData"})
 		}
+		currentTime := getExpTime(queryObject)
+		baseQuery, err := pool.Filter(db.Model(&dbModule.Order{}).Where("status = ?", dbModule.StatusOpen).Where("expiration_timestamp_in_sec > ?", currentTime))
+		if err != nil {
+			errs = append(errs, ValidationError{err.Error(), 1001, "pool"})
+		}
 		if len(errs) > 0 {
 			returnErrorList(w, errs)
 			return
 		}
-		currentTime := getExpTime(queryObject)
 		bids := []dbModule.Order{}
 		asks := []dbModule.Order{}
 		var bidCount int
 		var askCount int
+
 		// orderBook := &OrderBook{[]dbModule.Order{}, []dbModule.Order{}}
-		db.Model(&dbModule.Order{}).Where("status = ?", dbModule.StatusOpen).Where("expiration_timestamp_in_sec > ?", currentTime).Where("taker_asset_data = ? AND maker_asset_data = ?", []byte(baseAssetData[:]), []byte(quoteAssetData[:])).Order("price, fee_rate, expiration_timestamp_in_sec").Count(&bidCount)
-		db.Model(&dbModule.Order{}).Where("status = ?", dbModule.StatusOpen).Where("expiration_timestamp_in_sec > ?", currentTime).Where("maker_asset_data = ? AND taker_asset_data = ?", []byte(baseAssetData[:]), []byte(quoteAssetData[:])).Order("price, fee_rate, expiration_timestamp_in_sec").Count(&askCount)
+		baseQuery.Where("taker_asset_data = ? AND maker_asset_data = ?", []byte(baseAssetData[:]), []byte(quoteAssetData[:])).Order("price, fee_rate, expiration_timestamp_in_sec").Count(&bidCount)
+		baseQuery.Where("maker_asset_data = ? AND taker_asset_data = ?", []byte(baseAssetData[:]), []byte(quoteAssetData[:])).Order("price, fee_rate, expiration_timestamp_in_sec").Count(&askCount)
 		if bidCount > (pageInt - 1) * perPageInt {
 			// We don't need to bother with this query if te total is less than the
 			// offset
-			db.Model(&dbModule.Order{}).Where("status = ?", dbModule.StatusOpen).Where("expiration_timestamp_in_sec > ?", currentTime).Where("taker_asset_data = ? AND maker_asset_data = ?", []byte(baseAssetData[:]), []byte(quoteAssetData[:])).Order("price, fee_rate, expiration_timestamp_in_sec").Offset((pageInt - 1) * perPageInt).Limit(perPageInt).Find(&bids)
+			baseQuery.Where("taker_asset_data = ? AND maker_asset_data = ?", []byte(baseAssetData[:]), []byte(quoteAssetData[:])).Order("price, fee_rate, expiration_timestamp_in_sec").Offset((pageInt - 1) * perPageInt).Limit(perPageInt).Find(&bids)
 		}
 		if askCount > (pageInt - 1) * perPageInt {
-			db.Model(&dbModule.Order{}).Where("status = ?", dbModule.StatusOpen).Where("expiration_timestamp_in_sec > ?", currentTime).Where("maker_asset_data = ? AND taker_asset_data = ?", []byte(baseAssetData[:]), []byte(quoteAssetData[:])).Order("price, fee_rate, expiration_timestamp_in_sec").Offset((pageInt - 1) * perPageInt).Limit(perPageInt).Find(&asks)
+			baseQuery.Where("maker_asset_data = ? AND taker_asset_data = ?", []byte(baseAssetData[:]), []byte(quoteAssetData[:])).Order("price, fee_rate, expiration_timestamp_in_sec").Offset((pageInt - 1) * perPageInt).Limit(perPageInt).Find(&asks)
 		}
 		formattedAsks := []FormattedOrder{}
 		formattedBids := []FormattedOrder{}

@@ -26,12 +26,13 @@ type Order struct {
 	MakerAssetAmount          *Uint256
 	TakerAssetAmount          *Uint256
 	MakerFee                  *Uint256
-	TakerFee                  *Uint256
+	TakerFee                  *Uint256  `gorm:"index"`
 	ExpirationTimestampInSec  *Uint256  `gorm:"index"`
 	Salt                      *Uint256
 	Signature                 Signature //`gorm:"type:bytea"`
 	TakerAssetAmountFilled    *Uint256
 	Cancelled                 bool
+	PoolID                    []byte    `gorm:"index"`
 }
 
 func (order *Order) Initialize() {

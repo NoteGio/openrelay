@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"database/sql/driver"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
 	"errors"
 	"fmt"
 	"bytes"
@@ -44,6 +45,9 @@ func (data *Address) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("\"%v\"", data)), nil
 }
 
+func (data *Address) ToGethAddress() (common.Address) {
+	return common.HexToAddress(hex.EncodeToString(data[:]))
+}
 
 type Uint256 [32]byte
 

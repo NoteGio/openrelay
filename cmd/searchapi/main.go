@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/notegio/openrelay/search"
+	"github.com/notegio/openrelay/pool"
 	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/blockhash"
 	"github.com/notegio/openrelay/affiliates"
@@ -12,6 +13,7 @@ import (
 	"log"
 	// "github.com/rs/cors"
 	"strconv"
+	"regexp"
 )
 
 func corsDecorator(fn func(w http.ResponseWriter, r *http.Request)) func(http.ResponseWriter, *http.Request) {
@@ -28,6 +30,34 @@ func corsDecorator(fn func(w http.ResponseWriter, r *http.Request)) func(http.Re
 			fn(w, r)
 		}
 	}
+}
+
+type route struct {
+    pattern *regexp.Regexp
+    handler http.Handler
+}
+
+type regexpHandler struct {
+    routes []*route
+}
+
+func (h *regexpHandler) Handler(pattern *regexp.Regexp, handler http.Handler) {
+    h.routes = append(h.routes, &route{pattern, handler})
+}
+
+func (h *regexpHandler) HandleFunc(pattern *regexp.Regexp, handler func(http.ResponseWriter, *http.Request)) {
+    h.routes = append(h.routes, &route{pattern, http.HandlerFunc(handler)})
+}
+
+func (h *regexpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+    for _, route := range h.routes {
+        if route.pattern.MatchString(r.URL.Path) {
+            route.handler.ServeHTTP(w, r)
+            return
+        }
+    }
+    // no pattern matched; send 404 response
+    http.NotFound(w, r)
 }
 
 func main() {
@@ -52,19 +82,19 @@ func main() {
 		log.Fatalf("Error establishing block channel: %v", err.Error())
 	}
 	blockHash := blockhash.NewChanneledBlockHash(blockChannelConsumer)
-	searchHandler := corsDecorator(search.BlockHashDecorator(blockHash, search.SearchHandler(db)))
+	searchHandler := corsDecorator(search.BlockHashDecorator(blockHash, pool.PoolDecorator(db, search.SearchHandler(db))))
 	orderHandler := corsDecorator(search.BlockHashDecorator(blockHash, search.OrderHandler(db)))
-	orderBookHandler := corsDecorator(search.BlockHashDecorator(blockHash, search.OrderBookHandler(db)))
+	orderBookHandler := corsDecorator(search.BlockHashDecorator(blockHash, pool.PoolDecorator(db, search.OrderBookHandler(db))))
 	feeRecipientsHandler := corsDecorator(search.BlockHashDecorator(blockHash, search.FeeRecipientHandler(affiliates.NewRedisAffiliateService(redisClient))))
 	pairHandler := corsDecorator(search.PairHandler(db))
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/v2/orders", searchHandler)
-	mux.HandleFunc("/v2/order/", orderHandler)
-	mux.HandleFunc("/v2/asset_pairs", pairHandler)
-	mux.HandleFunc("/v2/orderbook", orderBookHandler)
-	mux.HandleFunc("/v2/fee_recipients", feeRecipientsHandler)
-	mux.HandleFunc("/_hc", search.HealthCheckHandler(db, blockHash))
+	mux := &regexpHandler{[]*route{}}
+	mux.HandleFunc(regexp.MustCompile("^(/[^/]+)?/v2/orders$"), searchHandler)
+	mux.HandleFunc(regexp.MustCompile("^(/[^/]+)?/v2/order/$"), orderHandler)
+	mux.HandleFunc(regexp.MustCompile("^(/[^/]+)?/v2/asset_pairs$"), pairHandler)
+	mux.HandleFunc(regexp.MustCompile("^(/[^/]+)?/v2/orderbook$"), orderBookHandler)
+	mux.HandleFunc(regexp.MustCompile("^(/[^/]+)?/v2/fee_recipients$"), feeRecipientsHandler)
+	mux.HandleFunc(regexp.MustCompile("^/_hc$"), search.HealthCheckHandler(db, blockHash))
 	log.Printf("Order Search Serving on :%v", port)
 	http.ListenAndServe(":"+port, mux)
 }

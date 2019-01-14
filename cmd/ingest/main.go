@@ -5,6 +5,7 @@ import (
 	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/affiliates"
 	"github.com/notegio/openrelay/accounts"
+	"github.com/notegio/openrelay/pool"
 	dbModule "github.com/notegio/openrelay/db"
 	"encoding/hex"
 	"net/http"
@@ -12,7 +13,36 @@ import (
 	"os"
 	"log"
 	"github.com/rs/cors"
+	"regexp"
 )
+
+type route struct {
+    pattern *regexp.Regexp
+    handler http.Handler
+}
+
+type regexpHandler struct {
+    routes []*route
+}
+
+func (h *regexpHandler) Handler(pattern *regexp.Regexp, handler http.Handler) {
+    h.routes = append(h.routes, &route{pattern, handler})
+}
+
+func (h *regexpHandler) HandleFunc(pattern *regexp.Regexp, handler func(http.ResponseWriter, *http.Request)) {
+    h.routes = append(h.routes, &route{pattern, http.HandlerFunc(handler)})
+}
+
+func (h *regexpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+    for _, route := range h.routes {
+        if route.pattern.MatchString(r.URL.Path) {
+            route.handler.ServeHTTP(w, r)
+            return
+        }
+    }
+    // no pattern matched; send 404 response
+    http.NotFound(w, r)
+}
 
 func main() {
 	db, err := dbModule.GetDB(os.Args[1], os.Args[2])
@@ -45,13 +75,14 @@ func main() {
 	publisher, err := channels.PublisherFromURI(dstChannel, redisClient)
 	enforceTerms := os.Getenv("OR_ENFORCE_TERMS") != "false"
 	if err != nil { log.Fatalf(err.Error()) }
-	handler := ingest.Handler(publisher, accountService, affiliateService, enforceTerms, dbModule.NewTermsManager(db), dbModule.NewExchangeLookup(db))
-	feeHandler := ingest.FeeHandler(publisher, accountService, affiliateService, defaultFeeRecipientBytes)
+	exchangeLookup := dbModule.NewExchangeLookup(db)
+	handler := pool.PoolDecoratorBaseFee(db, redisClient, ingest.Handler(publisher, accountService, affiliateService, enforceTerms, dbModule.NewTermsManager(db), exchangeLookup))
+	feeHandler := pool.PoolDecoratorBaseFee(db, redisClient, ingest.FeeHandler(publisher, accountService, affiliateService, defaultFeeRecipientBytes, exchangeLookup))
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/v2/order", handler)
-	mux.HandleFunc("/v2/order_config", feeHandler)
-	mux.HandleFunc("/_hc", ingest.HealthCheckHandler(redisClient))
+	mux := &regexpHandler{[]*route{}}
+	mux.HandleFunc(regexp.MustCompile("^(/[^/]+)?/v2/order$"), handler)
+	mux.HandleFunc(regexp.MustCompile("^(/[^/]+)?/v2/order_config$"), feeHandler)
+	mux.HandleFunc(regexp.MustCompile("^/_hc$"), ingest.HealthCheckHandler(redisClient))
 	corsHandler := cors.Default().Handler(mux)
 	log.Printf("Order Ingest Serving on :%v", port)
 	http.ListenAndServe(":"+port, corsHandler)

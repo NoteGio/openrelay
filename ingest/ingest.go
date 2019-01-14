@@ -9,6 +9,7 @@ import (
 	affiliatesModule "github.com/notegio/openrelay/affiliates"
 	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/types"
+	poolModule "github.com/notegio/openrelay/pool"
 	"io"
 	"log"
 	"math/big"
@@ -48,9 +49,9 @@ func returnError(w http.ResponseWriter, errResp IngestError, status int) {
 	w.Write(errBytes)
 }
 
-func Handler(publisher channels.Publisher, accounts accountsModule.AccountService, affiliates affiliatesModule.AffiliateService, enforceTerms bool, tm TermsManager, exchangeLookup ExchangeLookup) func(http.ResponseWriter, *http.Request) {
+func Handler(publisher channels.Publisher, accounts accountsModule.AccountService, affiliates affiliatesModule.AffiliateService, enforceTerms bool, tm TermsManager, exchangeLookup ExchangeLookup) func(http.ResponseWriter, *http.Request, *poolModule.Pool) {
 	var contentType string
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request, pool *poolModule.Pool) {
 		if r.Method == "GET" {
 			// Health checks
 			w.Header().Set("Content-Type", "application/json")
@@ -114,7 +115,7 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 			}, 415)
 			return
 		}
-		knownExchange := exchangeLookup.ExchangeIsKnown(order.ExchangeAddress)
+		networkIDChan := exchangeLookup.ExchangeIsKnown(order.ExchangeAddress)
 		var signedMaker <-chan bool
 		if(enforceTerms) {
 			signedMaker = tm.CheckAddress(order.Maker)
@@ -150,6 +151,7 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 			}, 400)
 			return
 		}
+		emptyAddress := types.Address{}
 		if !order.Signature.Supported() {
 			returnError(w, IngestError{
 				100,
@@ -250,7 +252,8 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 			}, 401)
 			return
 		}
-		if !(<-knownExchange) {
+		networkID := <-networkIDChan
+		if networkID == 0 {
 			returnError(w, IngestError{
 				100,
 				"Validation Failed",
@@ -259,6 +262,26 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 					1002,
 					"Unknown exchangeContractAddress",
 				}},
+			}, 400)
+			return
+		}
+		if len(pool.SenderAddresses) != 0 && !bytes.Equal(pool.SenderAddresses[networkID][:], emptyAddress[:]) && !bytes.Equal(pool.SenderAddresses[networkID][:], order.SenderAddress[:]) {
+			returnError(w, IngestError{
+				100,
+				"Validation Failed",
+				[]ValidationError{ValidationError{
+					"senderAddress",
+					1002,
+					"Invalid sender for this order pool / network",
+				}},
+			}, 400)
+			return
+		}
+		if pool.Expiration > 0 && pool.Expiration < bigTime.Uint64() {
+			returnError(w, IngestError{
+				102,
+				"Order Pool Expired",
+				[]ValidationError{},
 			}, 400)
 			return
 		}
@@ -281,13 +304,25 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 			}, 402)
 			return
 		}
+		poolFee, err := pool.Fee()
+		if err != nil {
+			returnError(w, IngestError{
+				100,
+				"Validation Failed",
+				[]ValidationError{ValidationError{
+					"pool",
+					1002,
+					err.Error(),
+				}},
+			}, 500)
+			return
+		}
 		account := <-makerChan
 		minFee := new(big.Int)
-		// A fee recipient's Fee() value is the base fee for that recipient. A
-		// maker's Discount() is the discount that recipient gets from the base
-		// fee. Thus, the minimum fee required is feeRecipient.Fee() -
-		// maker.Discount()
-		minFee.Sub(feeRecipient.Fee(), account.Discount())
+		// A pool's Fee() value is the base fee for that pool. A maker's Discount()
+		// is the discount that recipient gets from the base fee. Thus, the minimum
+		// fee required is pool.Fee() - maker.Discount()
+		minFee.Sub(poolFee, account.Discount())
 		if totalFee.Cmp(minFee) < 0 {
 			returnError(w, IngestError{
 				100,
@@ -311,6 +346,7 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 			fmt.Fprintf(w, "")
 			return
 		}
+		order.PoolID = pool.ID
 		w.WriteHeader(202)
 		fmt.Fprintf(w, "")
 		orderBytes := order.Bytes()
