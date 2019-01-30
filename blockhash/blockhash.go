@@ -27,7 +27,7 @@ func (rbhc *ChanneledBlockHashConsumer) Consume(delivery channels.Delivery) {
 	payload := []byte(delivery.Payload())
 	err := json.Unmarshal(payload, block)
 	if err != nil {
-		log.Printf("Error Parsing Payload: %v", err.Error())
+		log.Printf("Error Parsing Payload: %v - '%v'", err.Error(), string(payload))
 		delivery.Reject()
 		return
 	}
