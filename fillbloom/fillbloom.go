@@ -13,7 +13,21 @@ import (
 	"log"
 	"errors"
 	"sync"
+	"os"
+	"strconv"
 )
+
+func envInt(key string, default_ int64)  (int64) {
+	envVar := os.Getenv(key)
+	val, err := strconv.Atoi(envVar)
+	if err != nil {
+		if envVar != "" {
+			log.Printf("Error parsing '%v' - %v", envVar, err.Error())
+		}
+		return default_
+	}
+	return int64(val)
+}
 
 type FillBloom struct {
 	b     *bloom.BloomFilter
@@ -21,6 +35,10 @@ type FillBloom struct {
 	Initialized bool
 	m *sync.Mutex
 }
+
+var (
+	populateChunkSize = envInt("FILL_BLOOM_CHUNK", 10000)
+)
 
 func (fb *FillBloom) Initialize(lf ethereum.LogFilterer, endBlock int64, exchangeAddresses []common.Address) error {
 	itemReader, err := fb.store.Reader()
@@ -30,7 +48,7 @@ func (fb *FillBloom) Initialize(lf ethereum.LogFilterer, endBlock int64, exchang
 		for lastBlock < endBlock {
 			query := ethereum.FilterQuery{
 				FromBlock: big.NewInt(lastBlock),
-				ToBlock: big.NewInt(min(lastBlock + 100000, endBlock)),
+				ToBlock: big.NewInt(min(lastBlock + populateChunkSize, endBlock)),
 				Addresses: exchangeAddresses,
 				Topics: [][]common.Hash{
 					[]common.Hash{
@@ -49,8 +67,8 @@ func (fb *FillBloom) Initialize(lf ethereum.LogFilterer, endBlock int64, exchang
 				orderHash := log.Data[len(log.Data)-32:]
 				fb.Add(orderHash)
 			}
-			log.Printf("Populating %v / %v = %v %%", lastBlock, endBlock, (lastBlock / endBlock))
-			lastBlock = lastBlock + 100000
+			log.Printf("Populating %v / %v = %v %%", lastBlock, endBlock, (float64(lastBlock) / float64(endBlock)) * 100)
+			lastBlock = lastBlock + populateChunkSize
 		}
 	} else {
 		log.Printf("Loading bloom filter from file")
