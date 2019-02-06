@@ -174,7 +174,10 @@ func getPages(queryObject urlModule.Values) (int, int, error) {
 	if pageStr == "" {
 		pageStr = "1"
 	}
-	perPageStr := queryObject.Get("per_page")
+	perPageStr := queryObject.Get("perPage")
+	if perPageStr == "" {
+		perPageStr = queryObject.Get("per_page")
+	}
 	if perPageStr == "" {
 		perPageStr = "20"
 	}
