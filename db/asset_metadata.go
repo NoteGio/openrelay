@@ -14,12 +14,12 @@ type AssetMetadata struct {
 	RawMetadata string   `sql:"type:text;"  json:"-"`
 	URI         string   `json:"token_uri"`
 	Name        string	 `json:"name"`
-	ExternalURL string	 `json:"external_url"`
-	Image       string	 `json:"image"`
-	Description string   `sql:"type:text;" json:"description"`
-	BackgroundColor string `json:"background_color"`
-	Attributes  []AssetAttribute `json:"attributes" gorm:"foreignkey:AssetData;association_foreigkey:AssetData"`
-	RawAttributes string `json:"raw_attributes"`
+	ExternalURL string	 `json:"external_ur,omitempty"`
+	Image       string	 `json:"image,omitempty"`
+	Description string   `sql:"type:text;" json:"description,omitempty"`
+	BackgroundColor string `json:"background_color,omitempty"`
+	Attributes  []AssetAttribute `json:"attributes,omitempty" gorm:"foreignkey:AssetData;association_foreigkey:AssetData"`
+	RawAttributes string `json:"raw_attributes,omitempty"`
 }
 
 type AssetAttribute struct {
@@ -164,7 +164,6 @@ func (meta *AssetMetadata) AfterFind(scope *gorm.Scope) {
 		db := scope.NewDB()
 		allAttributes := []AssetAttribute{}
 		db.Model(&AssetAttribute{}).Where("asset_data IN (?)", assetDataList).Find(&allAttributes)
-		log.Printf("Attributes: %v", allAttributes)
 		for _, attribute := range allAttributes {
 			idx := assetDataSet[fmt.Sprintf("%#x", attribute.AssetData)]
 			(*results)[idx].Attributes = append((*results)[idx].Attributes, attribute)
