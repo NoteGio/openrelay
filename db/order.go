@@ -1,6 +1,7 @@
 package db
 
 import (
+	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/notegio/openrelay/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -31,7 +32,9 @@ type Order struct {
 	Price     float64 `gorm:"index:price"`
 	FeeRate   float64 `gorm:"index:price"`
 	MakerAssetRemaining *types.Uint256
-	MakerFeeRemaining *types.Uint256
+	MakerFeeRemaining   *types.Uint256
+	MakerAssetMetadata  *AssetMetadata
+	TakerAssetMetadata  *AssetMetadata
 }
 
 func (order *Order) TableName() string {
@@ -116,4 +119,44 @@ func (order *Order) Save(db *gorm.DB, status int64) *gorm.DB {
 		return updateScope
 	}
 	return db.Create(order)
+}
+
+type orderTracker struct {
+	makerOrders []int
+	takerOrders []int
+}
+
+// TODO: Test this
+func PopulateAssetMetadata(orders []Order, db *gorm.DB) {
+	// TODO: See the code in asset_metadata for potentially replacing this with
+	// subqueries.
+	assetDataMap := make(map[string]*orderTracker)
+	for i, order := range orders {
+		if assetDataMap[fmt.Sprintf("%#x", order.MakerAssetData[:])] == nil {
+			assetDataMap[fmt.Sprintf("%#x", order.MakerAssetData[:])] = &orderTracker{}
+		}
+		if assetDataMap[fmt.Sprintf("%#x", order.TakerAssetData[:])] == nil {
+			assetDataMap[fmt.Sprintf("%#x", order.TakerAssetData[:])] = &orderTracker{}
+		}
+		assetDataMap[fmt.Sprintf("%#x", order.MakerAssetData[:])].makerOrders = append(assetDataMap[fmt.Sprintf("%#x", order.MakerAssetData[:])].makerOrders, i)
+		assetDataMap[fmt.Sprintf("%#x", order.TakerAssetData[:])].takerOrders = append(assetDataMap[fmt.Sprintf("%#x", order.TakerAssetData[:])].takerOrders, i)
+	}
+	assetDataList := []*types.AssetData{}
+	for _, v := range assetDataMap {
+		if len(v.makerOrders) > 0 {
+			assetDataList = append(assetDataList, &(orders[v.makerOrders[0]].MakerAssetData))
+		} else {
+			assetDataList = append(assetDataList, &(orders[v.takerOrders[0]].TakerAssetData))
+		}
+	}
+	allAssetMetadata := []AssetMetadata{}
+	db.Model(&AssetMetadata{}).Where("asset_data IN (?)", assetDataList).Find(&allAssetMetadata)
+	for _, assetMetadata := range allAssetMetadata {
+		for _, idx := range assetDataMap[fmt.Sprintf("%#x", assetMetadata.AssetData[:])].makerOrders {
+			orders[idx].MakerAssetMetadata = &assetMetadata
+		}
+		for _, idx := range assetDataMap[fmt.Sprintf("%#x", assetMetadata.AssetData[:])].takerOrders {
+			orders[idx].TakerAssetMetadata = &assetMetadata
+		}
+	}
 }
