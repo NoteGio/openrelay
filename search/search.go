@@ -367,6 +367,7 @@ func SearchHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request, types.P
 		} else {
 			acceptHeader = "unknown"
 		}
+		dbModule.PopulateAssetMetadata(orders, db)
 		response, contentType, err := FormatResponse(orders, acceptHeader, count, pageInt, perPageInt)
 		if err == nil {
 

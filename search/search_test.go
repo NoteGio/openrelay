@@ -23,6 +23,7 @@ import (
 	"os"
 	// "reflect"
 	"testing"
+	// "log"
 )
 
 func sampleOrder(t *testing.T) *dbModule.Order {
@@ -116,7 +117,40 @@ func TestFormatResponseJson(t *testing.T) {
 	if contentType != "application/json" {
 		t.Errorf("Expected content type application/json, got '%v'", contentType)
 	}
-	if string(response) != "{\"total\":2,\"page\":1,\"perPage\":100,\"records\":[{\"order\":{\"makerAddress\":\"0x627306090abab3a6e1400e9345bc60c78a8bef57\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba\",\"takerAssetData\":\"0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x90fe2af704b34e0224bf2299c838e04d4dcf1364\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"50000000000000000000\",\"takerAssetAmount\":\"1000000000000000000\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"5797808836\",\"salt\":\"11065671350908846865864045738088581419204014210814002044381812654087807531\",\"signature\":\"0x1ba0ebab93c67e7cdf45e50c83b3a47681918c3f47f220935eb92b7338788024c82a0329105e2259b128ec811b69eb9eee253027089d544c37a1cc33b433ab9b8e03\"},\"metaData\":{\"hash\":\"0x0fa71adbd21643cbb4e87ab8e411655775b626b587e50d7b5303cf1a532e3be7\",\"feeRate\":0,\"status\":0,\"takerAssetAmountRemaining\":\"1000000000000000000\"}},{\"order\":{\"makerAddress\":\"0x627306090abab3a6e1400e9345bc60c78a8bef57\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba\",\"takerAssetData\":\"0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x90fe2af704b34e0224bf2299c838e04d4dcf1364\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"50000000000000000000\",\"takerAssetAmount\":\"1000000000000000000\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"5797808836\",\"salt\":\"11065671350908846865864045738088581419204014210814002044381812654087807531\",\"signature\":\"0x1ba0ebab93c67e7cdf45e50c83b3a47681918c3f47f220935eb92b7338788024c82a0329105e2259b128ec811b69eb9eee253027089d544c37a1cc33b433ab9b8e03\"},\"metaData\":{\"hash\":\"0x0fa71adbd21643cbb4e87ab8e411655775b626b587e50d7b5303cf1a532e3be7\",\"feeRate\":0,\"status\":0,\"takerAssetAmountRemaining\":\"1000000000000000000\"}}]}" {
+	if string(response) != "{\"total\":2,\"page\":1,\"perPage\":100,\"records\":[{\"order\":{\"makerAddress\":\"0x627306090abab3a6e1400e9345bc60c78a8bef57\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba\",\"takerAssetData\":\"0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x90fe2af704b34e0224bf2299c838e04d4dcf1364\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"50000000000000000000\",\"takerAssetAmount\":\"1000000000000000000\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"5797808836\",\"salt\":\"11065671350908846865864045738088581419204014210814002044381812654087807531\",\"signature\":\"0x1ba0ebab93c67e7cdf45e50c83b3a47681918c3f47f220935eb92b7338788024c82a0329105e2259b128ec811b69eb9eee253027089d544c37a1cc33b433ab9b8e03\"},\"metaData\":{\"hash\":\"0x0fa71adbd21643cbb4e87ab8e411655775b626b587e50d7b5303cf1a532e3be7\",\"feeRate\":0,\"status\":0,\"takerAssetAmountRemaining\":\"1000000000000000000\",\"takerAssetMetadata\":null,\"makerAssetMetadata\":null}},{\"order\":{\"makerAddress\":\"0x627306090abab3a6e1400e9345bc60c78a8bef57\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba\",\"takerAssetData\":\"0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x90fe2af704b34e0224bf2299c838e04d4dcf1364\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"50000000000000000000\",\"takerAssetAmount\":\"1000000000000000000\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"5797808836\",\"salt\":\"11065671350908846865864045738088581419204014210814002044381812654087807531\",\"signature\":\"0x1ba0ebab93c67e7cdf45e50c83b3a47681918c3f47f220935eb92b7338788024c82a0329105e2259b128ec811b69eb9eee253027089d544c37a1cc33b433ab9b8e03\"},\"metaData\":{\"hash\":\"0x0fa71adbd21643cbb4e87ab8e411655775b626b587e50d7b5303cf1a532e3be7\",\"feeRate\":0,\"status\":0,\"takerAssetAmountRemaining\":\"1000000000000000000\",\"takerAssetMetadata\":null,\"makerAssetMetadata\":null}}]}" {
+		t.Errorf("Got '%v'", string(response))
+	}
+}
+
+func TestFormatResponseJsonWithMetadata(t *testing.T) {
+	order := sampleOrder(t)
+	jsonBytes := []byte(`{
+			"description": "A big cow",
+			"external_url": "https://ethercow.openrelay.xyz/cows/3",
+			"image": "https://ethercow.openrelay.xyz/cows/3.png",
+			"name": "Jeff",
+			"attributes": {
+				"base": "cow",
+				"level": 5,
+				"weight": 500,
+				"generation": 2
+			}
+		}`)
+	asset := &dbModule.AssetMetadata{}
+	if err := json.Unmarshal(jsonBytes, asset); err != nil {
+		t.Fatalf(err.Error())
+	}
+	asset.SetAssetData(order.TakerAssetData)
+	order.MakerAssetMetadata = asset
+	orders := []dbModule.Order{*order, *order}
+	response, contentType, err := search.FormatResponse(orders, "application/json", 2, 1, 100)
+	if err != nil {
+		t.Errorf("Error getting formatted response: %v", err.Error())
+	}
+	if contentType != "application/json" {
+		t.Errorf("Expected content type application/json, got '%v'", contentType)
+	}
+	if string(response) != "{\"total\":2,\"page\":1,\"perPage\":100,\"records\":[{\"order\":{\"makerAddress\":\"0x627306090abab3a6e1400e9345bc60c78a8bef57\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba\",\"takerAssetData\":\"0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x90fe2af704b34e0224bf2299c838e04d4dcf1364\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"50000000000000000000\",\"takerAssetAmount\":\"1000000000000000000\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"5797808836\",\"salt\":\"11065671350908846865864045738088581419204014210814002044381812654087807531\",\"signature\":\"0x1ba0ebab93c67e7cdf45e50c83b3a47681918c3f47f220935eb92b7338788024c82a0329105e2259b128ec811b69eb9eee253027089d544c37a1cc33b433ab9b8e03\"},\"metaData\":{\"hash\":\"0x0fa71adbd21643cbb4e87ab8e411655775b626b587e50d7b5303cf1a532e3be7\",\"feeRate\":0,\"status\":0,\"takerAssetAmountRemaining\":\"1000000000000000000\",\"takerAssetMetadata\":null,\"makerAssetMetadata\":{\"token_uri\":\"\",\"name\":\"Jeff\",\"external_url\":\"https://ethercow.openrelay.xyz/cows/3\",\"image\":\"https://ethercow.openrelay.xyz/cows/3.png\",\"description\":\"A big cow\",\"background_color\":\"\",\"attributes\":[{\"name\":\"base\",\"type\":\"string\",\"value\":\"cow\"},{\"name\":\"generation\",\"type\":\"number\",\"value\":\"2.000000\"},{\"name\":\"level\",\"type\":\"number\",\"value\":\"5.000000\"},{\"name\":\"weight\",\"type\":\"number\",\"value\":\"500.000000\"}],\"raw_attributes\":\"{\\\"base\\\":\\\"cow\\\",\\\"generation\\\":2,\\\"level\\\":5,\\\"weight\\\":500}\"}}},{\"order\":{\"makerAddress\":\"0x627306090abab3a6e1400e9345bc60c78a8bef57\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba\",\"takerAssetData\":\"0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x90fe2af704b34e0224bf2299c838e04d4dcf1364\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"50000000000000000000\",\"takerAssetAmount\":\"1000000000000000000\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"5797808836\",\"salt\":\"11065671350908846865864045738088581419204014210814002044381812654087807531\",\"signature\":\"0x1ba0ebab93c67e7cdf45e50c83b3a47681918c3f47f220935eb92b7338788024c82a0329105e2259b128ec811b69eb9eee253027089d544c37a1cc33b433ab9b8e03\"},\"metaData\":{\"hash\":\"0x0fa71adbd21643cbb4e87ab8e411655775b626b587e50d7b5303cf1a532e3be7\",\"feeRate\":0,\"status\":0,\"takerAssetAmountRemaining\":\"1000000000000000000\",\"takerAssetMetadata\":null,\"makerAssetMetadata\":{\"token_uri\":\"\",\"name\":\"Jeff\",\"external_url\":\"https://ethercow.openrelay.xyz/cows/3\",\"image\":\"https://ethercow.openrelay.xyz/cows/3.png\",\"description\":\"A big cow\",\"background_color\":\"\",\"attributes\":[{\"name\":\"base\",\"type\":\"string\",\"value\":\"cow\"},{\"name\":\"generation\",\"type\":\"number\",\"value\":\"2.000000\"},{\"name\":\"level\",\"type\":\"number\",\"value\":\"5.000000\"},{\"name\":\"weight\",\"type\":\"number\",\"value\":\"500.000000\"}],\"raw_attributes\":\"{\\\"base\\\":\\\"cow\\\",\\\"generation\\\":2,\\\"level\\\":5,\\\"weight\\\":500}\"}}}]}" {
 		t.Errorf("Got '%v'", string(response))
 	}
 }
@@ -148,7 +182,39 @@ func TestFormatSingleResponseJson(t *testing.T) {
 	if contentType != "application/json" {
 		t.Errorf("Expected content type application/json, got '%v'", contentType)
 	}
-	if string(response) != "{\"order\":{\"makerAddress\":\"0x627306090abab3a6e1400e9345bc60c78a8bef57\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba\",\"takerAssetData\":\"0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x90fe2af704b34e0224bf2299c838e04d4dcf1364\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"50000000000000000000\",\"takerAssetAmount\":\"1000000000000000000\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"5797808836\",\"salt\":\"11065671350908846865864045738088581419204014210814002044381812654087807531\",\"signature\":\"0x1ba0ebab93c67e7cdf45e50c83b3a47681918c3f47f220935eb92b7338788024c82a0329105e2259b128ec811b69eb9eee253027089d544c37a1cc33b433ab9b8e03\"},\"metaData\":{\"hash\":\"0x0fa71adbd21643cbb4e87ab8e411655775b626b587e50d7b5303cf1a532e3be7\",\"feeRate\":0,\"status\":0,\"takerAssetAmountRemaining\":\"1000000000000000000\"}}" {
+	if string(response) != "{\"order\":{\"makerAddress\":\"0x627306090abab3a6e1400e9345bc60c78a8bef57\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba\",\"takerAssetData\":\"0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x90fe2af704b34e0224bf2299c838e04d4dcf1364\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"50000000000000000000\",\"takerAssetAmount\":\"1000000000000000000\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"5797808836\",\"salt\":\"11065671350908846865864045738088581419204014210814002044381812654087807531\",\"signature\":\"0x1ba0ebab93c67e7cdf45e50c83b3a47681918c3f47f220935eb92b7338788024c82a0329105e2259b128ec811b69eb9eee253027089d544c37a1cc33b433ab9b8e03\"},\"metaData\":{\"hash\":\"0x0fa71adbd21643cbb4e87ab8e411655775b626b587e50d7b5303cf1a532e3be7\",\"feeRate\":0,\"status\":0,\"takerAssetAmountRemaining\":\"1000000000000000000\",\"takerAssetMetadata\":null,\"makerAssetMetadata\":null}}" {
+		t.Errorf("Got '%v'", string(response))
+	}
+}
+
+func TestFormatSingleResponseJsonWithMetadata(t *testing.T) {
+	order := sampleOrder(t)
+	jsonBytes := []byte(`{
+		  "description": "A big cow",
+		  "external_url": "https://ethercow.openrelay.xyz/cows/3",
+		  "image": "https://ethercow.openrelay.xyz/cows/3.png",
+		  "name": "Jeff",
+		  "attributes": {
+				"base": "cow",
+				"level": 5,
+				"weight": 500,
+				"generation": 2
+			}
+		}`)
+	asset := &dbModule.AssetMetadata{}
+	if err := json.Unmarshal(jsonBytes, asset); err != nil {
+		t.Fatalf(err.Error())
+	}
+	asset.SetAssetData(order.TakerAssetData)
+	order.TakerAssetMetadata = asset
+	response, contentType, err := search.FormatSingleResponse(order, "application/json")
+	if err != nil {
+		t.Errorf("Error getting formatted response: %v", err.Error())
+	}
+	if contentType != "application/json" {
+		t.Errorf("Expected content type application/json, got '%v'", contentType)
+	}
+	if string(response) != "{\"order\":{\"makerAddress\":\"0x627306090abab3a6e1400e9345bc60c78a8bef57\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba\",\"takerAssetData\":\"0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x90fe2af704b34e0224bf2299c838e04d4dcf1364\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"50000000000000000000\",\"takerAssetAmount\":\"1000000000000000000\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"5797808836\",\"salt\":\"11065671350908846865864045738088581419204014210814002044381812654087807531\",\"signature\":\"0x1ba0ebab93c67e7cdf45e50c83b3a47681918c3f47f220935eb92b7338788024c82a0329105e2259b128ec811b69eb9eee253027089d544c37a1cc33b433ab9b8e03\"},\"metaData\":{\"hash\":\"0x0fa71adbd21643cbb4e87ab8e411655775b626b587e50d7b5303cf1a532e3be7\",\"feeRate\":0,\"status\":0,\"takerAssetAmountRemaining\":\"1000000000000000000\",\"takerAssetMetadata\":{\"token_uri\":\"\",\"name\":\"Jeff\",\"external_url\":\"https://ethercow.openrelay.xyz/cows/3\",\"image\":\"https://ethercow.openrelay.xyz/cows/3.png\",\"description\":\"A big cow\",\"background_color\":\"\",\"attributes\":[{\"name\":\"base\",\"type\":\"string\",\"value\":\"cow\"},{\"name\":\"generation\",\"type\":\"number\",\"value\":\"2.000000\"},{\"name\":\"level\",\"type\":\"number\",\"value\":\"5.000000\"},{\"name\":\"weight\",\"type\":\"number\",\"value\":\"500.000000\"}],\"raw_attributes\":\"{\\\"base\\\":\\\"cow\\\",\\\"generation\\\":2,\\\"level\\\":5,\\\"weight\\\":500}\"},\"makerAssetMetadata\":null}}" {
 		t.Errorf("Got '%v'", string(response))
 	}
 }
@@ -202,6 +268,12 @@ func filterContractRequest(queryString, emptyQueryString string, t *testing.T) {
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
+	if err := tx.AutoMigrate(&dbModule.AssetMetadata{}).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	if err := tx.AutoMigrate(&dbModule.AssetAttribute{}).Error; err != nil {
+		t.Errorf(err.Error())
+	}
 	if err := tx.AutoMigrate(&dbModule.Exchange{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
@@ -220,7 +292,7 @@ func filterContractRequest(queryString, emptyQueryString string, t *testing.T) {
 		t.Errorf("Unexpected response code '%v'", recorder.Code)
 	}
 	response := recorder.Body.String()
-	if string(response) != "{\"total\":1,\"page\":1,\"perPage\":20,\"records\":[{\"order\":{\"makerAddress\":\"0x627306090abab3a6e1400e9345bc60c78a8bef57\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba\",\"takerAssetData\":\"0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x90fe2af704b34e0224bf2299c838e04d4dcf1364\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"50000000000000000000\",\"takerAssetAmount\":\"1000000000000000000\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"5797808836\",\"salt\":\"11065671350908846865864045738088581419204014210814002044381812654087807531\",\"signature\":\"0x1ba0ebab93c67e7cdf45e50c83b3a47681918c3f47f220935eb92b7338788024c82a0329105e2259b128ec811b69eb9eee253027089d544c37a1cc33b433ab9b8e03\"},\"metaData\":{\"hash\":\"0x0fa71adbd21643cbb4e87ab8e411655775b626b587e50d7b5303cf1a532e3be7\",\"feeRate\":0,\"status\":0,\"takerAssetAmountRemaining\":\"1000000000000000000\"}}]}" {
+	if string(response) != "{\"total\":1,\"page\":1,\"perPage\":20,\"records\":[{\"order\":{\"makerAddress\":\"0x627306090abab3a6e1400e9345bc60c78a8bef57\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba\",\"takerAssetData\":\"0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x90fe2af704b34e0224bf2299c838e04d4dcf1364\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"50000000000000000000\",\"takerAssetAmount\":\"1000000000000000000\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"5797808836\",\"salt\":\"11065671350908846865864045738088581419204014210814002044381812654087807531\",\"signature\":\"0x1ba0ebab93c67e7cdf45e50c83b3a47681918c3f47f220935eb92b7338788024c82a0329105e2259b128ec811b69eb9eee253027089d544c37a1cc33b433ab9b8e03\"},\"metaData\":{\"hash\":\"0x0fa71adbd21643cbb4e87ab8e411655775b626b587e50d7b5303cf1a532e3be7\",\"feeRate\":0,\"status\":0,\"takerAssetAmountRemaining\":\"1000000000000000000\",\"takerAssetMetadata\":null,\"makerAssetMetadata\":null}}]}" {
 		t.Errorf("Got '%v'", string(response))
 	}
 	request, _ = http.NewRequest("GET", "/v0/orders?"+emptyQueryString+"&blockhash=x", nil)
@@ -310,6 +382,12 @@ func TestPagination(t *testing.T) {
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
+	if err := tx.AutoMigrate(&dbModule.AssetMetadata{}).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	if err := tx.AutoMigrate(&dbModule.AssetAttribute{}).Error; err != nil {
+		t.Errorf(err.Error())
+	}
 	if err := tx.AutoMigrate(&dbModule.Exchange{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
@@ -343,9 +421,6 @@ func TestPagination(t *testing.T) {
 	if bytes.Equal(orders[0].Order.Signature[:],  orders[1].Order.Signature[:]) {
 		t.Errorf("Different orders should have different signatures")
 	}
-	// if length := recorder.Body.Len(); length != (20 * 441) {
-	// 	t.Errorf("Expected 20 items, got '%v'", (length / 441))
-	// }
 	request, _ = http.NewRequest("GET", "/v0/orders?page=2&blockhash=x&_expTime=0", nil)
 	request.Header.Set("Accept", "application/json")
 	recorder = httptest.NewRecorder()
@@ -358,7 +433,7 @@ func TestPagination(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 	if pagedResult.Total != 21 {
-		t.Fatalf("Expected 21 total results, 20 on this page")
+		t.Fatalf("Expected 21 total results, 1 on this page, got %v", pagedResult.Total)
 	}
 	orders = pagedResult.Records
 	if length := len(orders); length != 1 {
@@ -378,6 +453,12 @@ func TestOrderLookup(t *testing.T) {
 		db.Close()
 	}()
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	if err := tx.AutoMigrate(&dbModule.AssetMetadata{}).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	if err := tx.AutoMigrate(&dbModule.AssetAttribute{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
 	if err := tx.AutoMigrate(&dbModule.Exchange{}).Error; err != nil {
@@ -402,7 +483,7 @@ func TestOrderLookup(t *testing.T) {
 		t.Errorf("Unexpected Content-Type: '%v'", contentType)
 	}
 	response := recorder.Body.String()
-	if string(response) != "{\"order\":{\"makerAddress\":\"0x627306090abab3a6e1400e9345bc60c78a8bef57\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba\",\"takerAssetData\":\"0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x90fe2af704b34e0224bf2299c838e04d4dcf1364\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"50000000000000000000\",\"takerAssetAmount\":\"1000000000000000000\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"5797808836\",\"salt\":\"11065671350908846865864045738088581419204014210814002044381812654087807531\",\"signature\":\"0x1ba0ebab93c67e7cdf45e50c83b3a47681918c3f47f220935eb92b7338788024c82a0329105e2259b128ec811b69eb9eee253027089d544c37a1cc33b433ab9b8e03\"},\"metaData\":{\"hash\":\"0x0fa71adbd21643cbb4e87ab8e411655775b626b587e50d7b5303cf1a532e3be7\",\"feeRate\":0,\"status\":0,\"takerAssetAmountRemaining\":\"1000000000000000000\"}}" {
+	if string(response) != "{\"order\":{\"makerAddress\":\"0x627306090abab3a6e1400e9345bc60c78a8bef57\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba\",\"takerAssetData\":\"0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x90fe2af704b34e0224bf2299c838e04d4dcf1364\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"50000000000000000000\",\"takerAssetAmount\":\"1000000000000000000\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"5797808836\",\"salt\":\"11065671350908846865864045738088581419204014210814002044381812654087807531\",\"signature\":\"0x1ba0ebab93c67e7cdf45e50c83b3a47681918c3f47f220935eb92b7338788024c82a0329105e2259b128ec811b69eb9eee253027089d544c37a1cc33b433ab9b8e03\"},\"metaData\":{\"hash\":\"0x0fa71adbd21643cbb4e87ab8e411655775b626b587e50d7b5303cf1a532e3be7\",\"feeRate\":0,\"status\":0,\"takerAssetAmountRemaining\":\"1000000000000000000\",\"takerAssetMetadata\":null,\"makerAssetMetadata\":null}}" {
 		t.Errorf("Got '%v'", string(response))
 	}
 }
@@ -419,6 +500,12 @@ func TestPairLookup(t *testing.T) {
 		db.Close()
 	}()
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	if err := tx.AutoMigrate(&dbModule.AssetMetadata{}).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	if err := tx.AutoMigrate(&dbModule.AssetAttribute{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
 	if err := tx.AutoMigrate(&dbModule.Exchange{}).Error; err != nil {
@@ -460,6 +547,12 @@ func TestOrderBookLookup(t *testing.T) {
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
+	if err := tx.AutoMigrate(&dbModule.AssetMetadata{}).Error; err != nil {
+		t.Errorf(err.Error())
+	}
+	if err := tx.AutoMigrate(&dbModule.AssetAttribute{}).Error; err != nil {
+		t.Errorf(err.Error())
+	}
 	if err := tx.AutoMigrate(&dbModule.Exchange{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
@@ -482,7 +575,7 @@ func TestOrderBookLookup(t *testing.T) {
 		t.Errorf("Unexpected Content-Type: '%v'", contentType)
 	}
 	response := recorder.Body.String()
-	if string(response) != "{\"asks\":{\"total\":0,\"page\":1,\"perPage\":20,\"records\":[]},\"bids\":{\"total\":1,\"page\":1,\"perPage\":20,\"records\":[{\"order\":{\"makerAddress\":\"0x627306090abab3a6e1400e9345bc60c78a8bef57\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba\",\"takerAssetData\":\"0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x90fe2af704b34e0224bf2299c838e04d4dcf1364\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"50000000000000000000\",\"takerAssetAmount\":\"1000000000000000000\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"5797808836\",\"salt\":\"11065671350908846865864045738088581419204014210814002044381812654087807531\",\"signature\":\"0x1ba0ebab93c67e7cdf45e50c83b3a47681918c3f47f220935eb92b7338788024c82a0329105e2259b128ec811b69eb9eee253027089d544c37a1cc33b433ab9b8e03\"},\"metaData\":{\"hash\":\"0x0fa71adbd21643cbb4e87ab8e411655775b626b587e50d7b5303cf1a532e3be7\",\"feeRate\":0,\"status\":0,\"takerAssetAmountRemaining\":\"1000000000000000000\"}}]}}" {
+	if string(response) != "{\"asks\":{\"total\":0,\"page\":1,\"perPage\":20,\"records\":[]},\"bids\":{\"total\":1,\"page\":1,\"perPage\":20,\"records\":[{\"order\":{\"makerAddress\":\"0x627306090abab3a6e1400e9345bc60c78a8bef57\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba\",\"takerAssetData\":\"0xf47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x90fe2af704b34e0224bf2299c838e04d4dcf1364\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"50000000000000000000\",\"takerAssetAmount\":\"1000000000000000000\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"5797808836\",\"salt\":\"11065671350908846865864045738088581419204014210814002044381812654087807531\",\"signature\":\"0x1ba0ebab93c67e7cdf45e50c83b3a47681918c3f47f220935eb92b7338788024c82a0329105e2259b128ec811b69eb9eee253027089d544c37a1cc33b433ab9b8e03\"},\"metaData\":{\"hash\":\"0x0fa71adbd21643cbb4e87ab8e411655775b626b587e50d7b5303cf1a532e3be7\",\"feeRate\":0,\"status\":0,\"takerAssetAmountRemaining\":\"1000000000000000000\",\"takerAssetMetadata\":null,\"makerAssetMetadata\":null}}]}}" {
 		t.Errorf("Got '%v'", string(response))
 	}
 }

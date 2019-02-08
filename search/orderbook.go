@@ -65,6 +65,7 @@ func OrderBookHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request, type
 		}
 		formattedAsks := []FormattedOrder{}
 		formattedBids := []FormattedOrder{}
+		dbModule.PopulateAssetMetadata(append(bids, asks...), db)
 		for _, order := range asks {
 			formattedAsks = append(formattedAsks, *GetFormattedOrder(order))
 		}

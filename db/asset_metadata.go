@@ -23,11 +23,11 @@ type AssetMetadata struct {
 }
 
 type AssetAttribute struct {
-	AssetData   types.AssetData `gorm:"primary_key"`
-	Name        string					`gorm:"primary_key"`
-	Type        string
-	Value       string
-	DisplayType string
+	AssetData   types.AssetData `gorm:"primary_key"  json:"-"`
+	Name        string					`gorm:"primary_key"  json:"name"`
+	Type        string					`json:"type,omitempty"`
+	Value       string					`json:"value,omitempty"`
+	DisplayType string 					`json:"display_type,omitempty"`
 }
 
 func toString(value interface{}) (string) {
