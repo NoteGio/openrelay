@@ -18,8 +18,8 @@ type AssetMetadata struct {
 	Image       string	 `json:"image,omitempty"`
 	Description string   `sql:"type:text;" json:"description,omitempty"`
 	BackgroundColor string `json:"background_color,omitempty"`
-	Attributes  []AssetAttribute `json:"attributes,omitempty" gorm:"foreignkey:AssetData;association_foreigkey:AssetData"`
-	RawAttributes string `json:"raw_attributes,omitempty"`
+	Attributes  []AssetAttribute `json:"attributes,omitempty" gorm:"foreignkey:AssetData;association_foreigkey:AssetData" `
+	RawAttributes string `sql:"type:text;" json:"raw_attributes,omitempty"`
 }
 
 type AssetAttribute struct {
@@ -176,6 +176,8 @@ func (meta *AssetMetadata) AfterFind(scope *gorm.Scope) {
 		resultList := &[]AssetMetadata{*results}
 		populateList(resultList)
 		*results = (*resultList)[0]
+	default:
+		log.Printf("Unknown call value type: %T", results)
 	}
 }
 
