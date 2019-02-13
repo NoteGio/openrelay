@@ -14,7 +14,7 @@ type AssetMetadata struct {
 	RawMetadata string   `sql:"type:text;"  json:"raw_metadata,omitempty"`
 	URI         string   `json:"token_uri"`
 	Name        string	 `json:"name,omitempty"`
-	ExternalURL string	 `json:"external_ur,omitempty"`
+	ExternalURL string	 `json:"external_url,omitempty"`
 	Image       string	 `json:"image,omitempty"`
 	Description string   `sql:"type:text;" json:"description,omitempty"`
 	BackgroundColor string `json:"background_color,omitempty"`
