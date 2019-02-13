@@ -63,6 +63,7 @@ func (consumer *OrderMetadataConsumer) ProcessAssetData(data *types.AssetData) {
 				// Don't return, because we still want to save the asset with the raw
 				// metadata in case that's useful to anyone.
 			}
+			metadata.URI = uri
 			metadata.SetAssetData(*data)
 			if err := consumer.db.Model(&dbModule.AssetMetadata{}).Save(metadata).Error; err != nil {
 				log.Printf("Error saving metdata for asset %#x: %v", (*data)[:], err.Error())

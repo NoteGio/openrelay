@@ -17,8 +17,8 @@ type OrderMetadata struct {
 	FeeRate float64               `json:"feeRate"`
 	Status int64                  `json:"status"`
 	TakerAssetAmountRemaining string `json:"takerAssetAmountRemaining"`
-	TakerAssetMetadata *dbModule.AssetMetadata `json:"takerAssetMetadata"`
-	MakerAssetMetadata *dbModule.AssetMetadata `json:"makerAssetMetadata"`
+	TakerAssetMetadata *dbModule.AssetMetadata `json:"takerAssetMetadata,omitempty"`
+	MakerAssetMetadata *dbModule.AssetMetadata `json:"makerAssetMetadata,omitempty"`
 }
 
 func GetFormattedOrder(order dbModule.Order) (*FormattedOrder) {

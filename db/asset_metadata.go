@@ -11,9 +11,9 @@ import (
 
 type AssetMetadata struct {
 	AssetData   types.AssetData `gorm:"primary_key" json:"-"`
-	RawMetadata string   `sql:"type:text;"  json:"-"`
+	RawMetadata string   `sql:"type:text;"  json:"raw_metadata,omitempty"`
 	URI         string   `json:"token_uri"`
-	Name        string	 `json:"name"`
+	Name        string	 `json:"name,omitempty"`
 	ExternalURL string	 `json:"external_ur,omitempty"`
 	Image       string	 `json:"image,omitempty"`
 	Description string   `sql:"type:text;" json:"description,omitempty"`
@@ -156,6 +156,7 @@ func (meta *AssetMetadata) AfterFind(scope *gorm.Scope) {
 		assetDataSet := make(map[string]int)
 		for i := range *results {
 			assetDataSet[fmt.Sprintf("%#x", (*results)[i].AssetData[:])] = i
+			(*results)[i].Attributes = []AssetAttribute{}
 		}
 		assetDataList := []*types.AssetData{}
 		for _, value := range assetDataSet {

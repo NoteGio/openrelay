@@ -126,7 +126,6 @@ type orderTracker struct {
 	takerOrders []int
 }
 
-// TODO: Test this
 func PopulateAssetMetadata(orders []Order, db *gorm.DB) {
 	// TODO: See the code in asset_metadata for potentially replacing this with
 	// subqueries.
@@ -153,10 +152,12 @@ func PopulateAssetMetadata(orders []Order, db *gorm.DB) {
 	db.Model(&AssetMetadata{}).Where("asset_data IN (?)", assetDataList).Find(&allAssetMetadata)
 	for _, assetMetadata := range allAssetMetadata {
 		for _, idx := range assetDataMap[fmt.Sprintf("%#x", assetMetadata.AssetData[:])].makerOrders {
-			orders[idx].MakerAssetMetadata = &assetMetadata
+			am := assetMetadata
+			orders[idx].MakerAssetMetadata = &am
 		}
 		for _, idx := range assetDataMap[fmt.Sprintf("%#x", assetMetadata.AssetData[:])].takerOrders {
-			orders[idx].TakerAssetMetadata = &assetMetadata
+			am := assetMetadata
+			orders[idx].TakerAssetMetadata = &am
 		}
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/notegio/openrelay/types"
 	"github.com/notegio/openrelay/common"
 	"testing"
+	// "log"
 )
 
 func VerifyAsset(asset *dbModule.AssetMetadata, jsonBytes []byte, rawAttributes string, assetData types.AssetData, t *testing.T) {
@@ -14,7 +15,7 @@ func VerifyAsset(asset *dbModule.AssetMetadata, jsonBytes []byte, rawAttributes 
 		t.Fatalf("AssetMetadata is nil")
 	}
 	if asset.Name != "Jeff" {
-		t.Errorf("Unexpected name ''%v'", asset.Name)
+		t.Errorf("Unexpected name '%v'", asset.Name)
 	}
 	if asset.Description != "A big cow" {
 		t.Errorf("Unexpected Description: '%v'", asset.Description)
@@ -217,6 +218,7 @@ func TestPopulateOrderMetadata(t *testing.T) {
 			}
 		}`)
 	assetData, _ := common.HexToAssetData("0xf47261b0000000000000000000000000e41d2489571d322189246dafa5ebde1f4699f498")
+	otherAssetData, _ := common.HexToAssetData("0xf47261b0000000000000000000000000e41d2489571d322189246dafa5ebde1f4699f499")
 	asset := &dbModule.AssetMetadata{}
 	if err := json.Unmarshal(jsonBytes, asset); err != nil {
 		t.Fatalf(err.Error())
@@ -234,13 +236,26 @@ func TestPopulateOrderMetadata(t *testing.T) {
 	if err := tx.Model(&dbModule.AssetMetadata{}).Create(asset).Error; err != nil {
 		t.Fatalf(err.Error())
 	}
+	asset.Name = "Joe"
+	asset.SetAssetData(otherAssetData)
+	if err := tx.Model(&dbModule.AssetMetadata{}).Create(asset).Error; err != nil {
+		t.Fatalf(err.Error())
+	}
 
-	orders := []dbModule.Order{dbModule.Order{}, dbModule.Order{}}
+	orders := []dbModule.Order{dbModule.Order{}, dbModule.Order{}, dbModule.Order{}}
 	orders[0].Initialize()
 	orders[1].Initialize()
+	orders[2].Initialize()
 	orders[0].MakerAssetData = assetData
 	orders[1].TakerAssetData = assetData
+	orders[2].MakerAssetData = otherAssetData
 	dbModule.PopulateAssetMetadata(orders, tx)
+	if orders[2].MakerAssetMetadata.Name != "Joe" {
+		t.Errorf("Got unexpected metadata for asset 2")
+	}
+	if count := len(orders[2].MakerAssetMetadata.Attributes); count != 4 {
+		t.Errorf("Got unexpected attribute count %v for asset 2", count)
+	}
 
 	dbAssetMetadata := []*dbModule.AssetMetadata{orders[0].MakerAssetMetadata, orders[1].TakerAssetMetadata}
 	for j, dbAsset := range dbAssetMetadata {
