@@ -106,7 +106,10 @@ bin/terms: $(BASE) cmd/terms/main.go
 bin/poolfilter: $(BASE) cmd/poolfilter/main.go
 	cd "$(BASE)" && $(GOSTATIC) -o bin/poolfilter cmd/poolfilter/main.go
 
-bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate bin/indexer bin/fillindexer bin/automigrate bin/searchapi bin/exchangesplitter bin/blockmonitor bin/allowancemonitor bin/spendmonitor bin/fillmonitor bin/multisigmonitor bin/spendrecorder bin/queuemonitor bin/canceluptomonitor bin/canceluptofilter bin/canceluptoindexer bin/erc721approvalmonitor bin/affiliatemonitor bin/terms bin/poolfilter
+bin/metadataindexer: $(BASE) cmd/metadataindexer/main.go
+	cd "$(BASE)" && $(GOSTATIC) -o bin/metadataindexer cmd/metadataindexer/main.go
+
+bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate bin/indexer bin/fillindexer bin/automigrate bin/searchapi bin/exchangesplitter bin/blockmonitor bin/allowancemonitor bin/spendmonitor bin/fillmonitor bin/multisigmonitor bin/spendrecorder bin/queuemonitor bin/canceluptomonitor bin/canceluptofilter bin/canceluptoindexer bin/erc721approvalmonitor bin/affiliatemonitor bin/terms bin/poolfilter bin/metadataindexer
 
 truffleCompile:
 	cd js ; node_modules/.bin/truffle compile
@@ -121,7 +124,7 @@ $(BASE)/tmp/postgres.containerid:
 
 dockerstart: $(BASE) $(BASE)/tmp/redis.containerid $(BASE)/tmp/postgres.containerid
 
-gotest: dockerstart test-funds test-channels test-accounts test-affiliates test-types test-ingest test-blocksmonitor test-allowancemonitor test-fillmonitor test-spendmonitor test-splitter test-search test-db
+gotest: dockerstart test-funds test-channels test-accounts test-affiliates test-types test-ingest test-blocksmonitor test-allowancemonitor test-fillmonitor test-spendmonitor test-splitter test-search test-db test-metadata
 
 test-funds: $(BASE)
 	cd "$(BASE)/funds" && go test
@@ -155,6 +158,8 @@ test-affiliate: $(BASE)
 	cd "$(BASE)/monitor/affiliate" && go test
 test-db: $(BASE)
 	cd "$(BASE)/db" &&  POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
+test-metadata: $(BASE)
+	cd "$(BASE)/metadata" &&  POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
 test-pool: $(BASE)
 	cd "$(BASE)/pool" &&  POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
 

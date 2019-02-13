@@ -56,6 +56,12 @@ func main() {
 	if err := db.AutoMigrate(&dbModule.HashMask{}).Error; err != nil {
 		log.Fatalf("Error migrating hash_masks table: %v", err.Error())
 	}
+	if err := db.AutoMigrate(&dbModule.AssetMetadata{}).Error; err != nil {
+		log.Fatalf("Error migrating asset_metadata table: %v", err.Error())
+	}
+	if err := db.AutoMigrate(&dbModule.AssetAttribute{}).Error; err != nil {
+		log.Fatalf("Error migrating asset_attributes table: %v", err.Error())
+	}
 	if err := db.AutoMigrate(&poolModule.Pool{}).Error; err != nil {
 		log.Fatalf("Error migrating pools table: %v", err.Error())
 	}

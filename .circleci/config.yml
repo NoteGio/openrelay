@@ -283,6 +283,16 @@ jobs:
           root: bin
           paths:
             - poolfilter
+  golang_build_metadataindexer:
+    docker:
+      - image: circleci/golang:1.8
+    steps:
+      - checkout
+      - run: make bin/metadataindexer
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - metadataindexer
   golang_test:
     docker:
       # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
@@ -341,7 +351,7 @@ jobs:
       - run: TAG=$CIRCLE_SHA1 docker-compose push --ignore-push-failures
       - run: TAG=$(echo "$CIRCLE_BRANCH" | sed 's^/^-^g')_$CIRCLE_SHA1 docker-compose push --ignore-push-failures
       - run: |
-          [[ CIRCLE_BRANCH = 'master' ]] && docker-compose push --ignore-push-failures || true
+          [[ CIRCLE_BRANCH = 'support/0xv2' ]] && docker-compose push --ignore-push-failures || true
       - run: |
           curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"New Docker Build! Tags: $(echo "$CIRCLE_BRANCH" | sed 's^/^-^g'), $CIRCLE_SHA1, $(echo "$CIRCLE_BRANCH" | sed 's^/^-^g')_$CIRCLE_SHA1\"}" $WEBHOOK_URL
 workflows:
@@ -376,6 +386,7 @@ workflows:
       - golang_build_queuemonitor
       - golang_build_terms
       - golang_build_poolfilter
+      - golang_build_metadataindexer
       - golang_test
       - notify_test_finished:
           requires:
@@ -407,6 +418,7 @@ workflows:
             - golang_build_affiliatemonitor
             - golang_build_terms
             - golang_build_poolfilter
+            - golang_build_metadataindexer
       - docker_build_deploy:
           requires:
             - notify_test_finished

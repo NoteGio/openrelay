@@ -40,6 +40,7 @@ func OrderHandler(db *gorm.DB) func(http.ResponseWriter, *http.Request) {
 		} else {
 			acceptHeader = "unknown"
 		}
+		dbModule.PopulateAssetMetadata([]dbModule.Order{*order}, db)
 		response, contentType, err := FormatSingleResponse(order, acceptHeader)
 		if err == nil {
 			w.WriteHeader(200)
