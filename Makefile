@@ -109,7 +109,10 @@ bin/poolfilter: $(BASE) cmd/poolfilter/main.go
 bin/metadataindexer: $(BASE) cmd/metadataindexer/main.go
 	cd "$(BASE)" && $(GOSTATIC) -o bin/metadataindexer cmd/metadataindexer/main.go
 
-bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate bin/indexer bin/fillindexer bin/automigrate bin/searchapi bin/exchangesplitter bin/blockmonitor bin/allowancemonitor bin/spendmonitor bin/fillmonitor bin/multisigmonitor bin/spendrecorder bin/queuemonitor bin/canceluptomonitor bin/canceluptofilter bin/canceluptoindexer bin/erc721approvalmonitor bin/affiliatemonitor bin/terms bin/poolfilter bin/metadataindexer
+bin/websockets: $(BASE) cmd/websockets/main.go
+	cd "$(BASE)" && $(GOSTATIC) -o bin/websockets cmd/websockets/main.go
+
+bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate bin/indexer bin/fillindexer bin/automigrate bin/searchapi bin/exchangesplitter bin/blockmonitor bin/allowancemonitor bin/spendmonitor bin/fillmonitor bin/multisigmonitor bin/spendrecorder bin/queuemonitor bin/canceluptomonitor bin/canceluptofilter bin/canceluptoindexer bin/erc721approvalmonitor bin/affiliatemonitor bin/terms bin/poolfilter bin/metadataindexer bin/websockets
 
 truffleCompile:
 	cd js ; node_modules/.bin/truffle compile
@@ -124,7 +127,7 @@ $(BASE)/tmp/postgres.containerid:
 
 dockerstart: $(BASE) $(BASE)/tmp/redis.containerid $(BASE)/tmp/postgres.containerid
 
-gotest: dockerstart test-funds test-channels test-accounts test-affiliates test-types test-ingest test-blocksmonitor test-allowancemonitor test-fillmonitor test-spendmonitor test-splitter test-search test-db test-metadata
+gotest: dockerstart test-funds test-channels test-accounts test-affiliates test-types test-ingest test-blocksmonitor test-allowancemonitor test-fillmonitor test-spendmonitor test-splitter test-search test-db test-metadata test-pool test-ws test-subscriptions
 
 test-funds: $(BASE)
 	cd "$(BASE)/funds" && go test
@@ -162,6 +165,10 @@ test-metadata: $(BASE)
 	cd "$(BASE)/metadata" &&  POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
 test-pool: $(BASE)
 	cd "$(BASE)/pool" &&  POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
+test-ws: $(BASE)
+	cd "$(BASE)/ws" &&  POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
+test-subscriptions: $(BASE)
+	cd "$(BASE)/subscriptions" &&  POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
 
 docker-cfg/ca-certificates.crt:
 	cp /etc/ssl/certs/ca-certificates.crt docker-cfg/ca-certificates.crt

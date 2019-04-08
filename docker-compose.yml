@@ -250,6 +250,7 @@ services:
       TOS_MGR_PASSWORD: password
       INGEST_PASSWORD: password
       METADATA_PASSWORD: password
+      WS_PASSWORD: password
     # TODO: PROD config needs to reflect new roles
     command:
       - "/automigrate"
@@ -260,6 +261,7 @@ services:
       - "search;env://SEARCH_PASSWORD;orderv2.SELECT,exchanges.SELECT,pools.SELECT,asset_metadata.SELECT,asset_attributes.SELECT"
       - "cancelfilter;env://CANCEL_FILTER_PASSWORD;cancellations.SELECT"
       - "poolfilter;env://POOL_FILTER_PASSWORD;pools.SELECT,exchanges.SELECT"
+      - "ws;env://WS_PASSWORD;pools.SELECT,exchanges.SELECT"
       - "metadata;env://METADATA_PASSWORD;asset_metadata.SELECT,asset_metadata.INSERT,asset_metadata.UPDATE,asset_attributes.SELECT,asset_attributes.INSERT,asset_attributes.UPDATE"
       - "cancelindexer;env://CANCEL_INDEX_PASSWORD;cancellations.SELECT,cancellations.INSERT,cancellations.UPDATE,orderv2.SELECT,orderv2.INSERT,orderv2.UPDATE"
       - "tos;env://TOS_PASSWORD;terms.SELECT,terms_sigs.SELECT,terms_sigs.INSERT,hash_masks.SELECT,hash_masks.INSERT"
@@ -400,6 +402,23 @@ services:
       dockerfile: Dockerfile.spendrecorder
     image: "openrelay/spendrecorder:${TAG:-latest}"
     command: ["/spendrecorder", "${REDIS_HOST:-redis:6379}", "queue://recordspend", "postgres://spendrecorder@postgres", "env://POSTGRES_PASSWORD"]
+    environment:
+      POSTGRES_PASSWORD: password
+    depends_on:
+      - redis
+      - ethnode
+      - corebuild
+    restart: on-failure
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+  websockets:
+    build:
+      context: ./
+      dockerfile: Dockerfile.websockets
+    image: "openrelay/websockets:${TAG:-latest}"
+    command: ["/websockets", "${REDIS_HOST:-redis:6379}", "topic://instant-broadcast", "postgres://ws@postgres", "env://POSTGRES_PASSWORD"]
     environment:
       POSTGRES_PASSWORD: password
     depends_on:
