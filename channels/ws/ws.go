@@ -113,7 +113,22 @@ func GetChannels(port uint, db *gorm.DB, cleanup func(channels.Publisher)) (<-ch
 		}
 	})
 
+	hcHandler := func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if db != nil {
+			if err := db.Raw("SELECT 1").Error; err != nil {
+				// Make sure the database works (needed for pools / exchange lookups)
+				w.WriteHeader(500)
+				w.Write([]byte(fmt.Sprintf(`{"error": "%v", "ok": false}`, err.Error())))
+				return
+			}
+		}
+		w.WriteHeader(200)
+		w.Write([]byte(fmt.Sprintf(`{"ok": false}`)))
+	}
+
 	mux := http.NewServeMux()
+	mux.HandleFunc("/_hc", hcHandler)
 	mux.HandleFunc("/", handler)
 	srv := &http.Server{
 		Addr: fmt.Sprintf(":%v", port),
