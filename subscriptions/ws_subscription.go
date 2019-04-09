@@ -18,10 +18,12 @@ func NewWebsocketSubscriptionManager() *WebsocketSubscriptionManager {
 }
 
 func (subs *WebsocketSubscriptionManager) ListenForSubscriptions(port uint, db *gorm.DB) (func() (error), error) {
-	channels, quit := ws.GetChannels(port, db, func(){})
+	chs, quit := ws.GetChannels(port, db, func(publisher channels.Publisher){
+		subs.manager.PruneByPublisher(publisher)
+	})
 	lookup := dbModule.NewExchangeLookup(db)
 	go func() {
-		for websocketChannel := range channels {
+		for websocketChannel := range chs {
 			ofilter, err := FilterFromQueryString(websocketChannel.Filter)
 			if err != nil {
 				sendError(websocketChannel, err)

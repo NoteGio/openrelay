@@ -293,6 +293,16 @@ jobs:
           root: bin
           paths:
             - metadataindexer
+  golang_build_websockets:
+    docker:
+      - image: circleci/golang:1.8
+    steps:
+      - checkout
+      - run: make bin/websockets
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - websockets
   golang_test:
     docker:
       # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
@@ -387,6 +397,7 @@ workflows:
       - golang_build_terms
       - golang_build_poolfilter
       - golang_build_metadataindexer
+      - golang_build_websockets
       - golang_test
       - notify_test_finished:
           requires:
@@ -419,6 +430,7 @@ workflows:
             - golang_build_terms
             - golang_build_poolfilter
             - golang_build_metadataindexer
+            - golang_build_websockets
       - docker_build_deploy:
           requires:
             - notify_test_finished

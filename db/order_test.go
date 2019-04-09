@@ -7,6 +7,7 @@ import (
 	"github.com/jinzhu/gorm"
 	dbModule "github.com/notegio/openrelay/db"
 	"github.com/notegio/openrelay/common"
+	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/types"
 	"os"
 	"reflect"
@@ -56,8 +57,14 @@ func TestSaveOrder(t *testing.T) {
 	order := sampleOrder(t)
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *order
-	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
+	publisher, ch := channels.MockPublisher()
+	if err := dbOrder.Save(tx, dbModule.StatusOpen, publisher).Error; err != nil {
 		t.Errorf(err.Error())
+	}
+	select {
+	case _ = <-ch:
+	default:
+		t.Errorf("Should have published message on save")
 	}
 }
 
@@ -77,7 +84,7 @@ func TestFailOnEmptyOrder(t *testing.T) {
 	}
 	dbOrder := &dbModule.Order{}
 	dbOrder.Initialize()
-	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err == nil {
+	if err := dbOrder.Save(tx, dbModule.StatusOpen, nil).Error; err == nil {
 		t.Errorf("Expected error saving empty order")
 	}
 }
@@ -99,7 +106,7 @@ func TestQueryOrder(t *testing.T) {
 	order := sampleOrder(t)
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *order
-	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
+	if err := dbOrder.Save(tx, dbModule.StatusOpen, nil).Error; err != nil {
 		t.Errorf(err.Error())
 	}
 	dbOrders := []dbModule.Order{}
@@ -169,7 +176,7 @@ func TestQueryPairs(t *testing.T) {
 	sOrder := sampleOrder(t)
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *sOrder
-	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
+	if err := dbOrder.Save(tx, dbModule.StatusOpen, nil).Error; err != nil {
 		t.Errorf(err.Error())
 	}
 	tokenPairs, _, err := dbModule.GetAllTokenPairs(tx, 0, 10, 1)
@@ -203,7 +210,7 @@ func TestQueryPairsTokenAFilter(t *testing.T) {
 	sOrder := sampleOrder(t)
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *sOrder
-	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
+	if err := dbOrder.Save(tx, dbModule.StatusOpen, nil).Error; err != nil {
 		t.Errorf(err.Error())
 	}
 	tokenPairs, _, err := dbModule.GetTokenAPairs(tx, sOrder.TakerAssetData, 0, 10, 1)
@@ -230,7 +237,7 @@ func TestQueryPairsTokenABFilter(t *testing.T) {
 	sOrder := sampleOrder(t)
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *sOrder
-	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
+	if err := dbOrder.Save(tx, dbModule.StatusOpen, nil).Error; err != nil {
 		t.Errorf(err.Error())
 	}
 	if err := tx.AutoMigrate(&dbModule.Exchange{}).Error; err != nil {
@@ -271,7 +278,7 @@ func TestQueryPairsTokenEmptyFilter(t *testing.T) {
 	sOrder := sampleOrder(t)
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *sOrder
-	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
+	if err := dbOrder.Save(tx, dbModule.StatusOpen, nil).Error; err != nil {
 		t.Errorf(err.Error())
 	}
 	tokenPairs, _, err := dbModule.GetTokenAPairs(tx, types.AssetData{}, 0, 10, 1)

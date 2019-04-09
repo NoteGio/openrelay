@@ -149,7 +149,7 @@ services:
       context: ./
       dockerfile: Dockerfile.pgfillindexer
     image: "openrelay/pgfillindexer:${TAG:-latest}"
-    command: ["/fillindexer", "redis:6379", "queue://pgordersfilled", "postgres://indexer@postgres", "env://POSTGRES_PASSWORD"]
+    command: ["/fillindexer", "redis:6379", "queue://pgordersfilled", "postgres://indexer@postgres", "env://POSTGRES_PASSWORD", "topic://instant-broadcast"]
     depends_on:
       - redis
       - postgres
@@ -227,7 +227,7 @@ services:
     image: "openrelay/pgindexer:${TAG:-latest}"
     environment:
       POSTGRES_PASSWORD: password
-    command: ["/indexer", "${REDIS_HOST:-redis:6379}", "queue://pgindexer", "postgres://indexer@postgres", "env://POSTGRES_PASSWORD"]
+    command: ["/indexer", "${REDIS_HOST:-redis:6379}", "queue://pgindexer", "postgres://indexer@postgres", "env://POSTGRES_PASSWORD", "topic://instant-broadcast"]
     depends_on:
       - postgres
       - redis
@@ -401,7 +401,7 @@ services:
       context: ./
       dockerfile: Dockerfile.spendrecorder
     image: "openrelay/spendrecorder:${TAG:-latest}"
-    command: ["/spendrecorder", "${REDIS_HOST:-redis:6379}", "queue://recordspend", "postgres://spendrecorder@postgres", "env://POSTGRES_PASSWORD"]
+    command: ["/spendrecorder", "${REDIS_HOST:-redis:6379}", "queue://recordspend", "postgres://spendrecorder@postgres", "env://POSTGRES_PASSWORD", "topic://instant-broadcast"]
     environment:
       POSTGRES_PASSWORD: password
     depends_on:
@@ -421,6 +421,8 @@ services:
     command: ["/websockets", "${REDIS_HOST:-redis:6379}", "topic://instant-broadcast", "postgres://ws@postgres", "env://POSTGRES_PASSWORD"]
     environment:
       POSTGRES_PASSWORD: password
+    ports:
+      - "8084:8080"
     depends_on:
       - redis
       - ethnode
@@ -469,7 +471,7 @@ services:
       context: ./
       dockerfile: Dockerfile.canceluptoindexer
     image: "openrelay/canceluptoindexer:${TAG:-latest}"
-    command: ["/canceluptoindexer", "redis:6379", "queue://recordcancel", "postgres://cancelindexer@postgres", "env://POSTGRES_PASSWORD"]
+    command: ["/canceluptoindexer", "redis:6379", "queue://recordcancel", "postgres://cancelindexer@postgres", "env://POSTGRES_PASSWORD", "topic://instant-broadcast"]
     environment:
       POSTGRES_PASSWORD: password
     restart: on-failure
@@ -479,7 +481,7 @@ services:
       context: ./
       dockerfile: Dockerfile.poolfilter
     image: "openrelay/poolfilter:${TAG:-latest}"
-    command: ["/poolfilter", "postgres://poolfilter@postgres", "env://POSTGRES_PASSWORD", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://poolfilter=>queue://pgindexer=>topic://instant-broadcast=>queue://metadataindexer"]
+    command: ["/poolfilter", "postgres://poolfilter@postgres", "env://POSTGRES_PASSWORD", "${REDIS_HOST:-redis:6379}", "${ETHEREUM_STATE_NODE:-http://ethnode:8545}", "queue://poolfilter=>queue://pgindexer=>queue://metadataindexer"]
     environment:
       POSTGRES_PASSWORD: password
     depends_on:

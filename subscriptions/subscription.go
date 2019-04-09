@@ -12,6 +12,7 @@ type Subscription struct {
 	publisher channels.Publisher
 	filter func(*db.Order) bool
 	requestID string
+	internalId int64
 }
 
 type SubscriptionUpdate struct {

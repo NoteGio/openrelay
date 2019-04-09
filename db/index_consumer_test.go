@@ -24,7 +24,8 @@ func IndexConsumerDefaultStatus(status int64, t *testing.T) {
 	}
 	order := sampleOrder(t)
 	publisher, channel := channels.MockChannel()
-	consumer := dbModule.NewIndexConsumer(tx, status, 1)
+	dsPublisher, ch := channels.MockPublisher()
+	consumer := dbModule.NewIndexConsumer(tx, status, 1, dsPublisher)
 	channel.AddConsumer(consumer)
 	channel.StartConsuming()
 	defer channel.StopConsuming()
@@ -46,6 +47,11 @@ func IndexConsumerDefaultStatus(status int64, t *testing.T) {
 	}
 	if channel.PurgeRejected() > 0 {
 		t.Errorf("Failed to record order")
+	}
+	select {
+	case <-ch:
+	default:
+		t.Errorf("Expected item to be published")
 	}
 
 }

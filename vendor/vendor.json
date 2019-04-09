@@ -500,6 +500,12 @@
 			"tree": true
 		},
 		{
+			"checksumSHA1": "gr0edNJuVv4+olNNZl5ZmwLgscA=",
+			"path": "github.com/gorilla/websocket",
+			"revision": "0ec3d1bd7fe50c503d6df98ee649d81f4857c564",
+			"revisionTime": "2019-03-06T00:42:57Z"
+		},
+		{
 			"checksumSHA1": "gxjkI9acQsXCdgN4IcSwRiohm08=",
 			"path": "github.com/jinzhu/gorm",
 			"revision": "0a51f6cdc55d1650d9ed3b4c13026cfa9133b01e",

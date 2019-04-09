@@ -108,7 +108,7 @@ func (consumer *spendBlockConsumer) Consume(delivery channels.Delivery) {
 				allowance, err = consumer.balanceChecker.GetAllowance(tokenAssetData, senderAddress, consumer.tokenProxyAddress)
 			}
 			if err != nil {
-				if err.Error() == "abi: unmarshalling empty output" || err.Error() == "no contract code at given address" || err.Error() == "VM Exception while processing transaction: revert" {
+				if strings.Contains(err.Error(), "abi") || err.Error() == "no contract code at given address" || err.Error() == "VM Exception while processing transaction: revert" {
 					log.Printf("balance checker gave error: %v -- using 0 balance", err.Error())
 					allowance = big.NewInt(0)
 				} else {
@@ -123,7 +123,7 @@ func (consumer *spendBlockConsumer) Consume(delivery channels.Delivery) {
 			} else {
 				balance, err = consumer.balanceChecker.GetBalance(tokenAssetData, senderAddress)
 				if err != nil {
-					if err.Error() == "abi: unmarshalling empty output" || err.Error() == "no contract code at given address" || err.Error() == "VM Exception while processing transaction: revert" {
+					if strings.Contains(err.Error(), "abi") || err.Error() == "no contract code at given address" || err.Error() == "VM Exception while processing transaction: revert" {
 						log.Printf("balance checker gave error: %v -- using 0 balance", err.Error())
 						balance = big.NewInt(0)
 						} else {

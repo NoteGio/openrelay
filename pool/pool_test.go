@@ -110,7 +110,7 @@ func TestPoolFilter(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 	order := sampleOrder(t)
-	order.Save(tx, dbModule.StatusOpen)
+	order.Save(tx, dbModule.StatusOpen, nil)
 
 	poolHash := sha3.NewKeccak256()
 	poolHash.Write([]byte("testPool"))

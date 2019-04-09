@@ -43,12 +43,16 @@ type WebsocketChannel struct {
 	consumers []channels.Consumer
 	Filter string
 	quit chan struct{}
-	cleanup func()
+	cleanup func(channels.Publisher)
 }
 
 func (pub *WebsocketChannel) Publish(payload string) bool {
-	pub.payloads <- []byte(payload)
-	return true
+	select {
+	case pub.payloads <- []byte(payload):
+		return true
+	default:
+		return false
+	}
 }
 
 func (consumerChannel *WebsocketChannel) AddConsumer(consumer channels.Consumer) bool {
@@ -57,7 +61,7 @@ func (consumerChannel *WebsocketChannel) AddConsumer(consumer channels.Consumer)
 }
 func (consumerChannel *WebsocketChannel) StartConsuming() bool {
 	go func () {
-		defer consumerChannel.cleanup()
+		defer consumerChannel.cleanup(consumerChannel)
 		for {
 			select {
 			case _ = <-consumerChannel.quit:
@@ -91,7 +95,7 @@ func (consumerChannel *WebsocketChannel) Publisher() channels.Publisher {
 	return consumerChannel
 }
 
-func GetChannels(port uint, db *gorm.DB, cleanup func()) (<-chan *WebsocketChannel, func() (error)) {
+func GetChannels(port uint, db *gorm.DB, cleanup func(channels.Publisher)) (<-chan *WebsocketChannel, func() (error)) {
 	outChan := make(chan *WebsocketChannel)
 	handler := pool.PoolDecorator(db, func (w http.ResponseWriter, r *http.Request, p types.Pool) {
     conn, err := upgrader.Upgrade(w, r, nil)

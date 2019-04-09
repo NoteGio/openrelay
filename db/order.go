@@ -3,6 +3,7 @@ package db
 import (
 	"fmt"
 	"github.com/jinzhu/gorm"
+	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"log"
@@ -88,7 +89,7 @@ func (order *Order) Populate() {
 // Status should either be db.StatusOpen, or db.StatusUnfunded. If the order
 // is filled based on order.TakerAssetAmountFilled + order.TakerAssetAmountCancelled
 // the status will be recorded as db.StatusFilled regardless of the specified status.
-func (order *Order) Save(db *gorm.DB, status int64) *gorm.DB {
+func (order *Order) Save(db *gorm.DB, status int64, publisher channels.Publisher) *gorm.DB {
 	if !order.Signature.Verify(order.Maker, order.Hash()) {
 		scope := db.New()
 		scope.AddError(errors.New("Failed to verify signature"))
@@ -116,9 +117,19 @@ func (order *Order) Save(db *gorm.DB, status int64) *gorm.DB {
 		log.Printf(updateScope.Error.Error())
 	}
 	if updateScope.RowsAffected > 0 {
+		if publisher != nil {
+			publisher.Publish(string(order.Bytes()))
+		}
 		return updateScope
 	}
-	return db.Create(order)
+	scope := db.Create(order)
+	if scope.Error != nil {
+		return scope
+	}
+	if publisher != nil {
+		publisher.Publish(string(order.Bytes()))
+	}
+	return scope
 }
 
 type orderTracker struct {

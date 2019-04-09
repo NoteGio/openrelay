@@ -15,6 +15,7 @@ func main() {
 	redisURL := os.Args[1]
 	srcChannel := os.Args[2]
 	db, err := dbModule.GetDB(os.Args[3], os.Args[4])
+	destChannel := os.Args[5]
 	if err != nil {
 		log.Fatalf("Could not open database connection: %v", err.Error())
 	}
@@ -25,11 +26,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error establishing consumer channel: %v", err.Error())
 	}
+	publisherChannel, err := channels.PublisherFromURI(destChannel, redisClient)
+	if err != nil {
+		log.Fatalf("Error establishing publisher channel: %v", err.Error())
+	}
 	concurrency, err := strconv.Atoi(os.Getenv("CONCURRENCY"))
 	if err != nil {
 		concurrency = 5
 	}
-	consumerChannel.AddConsumer(dbModule.NewRecordCancellationConsumer(db, concurrency))
+	consumerChannel.AddConsumer(dbModule.NewRecordCancellationConsumer(db, concurrency, publisherChannel))
 	consumerChannel.StartConsuming()
 	log.Printf("Starting db fill indexer consumer on '%v'", srcChannel)
 	c := make(chan os.Signal, 1)

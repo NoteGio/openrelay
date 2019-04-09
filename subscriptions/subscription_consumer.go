@@ -5,6 +5,7 @@ import (
 	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/db"
 	"log"
+	"errors"
 )
 
 
@@ -42,6 +43,21 @@ func (consumer *SubscriptionConsumer) Consume(delivery channels.Delivery) {
 	if err := json.Unmarshal([]byte(delivery.Payload()), incoming); err != nil {
 		log.Printf("Error parsing JSON: %v", err.Error())
 		sendError(consumer.publisher, err)
+		return
+	}
+	if incoming.Type != "subscribe" {
+		log.Printf("Invalid message type '%v'", incoming.Type)
+		sendError(consumer.publisher, errors.New("Invalid message type"))
+		return
+	}
+	if incoming.Channel != "orders" {
+		log.Printf("Invalid channel '%v'", incoming.Channel)
+		sendError(consumer.publisher, errors.New("Invalid channel"))
+		return
+	}
+	if incoming.RequestID == "" || len(incoming.RequestID) > 20 {
+		log.Printf("Invalid request ID")
+		sendError(consumer.publisher, errors.New("Invalid request ID (check length)"))
 		return
 	}
 	baseFilterFn := func(order *db.Order) (bool) { return true }

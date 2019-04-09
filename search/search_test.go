@@ -282,7 +282,7 @@ func filterContractRequest(queryString, emptyQueryString string, t *testing.T) {
 	tx.Where(
 		&dbModule.Exchange{Network: 1},
 	).FirstOrCreate(&dbModule.Exchange{Network: 1, Address: sampleAddress })
-	if err := sampleOrder(t).Save(tx, 0).Error; err != nil {
+	if err := sampleOrder(t).Save(tx, 0, nil).Error; err != nil {
 		t.Fatalf(err.Error())
 	}
 	handler := getTestSearchHandler(tx)
@@ -397,7 +397,7 @@ func TestPagination(t *testing.T) {
 		&dbModule.Exchange{Network: 1},
 	).FirstOrCreate(&dbModule.Exchange{Network: 1, Address: sampleAddress })
 	for i := 0; i < 21; i++ {
-		saltedSampleOrder(t).Save(tx, 0)
+		saltedSampleOrder(t).Save(tx, 0, nil)
 	}
 	handler := getTestSearchHandler(tx)
 	request, _ := http.NewRequest("GET", "/v0/orders?&blockhash=x&_expTime=0", nil)
@@ -470,7 +470,7 @@ func TestOrderLookup(t *testing.T) {
 		&dbModule.Exchange{Network: 1},
 	).FirstOrCreate(&dbModule.Exchange{Network: 1, Address: sampleAddress })
 	order := sampleOrder(t)
-	order.Save(tx, 0)
+	order.Save(tx, 0, nil)
 	orderHash := order.Hash()
 	orderHashHex := hex.EncodeToString(orderHash)
 	handler := getTestOrderHandler(tx)
@@ -517,7 +517,7 @@ func TestPairLookup(t *testing.T) {
 		&dbModule.Exchange{Network: 1},
 	).FirstOrCreate(&dbModule.Exchange{Network: 1, Address: sampleAddress })
 	order := sampleOrder(t)
-	order.Save(tx, 0)
+	order.Save(tx, 0, nil)
 	handler := search.PairHandler(tx)
 	request, _ := http.NewRequest("GET", "/v0/asset_pairs", nil)
 	recorder := httptest.NewRecorder()
@@ -562,7 +562,7 @@ func TestOrderBookLookup(t *testing.T) {
 		&dbModule.Exchange{Network: 1},
 	).FirstOrCreate(&dbModule.Exchange{Network: 1, Address: sampleAddress })
 	order := sampleOrder(t)
-	if err := order.Save(tx, 0).Error; err != nil {
+	if err := order.Save(tx, 0, nil).Error; err != nil {
 		t.Errorf(err.Error())
 	}
 	handler := getTestOrderBookHandler(tx)
