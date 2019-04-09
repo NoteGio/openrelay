@@ -9,6 +9,8 @@ import (
 	"github.com/jinzhu/gorm"
 	"log"
 	"time"
+	"os"
+	"strconv"
 )
 
 type WebsocketSubscriptionManager struct {
@@ -38,6 +40,15 @@ func (subs *WebsocketSubscriptionManager) ListenForSubscriptions(port uint, db *
 		}
 	}()
 	go func() {
+		intervalStr := os.Getenv("HEARTBEAT_INTERVAL")
+		interval := 60
+		if intervalStr != "" {
+			var err error
+			interval, err = strconv.Atoi(intervalStr)
+			if err != nil {
+				interval = 60
+			}
+		}
 		for !done {
 			for _, subscription := range subs.manager.subscriptions {
 				message := &SubscriptionUpdate{
@@ -52,7 +63,7 @@ func (subs *WebsocketSubscriptionManager) ListenForSubscriptions(port uint, db *
 				}
 				subscription.publisher.Publish(string(data))
 			}
-			time.Sleep(5 * time.Minute)
+			time.Sleep(time.Duration(interval) * time.Second)
 		}
 	}()
 	return func() (error) {
