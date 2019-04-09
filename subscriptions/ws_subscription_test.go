@@ -51,7 +51,7 @@ func TestWebsocketSubscriptionConsumer(t *testing.T) {
 	}
 	address := &types.Address{}
 	tx.Model(&dbModule.Exchange{}).Create(&dbModule.Exchange{address, 1})
-	quit, err := manager.ListenForSubscriptions(1234, tx)
+	quit, err := manager.ListenForSubscriptions(4321, tx)
 	defer quit()
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -63,8 +63,12 @@ func TestWebsocketSubscriptionConsumer(t *testing.T) {
 	defer cancel()
 	if err != nil {
 		content := []byte{}
-		resp.Body.Read(content[:])
-		t.Fatalf("%v - (%v) %v", err.Error(), resp.StatusCode, content)
+		statusCode := 0
+		if resp != nil {
+			resp.Body.Read(content[:])
+			statusCode = resp.StatusCode
+		}
+		t.Fatalf("%v - (%v) %v", err.Error(), statusCode, content)
 	}
 
 	c.WriteMessage(websocket.BinaryMessage, []byte(`{
@@ -88,7 +92,7 @@ func TestWebsocketSubscriptionConsumer(t *testing.T) {
 		t.Errorf("Unexpected message type %v", mtype)
 	}
 
-	if string(p) != `{"type":"update","channel":"orders","requestId":"123e4567-e89b-12d3-a456-426655440000","payload":[{"order":{"makerAddress":"0x0000000000000000000000000000000000000000","takerAddress":"0x0000000000000000000000000000000000000000","makerAssetData":"0x0000000000000000000000000000000000000000","takerAssetData":"0x0000000000000000000000000000000000000000","feeRecipientAddress":"0x0000000000000000000000000000000000000000","exchangeAddress":"0x0000000000000000000000000000000000000000","senderAddress":"0x0000000000000000000000000000000000000000","makerAssetAmount":"0","takerAssetAmount":"1","makerFee":"0","takerFee":"0","expirationTimeSeconds":"0","salt":"0","signature":""},"metaData":{"hash":"0xadfaa1d67d27cc9240ab3a90bf7b1682eb683e16873b6a88f95294d126b5e6c1","feeRate":0,"status":0,"takerAssetAmountRemaining":"1"}}]}` {
+	if string(p) != `{"type":"update","channel":"orders","requestId":"123e4567-e89b-12d3-a456-426655440000","payload":[{"order":{"makerAddress":"0x0000000000000000000000000000000000000000","takerAddress":"0x0000000000000000000000000000000000000000","makerAssetData":"0x0000000000000000000000000000000000000000","takerAssetData":"0x0000000000000000000000000000000000000000","feeRecipientAddress":"0x0000000000000000000000000000000000000000","exchangeAddress":"0x0000000000000000000000000000000000000000","senderAddress":"0x0000000000000000000000000000000000000000","makerAssetAmount":"0","takerAssetAmount":"0","makerFee":"0","takerFee":"0","expirationTimeSeconds":"0","salt":"0","signature":""},"metaData":{"hash":"0xfaa49b35faeb9197e9c3ba7a52075e6dad19739549f153b77dfcf59408a4b422","feeRate":0,"status":1,"takerAssetAmountRemaining":"0"}}]}` {
 		t.Errorf("Unexpected value: %v", string(p))
 	}
 }

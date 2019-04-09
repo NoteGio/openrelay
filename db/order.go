@@ -57,10 +57,14 @@ func (order *Order) Populate() {
 	thresholdAmount.Sub(thresholdAmount, order.TakerAssetAmountFilled.Big())
 
 	// makerRemainingInt = (MakerAssetAmount * RemainingAmount) / TakerAssetAmount
-	makerRemainingInt := new(big.Int).Div(new(big.Int).Mul(order.MakerAssetAmount.Big(), remainingAmount), order.TakerAssetAmount.Big())
+	makerRemainingInt := new(big.Int)
+	makerFeeRemainingInt := new(big.Int)
+	if order.TakerAssetAmount.Big().Cmp(new(big.Int)) != 0 {
+		makerRemainingInt = makerRemainingInt.Div(new(big.Int).Mul(order.MakerAssetAmount.Big(), remainingAmount), order.TakerAssetAmount.Big())
+		makerFeeRemainingInt = makerFeeRemainingInt.Div(new(big.Int).Mul(order.MakerFee.Big(), remainingAmount), order.TakerAssetAmount.Big())
+	}
 	makerRemaining := &types.Uint256{}
 	copy(makerRemaining[:], abi.U256(makerRemainingInt))
-	makerFeeRemainingInt := new(big.Int).Div(new(big.Int).Mul(order.MakerFee.Big(), remainingAmount), order.TakerAssetAmount.Big())
 	makerFeeRemaining := &types.Uint256{}
 	copy(makerFeeRemaining[:], abi.U256(makerFeeRemainingInt))
 	order.MakerAssetRemaining = makerRemaining
@@ -70,8 +74,12 @@ func (order *Order) Populate() {
 	makerTokenAmount := new(big.Float).SetInt(order.MakerAssetAmount.Big())
 	takerFeeAmount := new(big.Float).SetInt(order.TakerFee.Big())
 
-	order.Price, _ = new(big.Float).Quo(takerTokenAmount, makerTokenAmount).Float64()
-	order.FeeRate, _ = new(big.Float).Quo(takerFeeAmount, takerTokenAmount).Float64()
+	if makerTokenAmount.Cmp(new(big.Float)) != 0 {
+		order.Price, _ = new(big.Float).Quo(takerTokenAmount, makerTokenAmount).Float64()
+	}
+	if takerTokenAmount.Cmp(new(big.Float)) != 0 {
+		order.FeeRate, _ = new(big.Float).Quo(takerFeeAmount, takerTokenAmount).Float64()
+	}
 
 	if order.Cancelled {
 		order.Status = StatusCancelled
