@@ -45,6 +45,9 @@ func (consumer *SubscriptionConsumer) Consume(delivery channels.Delivery) {
 		sendError(consumer.publisher, err)
 		return
 	}
+	if incoming.Type == "heartbeat" {
+		return
+	}
 	if incoming.Type != "subscribe" {
 		log.Printf("Invalid message type '%v'", incoming.Type)
 		sendError(consumer.publisher, errors.New("Invalid message type"))
