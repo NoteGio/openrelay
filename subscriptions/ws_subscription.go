@@ -1,12 +1,14 @@
 package subscriptions
 
 import (
+	"encoding/json"
 	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/channels/ws"
 	dbModule "github.com/notegio/openrelay/db"
 	"github.com/notegio/openrelay/types"
 	"github.com/jinzhu/gorm"
 	"log"
+	"time"
 )
 
 type WebsocketSubscriptionManager struct {
@@ -18,6 +20,7 @@ func NewWebsocketSubscriptionManager() *WebsocketSubscriptionManager {
 }
 
 func (subs *WebsocketSubscriptionManager) ListenForSubscriptions(port uint, db *gorm.DB) (func() (error), error) {
+	done := false
 	chs, quit := ws.GetChannels(port, db, func(publisher channels.Publisher){
 		subs.manager.PruneByPublisher(publisher)
 	})
@@ -34,7 +37,28 @@ func (subs *WebsocketSubscriptionManager) ListenForSubscriptions(port uint, db *
 			websocketChannel.StartConsuming()
 		}
 	}()
-	return quit, nil
+	go func() {
+		for !done {
+			for _, subscription := range subs.manager.subscriptions {
+				message := &SubscriptionUpdate{
+					Type: "heatbeat",
+					Channel: "heartbeat",
+					RequestID: subscription.requestID,
+					Payload: []interface{}{},
+				}
+				data, err := json.Marshal(message)
+				if err != nil {
+					log.Printf(err.Error())
+				}
+				subscription.publisher.Publish(string(data))
+			}
+			time.Sleep(5 * time.Minute)
+		}
+	}()
+	return func() (error) {
+		done = true
+		return quit()
+	}, nil
 }
 
 func (subs *WebsocketSubscriptionManager) Consume(delivery channels.Delivery) {
