@@ -10,6 +10,9 @@ import (
 	"github.com/jinzhu/gorm"
 	"net/http"
 	"log"
+	"strconv"
+	"time"
+	"os"
 )
 
 var upgrader = websocket.Upgrader{
@@ -105,10 +108,28 @@ func GetChannels(port uint, db *gorm.DB, cleanup func(channels.Publisher)) (<-ch
     }
 		wsChannel := &WebsocketChannel{true, conn, make(chan []byte), []channels.Consumer{}, p.QueryString(), make(chan struct{}), cleanup}
 		outChan <- wsChannel
-		for payload := range wsChannel.payloads {
-			if err := conn.WriteMessage(websocket.BinaryMessage, payload); err != nil {
-				log.Println(err)
-				return
+		pingPeriodString := os.Getenv("WEBSOCKET_HEARTBEAT")
+		pingPeriod := 60
+		if pingPeriodString != "" {
+			var err error
+			pingPeriod, err = strconv.Atoi(pingPeriodString)
+			if err != nil {
+				pingPeriod = 60
+			}
+		}
+		ticker := time.NewTicker(time.Duration(pingPeriod) * time.Second)
+		for {
+			select {
+			case payload := <- wsChannel.payloads:
+				if err := conn.WriteMessage(websocket.BinaryMessage, payload); err != nil {
+					log.Println(err)
+					return
+				}
+			case <-ticker.C:
+				if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+					log.Println(err)
+					return
+				}
 			}
 		}
 	})
