@@ -55,7 +55,7 @@ func (consumer *SubscriptionConsumer) Consume(delivery channels.Delivery) {
 		sendError(consumer.publisher, errors.New("Invalid channel"))
 		return
 	}
-	if incoming.RequestID == "" || len(incoming.RequestID) > 20 {
+	if incoming.RequestID == "" || len(incoming.RequestID) > 64 {
 		log.Printf("Invalid request ID")
 		sendError(consumer.publisher, errors.New("Invalid request ID (check length)"))
 		return
