@@ -25,7 +25,7 @@ func TestIndexOrder(t *testing.T) {
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	indexer := dbModule.NewIndexer(tx, dbModule.StatusOpen)
+	indexer := dbModule.NewIndexer(tx, dbModule.StatusOpen, nil)
 	order := sampleOrder(t)
 	if !order.Signature.Verify(order.Maker, order.Hash()) {
 		t.Errorf("Failed to verify signature")
@@ -49,7 +49,7 @@ func TestFillIndex(t *testing.T) {
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	indexer := dbModule.NewIndexer(tx, dbModule.StatusOpen)
+	indexer := dbModule.NewIndexer(tx, dbModule.StatusOpen, nil)
 	order := sampleOrder(t)
 	if err := indexer.Index(order); err != nil {
 		t.Errorf(err.Error())
@@ -92,11 +92,11 @@ func TestCheckUnfundedSufficient(t *testing.T) {
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	indexer := dbModule.NewIndexer(tx, dbModule.StatusUnfunded)
+	indexer := dbModule.NewIndexer(tx, dbModule.StatusUnfunded, nil)
 	order := sampleOrder(t)
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *order
-	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
+	if err := dbOrder.Save(tx, dbModule.StatusOpen, nil).Error; err != nil {
 		t.Errorf(err.Error())
 	}
 	// Checking that the MakerAddress has enough of MakerAssetData.Address(), asserting that they have exactly MakerAssetAmount of the token
@@ -126,11 +126,11 @@ func TestCheckUnfundedNotFound(t *testing.T) {
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	indexer := dbModule.NewIndexer(tx, dbModule.StatusUnfunded)
+	indexer := dbModule.NewIndexer(tx, dbModule.StatusUnfunded, nil)
 	order := sampleOrder(t)
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *order
-	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
+	if err := dbOrder.Save(tx, dbModule.StatusOpen, nil).Error; err != nil {
 		t.Errorf(err.Error())
 	}
 	// Checking that the Taker has enough of MakerAssetData.Address(), asserting that they have exactly MakerAssetAmount of the token
@@ -161,11 +161,11 @@ func TestCheckUnfundedInsufficient(t *testing.T) {
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	indexer := dbModule.NewIndexer(tx, dbModule.StatusUnfunded)
+	indexer := dbModule.NewIndexer(tx, dbModule.StatusUnfunded, nil)
 	order := sampleOrder(t)
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *order
-	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
+	if err := dbOrder.Save(tx, dbModule.StatusOpen, nil).Error; err != nil {
 		t.Errorf(err.Error())
 	}
 	// Checking that the Taker has enough of MakerAssetData.Address(), asserting that they have exactly MakerAssetAmount of the token

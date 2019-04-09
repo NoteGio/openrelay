@@ -60,14 +60,14 @@ func (consumer *RecordSpendConsumer) Consume(msg channels.Delivery) {
 		balance, err := types.IntStringToUint256(spendRecord.Balance)
 		if err := consumer.idx.RecordSpend(spenderAddress, tokenAddress, zrxToken, assetData, balance); err == nil {
 			msg.Ack()
-			} else {
-				log.Printf("Failed to record spend: '%v', '%v'", msg.Payload(), err.Error())
-				msg.Reject()
-				return
-			}
+		} else {
+			log.Printf("Failed to record spend: '%v', '%v'", msg.Payload(), err.Error())
+			msg.Reject()
+			return
+		}
 	}()
 }
 
-func NewRecordSpendConsumer(db *gorm.DB, concurrency int) *RecordSpendConsumer {
-	return &RecordSpendConsumer{NewIndexer(db, StatusUnfunded), make(common.Semaphore, concurrency)}
+func NewRecordSpendConsumer(db *gorm.DB, concurrency int, publisher channels.Publisher) *RecordSpendConsumer {
+	return &RecordSpendConsumer{NewIndexer(db, StatusUnfunded, publisher), make(common.Semaphore, concurrency)}
 }

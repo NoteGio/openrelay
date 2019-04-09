@@ -25,7 +25,7 @@ func TestCancellationConsumer(t *testing.T) {
 	if err := tx.AutoMigrate(&dbModule.Cancellation{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	indexer := dbModule.NewIndexer(tx, dbModule.StatusOpen)
+	indexer := dbModule.NewIndexer(tx, dbModule.StatusOpen, nil)
 	order := sampleOrder(t)
 	if !order.Signature.Verify(order.Maker, order.Hash()) {
 		t.Errorf("Failed to verify signature")
@@ -35,7 +35,8 @@ func TestCancellationConsumer(t *testing.T) {
 	}
 	fillString := "{\"Maker\": \"0x627306090abab3a6e1400e9345bc60c78a8bef57\", \"Sender\": \"0x0000000000000000000000000000000000000000\", \"Epoch\": \"11065671350908846865864045738088581419204014210814002044381812654087807532\"}"
 	publisher, channel := channels.MockChannel()
-	consumer := dbModule.NewRecordCancellationConsumer(tx, 1)
+	dsPublisher, ch := channels.MockPublisher()
+	consumer := dbModule.NewRecordCancellationConsumer(tx, 1, dsPublisher)
 	channel.AddConsumer(consumer)
 	channel.StartConsuming()
 	defer channel.StopConsuming()
@@ -56,5 +57,10 @@ func TestCancellationConsumer(t *testing.T) {
 	}
 	if !reflect.DeepEqual(cancellation.Maker, dbOrder.Maker) || !reflect.DeepEqual(cancellation.Sender, dbOrder.SenderAddress) {
 		t.Errorf("Cancellation does not match order: %v", cancellation.Maker)
+	}
+	select {
+	case <-ch:
+	default:
+		t.Errorf("Expected canceled item to be published")
 	}
 }

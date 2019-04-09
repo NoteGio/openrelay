@@ -21,6 +21,7 @@ func main() {
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: redisURL,
 	})
+	destChannel := os.Args[5]
 	consumerChannel, err := channels.ConsumerFromURI(srcChannel, redisClient)
 	if err != nil {
 		log.Fatalf("Error establishing consumer channel: %v", err.Error())
@@ -29,7 +30,11 @@ func main() {
 	if err != nil {
 		concurrency = 5
 	}
-	consumerChannel.AddConsumer(dbModule.NewRecordSpendConsumer(db, concurrency))
+	publisher, err := channels.PublisherFromURI(destChannel, redisClient)
+	if err != nil {
+		log.Fatalf("Error establishing publisher channel: %v", err.Error())
+	}
+	consumerChannel.AddConsumer(dbModule.NewRecordSpendConsumer(db, concurrency, publisher))
 	consumerChannel.StartConsuming()
 	log.Printf("Starting spend recorder consumer on '%v'", srcChannel)
 	c := make(chan os.Signal, 1)

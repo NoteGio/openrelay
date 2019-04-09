@@ -127,9 +127,9 @@ func applyBytesFilter(query *gorm.DB, queryField, dbField string, queryObject ur
 
 func applyHashFilter(query *gorm.DB, queryField, dbField string, queryObject urlModule.Values) (*gorm.DB, error) {
 	if preimage := queryObject.Get(queryField); preimage != "" {
-		termsSha := sha3.NewKeccak256()
-		termsSha.Write([]byte(preimage))
-		hash := termsSha.Sum(nil)
+		dataSha := sha3.NewKeccak256()
+		dataSha.Write([]byte(preimage))
+		hash := dataSha.Sum(nil)
 		whereClause := fmt.Sprintf("%v = ?", dbField)
 		filteredQuery := query.Where(whereClause, hash[:])
 		return filteredQuery, filteredQuery.Error
@@ -288,6 +288,10 @@ func QueryFilter(query *gorm.DB, queryObject urlModule.Values) (*gorm.DB, []Vali
 	query, err = applyAssetDataOrFilter(query, "assetData", "maker_asset_data", "taker_asset_data", queryObject)
 	if err != nil {
 		errs = append(errs, ValidationError{err.Error(), 1001, "assetData"})
+	}
+	query, err = applyAssetDataOrFilter(query, "traderAssetData", "maker_asset_data", "taker_asset_data", queryObject)
+	if err != nil {
+		errs = append(errs, ValidationError{err.Error(), 1001, "traderAssetData"})
 	}
 	query, err = applyOrFilter(query, "traderAddress", "maker", "taker", queryObject)
 	if err != nil {

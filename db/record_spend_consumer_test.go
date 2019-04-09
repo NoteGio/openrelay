@@ -24,7 +24,7 @@ func TestSpendConsumer(t *testing.T) {
 	order := sampleOrder(t)
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *order
-	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
+	if err := dbOrder.Save(tx, dbModule.StatusOpen, nil).Error; err != nil {
 		t.Errorf(err.Error())
 	}
 	fillString := fmt.Sprintf(
@@ -35,7 +35,7 @@ func TestSpendConsumer(t *testing.T) {
 		order.MakerAssetAmount,
 	)
 	publisher, channel := channels.MockChannel()
-	consumer := dbModule.NewRecordSpendConsumer(tx, 1)
+	consumer := dbModule.NewRecordSpendConsumer(tx, 1, nil)
 	channel.AddConsumer(consumer)
 	channel.StartConsuming()
 	defer channel.StopConsuming()
@@ -71,7 +71,7 @@ func TestSpendConsumerMakerZRX(t *testing.T) {
 	order := sampleOrder(t)
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *order
-	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
+	if err := dbOrder.Save(tx, dbModule.StatusOpen, nil).Error; err != nil {
 		t.Errorf(err.Error())
 	}
 	fillString := fmt.Sprintf(
@@ -84,7 +84,7 @@ func TestSpendConsumerMakerZRX(t *testing.T) {
 	tx.LogMode(true)
 	defer tx.LogMode(false)
 	publisher, channel := channels.MockChannel()
-	consumer := dbModule.NewRecordSpendConsumer(tx, 1)
+	consumer := dbModule.NewRecordSpendConsumer(tx, 1, nil)
 	channel.AddConsumer(consumer)
 	channel.StartConsuming()
 	defer channel.StopConsuming()
@@ -119,7 +119,7 @@ func TestSpendConsumerInsufficient(t *testing.T) {
 	order := sampleOrder(t)
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *order
-	if err := dbOrder.Save(tx, dbModule.StatusOpen).Error; err != nil {
+	if err := dbOrder.Save(tx, dbModule.StatusOpen, nil).Error; err != nil {
 		t.Errorf(err.Error())
 	}
 	fillString := fmt.Sprintf(
@@ -129,7 +129,8 @@ func TestSpendConsumerInsufficient(t *testing.T) {
 		order.TakerAssetData.Address(),
 	)
 	publisher, channel := channels.MockChannel()
-	consumer := dbModule.NewRecordSpendConsumer(tx, 1)
+	dsPublisher, ch := channels.MockPublisher()
+	consumer := dbModule.NewRecordSpendConsumer(tx, 1, dsPublisher)
 	channel.AddConsumer(consumer)
 	channel.StartConsuming()
 	defer channel.StopConsuming()
@@ -145,5 +146,10 @@ func TestSpendConsumerInsufficient(t *testing.T) {
 	}
 	if dbOrder.Status != dbModule.StatusUnfunded {
 		t.Errorf("Order status should be unfunded, got %v", dbOrder.Status)
+	}
+	select {
+	case <-ch:
+	default:
+		t.Errorf("Expected spent item to be published")
 	}
 }

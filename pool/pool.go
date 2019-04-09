@@ -96,6 +96,10 @@ func (pool Pool) Fee() (*big.Int, error) {
 	return new(big.Int).Div(combined, feeBaseUnits), nil
 }
 
+func (pool Pool) QueryString() string {
+	return pool.SearchTerms
+}
+
 var poolRegex = regexp.MustCompile("^(/[^/]*)?/v2/")
 
 func PoolDecorator(db *gorm.DB, fn func(http.ResponseWriter, *http.Request, types.Pool)) func(http.ResponseWriter, *http.Request) {
@@ -106,15 +110,17 @@ func PoolDecorator(db *gorm.DB, fn func(http.ResponseWriter, *http.Request, type
 			pool :=  &Pool{}
 			poolHash := sha3.NewKeccak256()
 			poolHash.Write([]byte(poolName))
-			if q := db.Model(&Pool{}).Where("ID = ?", poolHash.Sum(nil)).First(pool); q.Error != nil {
-				if poolName != "" {
-					w.WriteHeader(404)
-					w.Header().Set("Content-Type", "application/json")
-					w.Write([]byte(fmt.Sprintf("{\"code\":102,\"reason\":\"Pool Not Found: %v\"}", q.Error.Error())))
-					return
+			if db != nil {
+				if q := db.Model(&Pool{}).Where("ID = ?", poolHash.Sum(nil)).First(pool); q.Error != nil {
+					if poolName != "" {
+						w.WriteHeader(404)
+						w.Header().Set("Content-Type", "application/json")
+						w.Write([]byte(fmt.Sprintf("{\"code\":102,\"reason\":\"Pool Not Found: %v\"}", q.Error.Error())))
+						return
+					}
+					// If no pool was specified and no default pool is in the database,
+					// just use an empty pool
 				}
-				// If no pool was specified and no default pool is in the database,
-				// just use an empty pool
 			}
 			fn(w, r, pool)
 		} else {

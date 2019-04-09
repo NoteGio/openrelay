@@ -6,7 +6,8 @@ import (
 	dbModule "github.com/notegio/openrelay/db"
 	"reflect"
 	"testing"
-	"time"
+	// "log"
+	// "time"
 )
 
 func TestFillConsumer(t *testing.T) {
@@ -23,7 +24,7 @@ func TestFillConsumer(t *testing.T) {
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	indexer := dbModule.NewIndexer(tx, dbModule.StatusOpen)
+	indexer := dbModule.NewIndexer(tx, dbModule.StatusOpen, nil)
 	order := sampleOrder(t)
 	if !order.Signature.Verify(order.Maker, order.Hash()) {
 		t.Errorf("Failed to verify signature")
@@ -38,12 +39,13 @@ func TestFillConsumer(t *testing.T) {
 		takerAssetAmount.String(),
 	)
 	publisher, channel := channels.MockChannel()
-	consumer := dbModule.NewRecordFillConsumer(tx, 1)
+	dsPublisher, ch := channels.MockPublisher()
+	consumer := dbModule.NewRecordFillConsumer(tx, 1, dsPublisher)
 	channel.AddConsumer(consumer)
 	channel.StartConsuming()
 	defer channel.StopConsuming()
 	publisher.Publish(fillString)
-	time.Sleep(100 * time.Millisecond)
+	channels.MockFinish(channel, 1)
 
 	dbOrder := &dbModule.Order{}
 	dbOrder.Initialize()
@@ -55,5 +57,10 @@ func TestFillConsumer(t *testing.T) {
 	}
 	if dbOrder.Status != dbModule.StatusFilled {
 		t.Errorf("Order status should be filled, got %v", dbOrder.Status)
+	}
+	select {
+	case <-ch:
+	default:
+		t.Errorf("Expected item to be published")
 	}
 }

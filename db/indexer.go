@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/jinzhu/gorm"
+	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/types"
 	"math/big"
 	"strings"
@@ -18,15 +19,16 @@ type FillRecord struct {
 }
 
 type Indexer struct {
-	db     *gorm.DB
-	status int64
+	db        *gorm.DB
+	status    int64
+	publisher channels.Publisher
 }
 
 // Index takes an order and saves it to the database
 func (indexer *Indexer) Index(order *types.Order) error {
 	dbOrder := Order{}
 	dbOrder.Order = *order
-	return dbOrder.Save(indexer.db, indexer.status).Error
+	return dbOrder.Save(indexer.db, indexer.status, indexer.publisher).Error
 }
 
 // RecordFill takes information about a filled order and updates the corresponding
@@ -52,7 +54,7 @@ func (indexer *Indexer) RecordFill(fillRecord *FillRecord) error {
 	totalFilled := dbOrder.TakerAssetAmountFilled.Big()
 	copy(dbOrder.TakerAssetAmountFilled[:], abi.U256(totalFilled.Add(totalFilled, amountFilled)))
 	dbOrder.Cancelled = dbOrder.Cancelled || fillRecord.Cancel
-	return dbOrder.Save(indexer.db, dbOrder.Status).Error
+	return dbOrder.Save(indexer.db, dbOrder.Status, indexer.publisher).Error
 }
 
 // RecordSpend takes information about a token transfer, and updates any
@@ -72,18 +74,37 @@ func (indexer *Indexer) RecordSpend(makerAddress, tokenAddress, zrxAddress *type
 	if(bytes.Equal(tokenAddress[:], zrxAddress[:])) {
 		query = query.Or("maker = ? AND ? < maker_fee_remaining", makerAddress, balance)
 	}
-	return query.Update("status", indexer.status).Error
+	return indexer.UpdateAndPublish(query, "status", indexer.status, true)
 }
 
 func (indexer *Indexer) RecordCancellation(cancellation *Cancellation) error {
 	if err := cancellation.Save(indexer.db).Error; err != nil {
 		return err
 	}
-	return indexer.db.Model(&Order{}).Where(
+	return indexer.UpdateAndPublish(indexer.db.Model(&Order{}).Where(
 		"status = ? AND maker = ? AND sender_address = ? AND salt < ?", StatusOpen, cancellation.Maker, cancellation.Sender, cancellation.Epoch,
-	).Update("status", indexer.status).Error
+	), "status", indexer.status, true)
 }
 
-func NewIndexer(db *gorm.DB, status int64) *Indexer {
-	return &Indexer{db, status}
+func (indexer *Indexer) UpdateAndPublish(query *gorm.DB, key string, value interface{}, unfillable bool) error {
+	orders := []Order{}
+	if err := query.Find(&orders).Error; err != nil {
+		return err
+	}
+	if indexer.publisher != nil {
+		go func() {
+			for _, order := range orders {
+				if unfillable {
+					order.TakerAssetAmountFilled = order.TakerAssetAmount
+				}
+				indexer.publisher.Publish(string(order.Bytes()))
+			}
+		}()
+	}
+	return query.Update(key, value).Error
+
+}
+
+func NewIndexer(db *gorm.DB, status int64, publisher channels.Publisher) *Indexer {
+	return &Indexer{db, status, publisher}
 }

@@ -38,6 +38,6 @@ func (consumer *IndexConsumer) Consume(msg channels.Delivery) {
 	}()
 }
 
-func NewIndexConsumer(db *gorm.DB, status int64, concurrency int) *IndexConsumer {
-	return &IndexConsumer{NewIndexer(db, status), make(common.Semaphore, concurrency)}
+func NewIndexConsumer(db *gorm.DB, status int64, concurrency int, publisher channels.Publisher) *IndexConsumer {
+	return &IndexConsumer{NewIndexer(db, status, publisher), make(common.Semaphore, concurrency)}
 }

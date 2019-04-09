@@ -28,6 +28,7 @@ func (consumer *RecordFillConsumer) Consume(msg channels.Delivery) {
 	}()
 }
 
-func NewRecordFillConsumer(db *gorm.DB, concurrency int) *RecordFillConsumer {
-	return &RecordFillConsumer{NewIndexer(db, StatusOpen), make(common.Semaphore, concurrency)}
+func NewRecordFillConsumer(db *gorm.DB, concurrency int, publisher channels.Publisher) *RecordFillConsumer {
+	log.Printf("Publisher %v", publisher)
+	return &RecordFillConsumer{NewIndexer(db, StatusOpen, publisher), make(common.Semaphore, concurrency)}
 }

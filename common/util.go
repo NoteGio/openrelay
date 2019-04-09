@@ -68,6 +68,10 @@ func BytesToUint256(data [32]byte) (*types.Uint256) {
 	return result
 }
 
+func Int64ToUint256(number int64) (*types.Uint256) {
+	return BigToUint256(big.NewInt(number))
+}
+
 func ToERC20AssetData(address *types.Address) (types.AssetData) {
 	assetData := make(types.AssetData, 36)
 	copy(assetData[0:4], types.ERC20ProxyID[:])

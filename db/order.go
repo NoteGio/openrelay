@@ -3,6 +3,7 @@ package db
 import (
 	"fmt"
 	"github.com/jinzhu/gorm"
+	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"log"
@@ -56,10 +57,14 @@ func (order *Order) Populate() {
 	thresholdAmount.Sub(thresholdAmount, order.TakerAssetAmountFilled.Big())
 
 	// makerRemainingInt = (MakerAssetAmount * RemainingAmount) / TakerAssetAmount
-	makerRemainingInt := new(big.Int).Div(new(big.Int).Mul(order.MakerAssetAmount.Big(), remainingAmount), order.TakerAssetAmount.Big())
+	makerRemainingInt := new(big.Int)
+	makerFeeRemainingInt := new(big.Int)
+	if order.TakerAssetAmount.Big().Cmp(new(big.Int)) != 0 {
+		makerRemainingInt = makerRemainingInt.Div(new(big.Int).Mul(order.MakerAssetAmount.Big(), remainingAmount), order.TakerAssetAmount.Big())
+		makerFeeRemainingInt = makerFeeRemainingInt.Div(new(big.Int).Mul(order.MakerFee.Big(), remainingAmount), order.TakerAssetAmount.Big())
+	}
 	makerRemaining := &types.Uint256{}
 	copy(makerRemaining[:], abi.U256(makerRemainingInt))
-	makerFeeRemainingInt := new(big.Int).Div(new(big.Int).Mul(order.MakerFee.Big(), remainingAmount), order.TakerAssetAmount.Big())
 	makerFeeRemaining := &types.Uint256{}
 	copy(makerFeeRemaining[:], abi.U256(makerFeeRemainingInt))
 	order.MakerAssetRemaining = makerRemaining
@@ -69,8 +74,12 @@ func (order *Order) Populate() {
 	makerTokenAmount := new(big.Float).SetInt(order.MakerAssetAmount.Big())
 	takerFeeAmount := new(big.Float).SetInt(order.TakerFee.Big())
 
-	order.Price, _ = new(big.Float).Quo(takerTokenAmount, makerTokenAmount).Float64()
-	order.FeeRate, _ = new(big.Float).Quo(takerFeeAmount, takerTokenAmount).Float64()
+	if makerTokenAmount.Cmp(new(big.Float)) != 0 {
+		order.Price, _ = new(big.Float).Quo(takerTokenAmount, makerTokenAmount).Float64()
+	}
+	if takerTokenAmount.Cmp(new(big.Float)) != 0 {
+		order.FeeRate, _ = new(big.Float).Quo(takerFeeAmount, takerTokenAmount).Float64()
+	}
 
 	if order.Cancelled {
 		order.Status = StatusCancelled
@@ -88,7 +97,7 @@ func (order *Order) Populate() {
 // Status should either be db.StatusOpen, or db.StatusUnfunded. If the order
 // is filled based on order.TakerAssetAmountFilled + order.TakerAssetAmountCancelled
 // the status will be recorded as db.StatusFilled regardless of the specified status.
-func (order *Order) Save(db *gorm.DB, status int64) *gorm.DB {
+func (order *Order) Save(db *gorm.DB, status int64, publisher channels.Publisher) *gorm.DB {
 	if !order.Signature.Verify(order.Maker, order.Hash()) {
 		scope := db.New()
 		scope.AddError(errors.New("Failed to verify signature"))
@@ -116,9 +125,19 @@ func (order *Order) Save(db *gorm.DB, status int64) *gorm.DB {
 		log.Printf(updateScope.Error.Error())
 	}
 	if updateScope.RowsAffected > 0 {
+		if publisher != nil {
+			publisher.Publish(string(order.Bytes()))
+		}
 		return updateScope
 	}
-	return db.Create(order)
+	scope := db.Create(order)
+	if scope.Error != nil {
+		return scope
+	}
+	if publisher != nil {
+		publisher.Publish(string(order.Bytes()))
+	}
+	return scope
 }
 
 type orderTracker struct {
