@@ -25,7 +25,7 @@ func (consumer *TestConsumer) Consume(delivery channels.Delivery) {
 
 func TestGetChannels(t *testing.T) {
 	clean := false
-	channels, quit := ws.GetChannels(4321, nil, func() { clean = true })
+	channels, quit := ws.GetChannels(4321, nil, func(channels.Publisher) { clean = true })
 	go func() {
 		for channel := range channels {
 			channel.AddConsumer(&TestConsumer{channel})
