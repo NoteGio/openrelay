@@ -59,7 +59,7 @@ func TestDecorator(t *testing.T) {
 	poolHash := sha3.NewKeccak256()
 	poolHash.Write([]byte("testPool"))
 	poolID := poolHash.Sum(nil)
-	tx.Create(&poolModule.Pool{ID: poolID, SenderAddress: &types.Address{}, FilterAddress: &types.Address{}})
+	tx.Create(&poolModule.Pool{ID: poolID, SenderAddresses: types.NetworkAddressMap{}, FilterAddresses: types.NetworkAddressMap{}})
 
 	handler := poolModule.PoolDecorator(tx, func(w http.ResponseWriter, r *http.Request, pool types.Pool) {
 		if !bytes.Equal(pool.(*poolModule.Pool).ID, []byte("")) {
@@ -118,8 +118,8 @@ func TestPoolFilter(t *testing.T) {
 	poolHash2 := sha3.NewKeccak256()
 	poolHash2.Write([]byte("testPool2"))
 	poolID2 := poolHash2.Sum(nil)
-	tx.Create(&poolModule.Pool{ID: poolID, SenderAddress: &types.Address{}, FilterAddress: &types.Address{}, SearchTerms: "makerAssetData=0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba"})
-	tx.Create(&poolModule.Pool{ID: poolID2, SenderAddress: &types.Address{}, FilterAddress: &types.Address{}, SearchTerms: "takerAssetData=0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba"})
+	tx.Create(&poolModule.Pool{ID: poolID, SenderAddresses: types.NetworkAddressMap{}, FilterAddresses: types.NetworkAddressMap{}, SearchTerms: "makerAssetData=0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba"})
+	tx.Create(&poolModule.Pool{ID: poolID2, SenderAddresses: types.NetworkAddressMap{}, FilterAddresses: types.NetworkAddressMap{}, SearchTerms: "takerAssetData=0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba"})
 
 	var poolCount int
 	tx.Model(&poolModule.Pool{}).Count(&poolCount)
