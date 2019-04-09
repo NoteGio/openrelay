@@ -166,7 +166,7 @@ test-metadata: $(BASE)
 test-pool: $(BASE)
 	cd "$(BASE)/pool" &&  POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
 test-ws: $(BASE)
-	cd "$(BASE)/ws" &&  POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
+	cd "$(BASE)/channels/ws" &&  POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
 test-subscriptions: $(BASE)
 	cd "$(BASE)/subscriptions" &&  POSTGRES_HOST=localhost POSTGRES_USER=postgres POSTGRES_PASSWORD=secret go test
 
