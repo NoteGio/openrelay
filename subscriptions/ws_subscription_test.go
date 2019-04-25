@@ -71,7 +71,7 @@ func TestWebsocketSubscriptionConsumer(t *testing.T) {
 		t.Fatalf("%v - (%v) %v", err.Error(), statusCode, content)
 	}
 
-	c.WriteMessage(websocket.BinaryMessage, []byte(`{
+	c.WriteMessage(websocket.TextMessage, []byte(`{
 	    "type": "subscribe",
 	    "channel": "orders",
 	    "requestId": "123e4567-e89b-12d3-a456-426655440000"
@@ -88,7 +88,7 @@ func TestWebsocketSubscriptionConsumer(t *testing.T) {
 	if err != nil {
 		t.Errorf(err.Error())
 	}
-	if mtype != websocket.BinaryMessage {
+	if mtype != websocket.TextMessage {
 		t.Errorf("Unexpected message type %v", mtype)
 	}
 

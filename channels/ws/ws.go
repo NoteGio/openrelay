@@ -122,7 +122,7 @@ func GetChannels(port uint, db *gorm.DB, cleanup func(channels.Publisher)) (<-ch
 		for {
 			select {
 			case payload := <- wsChannel.payloads:
-				if err := conn.WriteMessage(websocket.BinaryMessage, payload); err != nil {
+				if err := conn.WriteMessage(websocket.TextMessage, payload); err != nil {
 					log.Println(err)
 					return
 				}
