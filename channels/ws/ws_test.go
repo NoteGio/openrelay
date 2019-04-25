@@ -40,14 +40,14 @@ func TestGetChannels(t *testing.T) {
 		resp.Body.Read(content[:])
 		t.Fatalf("%v - (%v) %v", err.Error(), resp.StatusCode, content)
 	}
-	if err := c.WriteMessage(websocket.BinaryMessage, []byte("ping")); err != nil {
+	if err := c.WriteMessage(websocket.TextMessage, []byte("ping")); err != nil {
 		t.Errorf(err.Error())
 	}
 	mtype, p, err := c.ReadMessage()
 	if err != nil {
 		t.Errorf(err.Error())
 	}
-	if mtype != websocket.BinaryMessage {
+	if mtype != websocket.TextMessage {
 		t.Errorf("Unexpected message type %v", mtype)
 	}
 	if string(p) != "ping" {
