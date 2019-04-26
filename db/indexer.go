@@ -10,6 +10,7 @@ import (
 	"math/big"
 	"strings"
 	"bytes"
+	"log"
 )
 
 type FillRecord struct {
@@ -49,8 +50,10 @@ func (indexer *Indexer) RecordFill(fillRecord *FillRecord) error {
 	dbOrder.Initialize()
 	if indexer.db.Model(&Order{}).Where("order_hash = ?", hashBytes).First(dbOrder).RecordNotFound() {
 		// Not our order
+		log.Printf("Order %#x not in db", hashBytes[:])
 		return nil
 	}
+	log.Printf("Recording fill for %#x", hashBytes[:])
 	totalFilled := dbOrder.TakerAssetAmountFilled.Big()
 	copy(dbOrder.TakerAssetAmountFilled[:], abi.U256(totalFilled.Add(totalFilled, amountFilled)))
 	dbOrder.Cancelled = dbOrder.Cancelled || fillRecord.Cancel
