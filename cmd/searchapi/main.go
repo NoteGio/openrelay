@@ -90,7 +90,7 @@ func main() {
 
 	mux := &regexpHandler{[]*route{}}
 	mux.HandleFunc(regexp.MustCompile("^(/[^/]+)?/v2/orders$"), searchHandler)
-	mux.HandleFunc(regexp.MustCompile("^(/[^/]+)?/v2/order/$"), orderHandler)
+	mux.HandleFunc(regexp.MustCompile("^(/[^/]+)?/v2/order/"), orderHandler)
 	mux.HandleFunc(regexp.MustCompile("^(/[^/]+)?/v2/asset_pairs$"), pairHandler)
 	mux.HandleFunc(regexp.MustCompile("^(/[^/]+)?/v2/orderbook$"), orderBookHandler)
 	mux.HandleFunc(regexp.MustCompile("^(/[^/]+)?/v2/fee_recipients$"), feeRecipientsHandler)
