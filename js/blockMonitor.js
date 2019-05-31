@@ -13,6 +13,7 @@ module.exports = function(done){
                 } else {
                     if (!result) {
                         reject("Result is empty");
+                        return;
                     }
                     var blockObj = { "hash": result['hash'], "number": result['number'], "bloom": result['logsBloom'] };
                     resolve(blockObj);
