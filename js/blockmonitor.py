@@ -20,11 +20,14 @@ def main(rpc_endpoint, redis_client, notification_channel, sleep):
         ).json()["result"], 16)
 
     while True:
-        next_block = requests.post(
-            rpc_endpoint,
-            json={"jsonrpc": "2.0", "method": "eth_getBlockByNumber",
-                  "params": [hex(block_number), False], "id": 64}
-        ).json()["result"]
+        try:
+            next_block = requests.post(
+                rpc_endpoint,
+                json={"jsonrpc": "2.0", "method": "eth_getBlockByNumber",
+                      "params": [hex(block_number), False], "id": 64}
+            ).json()["result"]
+        except KeyError:
+            continue
         if next_block is None:
             time.sleep(5)
             continue
