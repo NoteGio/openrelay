@@ -43,6 +43,7 @@ module.exports = function(redisClient, notificationChannel, filterCreator, web3,
             blockNumber = parseInt(blockNumber) + 1;
             resuming = true;
         }
+        console.log(`Resuming from ${blockNumber}`)
         var watcher = filterCreator({fromBlock: blockNumber, toBlock: "latest"});
         lastBlockNumber = blockNumber;
         watcher.watch((err, data) => {
@@ -75,7 +76,9 @@ module.exports = function(redisClient, notificationChannel, filterCreator, web3,
             } else {
                 web3.eth.getBlockNumber((err, currentBlock) => {
                     var payload = transform(data).then((blockData) => {
-                        channel.Publish(JSON.stringify(blockData));
+                        var message = JSON.stringify(blockData);
+                        channel.Publish(message);
+                        console.log(`Block ${currentBlock} - published '${message}'`);
                         if(lastBlockNumber != currentBlock && currentBlock != null) {
                             redisClient.set(blockKey, currentBlock);
                             lastBlockNumber = currentBlock;
@@ -83,8 +86,6 @@ module.exports = function(redisClient, notificationChannel, filterCreator, web3,
                     }).catch((error) => {
                         console.log("Failed to get block data " + error);
                     });
-                    console.log(`Block ${currentBlock} - published '${payload}'`);
-
                 });
             }
 
