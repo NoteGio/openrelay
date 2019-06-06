@@ -21,13 +21,19 @@ def main(rpc_endpoint, redis_client, notification_channel, sleep):
 
     while True:
         try:
-            next_block = requests.post(
+            res = requests.post(
                 rpc_endpoint,
                 json={"jsonrpc": "2.0", "method": "eth_getBlockByNumber",
                       "params": [hex(block_number), False], "id": 64}
-            ).json()["result"]
+            )
+            next_block = res.json()["result"]
         except KeyError:
             continue
+        except json.decoder.JSONDecodeError:
+            logger.exception("JSON Decode error for: '%s'", res.content)
+            time.sleep(1)
+            continue
+
         if next_block is None:
             time.sleep(5)
             continue
@@ -36,15 +42,21 @@ def main(rpc_endpoint, redis_client, notification_channel, sleep):
             raise ValueError(
                 "Received block does not match request block number"
             )
+        if next_block['logsBloom'].strip("0") == "x":
+            logger.info("Skipping block %s (empty)", block_number)
+            block_number += 1
+            time.sleep(0.1)
+            continue
         message = json.dumps({
             "hash": next_block['hash'],
             "number": new_block_number,
             "bloom": next_block['logsBloom']
         })
-        redis_client.lpush("notification_channel", message)
+        redis_client.lpush(notification_channel, message)
         logger.info("Publishing block %s: %s", block_number, message)
         block_number += 1
         redis_client.set(notification_channel + "::blocknumber", block_number)
+        time.sleep(0.1)
 
 if __name__ == "__main__":
     import argparse
