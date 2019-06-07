@@ -11,6 +11,10 @@ module.exports = function(done){
                 if(error){
                     reject(error);
                 } else {
+                    if (!result) {
+                        reject("Result is empty");
+                        return;
+                    }
                     var blockObj = { "hash": result['hash'], "number": result['number'], "bloom": result['logsBloom'] };
                     resolve(blockObj);
                 }

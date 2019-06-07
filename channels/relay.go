@@ -61,7 +61,7 @@ func (consumer *RelayConsumer) Consume(delivery Delivery) {
 		defer consumer.relay.s.Release()
 		if consumer.relay.filter.Filter(delivery) {
 			for _, publisher := range consumer.relay.publishers {
-				publisher.Publish(delivery.Payload())
+				go publisher.Publish(delivery.Payload())
 			}
 		}
 		delivery.Ack()
