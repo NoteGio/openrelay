@@ -87,7 +87,7 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 				return
 			}
 		} else if contentType == "application/json" {
-			var data [1024]byte
+			var data [4096]byte
 			jsonLength, err := r.Body.Read(data[:])
 			if err != nil && err != io.EOF {
 				log.Printf(err.Error())
