@@ -39,7 +39,7 @@ type Order struct {
 }
 
 func (order *Order) TableName() string {
-	return "orderv2"
+	return "orderv3"
 }
 
 func (order *Order) Populate() {

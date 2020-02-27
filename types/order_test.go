@@ -1,11 +1,14 @@
 package types_test
 
 import (
+	"crypto/ecdsa"
+	"crypto/rand"
 	"database/sql"
 	"database/sql/driver"
 	"encoding/hex"
 	"encoding/json"
 	"github.com/notegio/openrelay/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"io/ioutil"
 	"reflect"
 	"testing"
@@ -14,7 +17,7 @@ import (
 )
 
 func checkOrder(order *types.Order, t *testing.T) {
-	if hex.EncodeToString(order.MakerAssetData[:]) != "0000000000000000000000000000000000000000" {
+	if hex.EncodeToString(order.MakerAssetData[:]) != "" {
 		t.Errorf("Unexpected MakerAssetData: %#x", order.MakerAssetData[:])
 	}
 	if hex.EncodeToString(order.Maker[:]) != "0000000000000000000000000000000000000000" {
@@ -26,7 +29,7 @@ func checkOrder(order *types.Order, t *testing.T) {
 	if hex.EncodeToString(order.FeeRecipient[:]) != "0000000000000000000000000000000000000000" {
 		t.Errorf("Unexpected FeeRecipient: %#x", order.FeeRecipient[:])
 	}
-	if hex.EncodeToString(order.TakerAssetData[:]) != "0000000000000000000000000000000000000000" {
+	if hex.EncodeToString(order.TakerAssetData[:]) != "" {
 		t.Errorf("Unexpected TakerAssetData: %#x", order.TakerAssetData[:])
 	}
 	if hex.EncodeToString(order.MakerAssetAmount[:]) != "0000000000000000000000000000000000000000000000000000000000000000" {
@@ -50,8 +53,22 @@ func checkOrder(order *types.Order, t *testing.T) {
 	if hex.EncodeToString(order.Salt[:]) != "0000000000000000000000000000000000000000000000000000000000000000" {
 		t.Errorf("Unexpected Salt: %#x", order.Salt[:])
 	}
-	if hex.EncodeToString(order.Hash()) != "434c6b41e2fb6dfcfe1b45c4492fb03700798e9c1afc6f801ba6203f948c1fa7" {
+	if hex.EncodeToString(order.Hash()) != "9483dbab254a233e314df609817fd564b60cd79a5414b75e8309ff05ef3cceb8" {
 		t.Errorf("Hashes not equal %x", order.Hash())
+	}
+}
+
+func TestPublicOrderHash(t *testing.T) {
+	orderData := []byte(`{"chainId":1,"exchangeAddress":"0x61935cbdd02287b511119ddb11aeb42f1593b7ef","senderAddress":"0x0000000000000000000000000000000000000000","makerAddress":"0xa5a3a577aa8ac8f09a2bf6f9239ee215131204f0","takerAddress":"0x0000000000000000000000000000000000000000","makerAssetData":"0xf47261b0000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2","takerAssetData":"0xf47261b0000000000000000000000000e41d2489571d322189246dafa5ebde1f4699f498","feeRecipientAddress":"0xa258b39954cef5cb142fd567a46cddb31a670124","makerAssetAmount":"1055000000000000","takerAssetAmount":"1000000000000000000","makerFee":"0","takerFee":"0","makerFeeAssetData":"0x","takerFeeAssetData":"0x","expirationTimeSeconds":"1585170491","signature":"0x1ba9664367f2307a57af0f1e1e038fa0b57ec38bcbd17216f00f43afe16a5b54955bfca3252944a42bdf09b1b6bd30bbc0831aad0ecd7b69e9a1ab8fcbd38b1f5b02","salt":"1582665013297"}`)
+	newOrder := &types.Order{}
+	if err := json.Unmarshal(orderData, &newOrder); err != nil {
+		t.Fatalf("unmarshal failed")
+	}
+	if orderHash := hex.EncodeToString(newOrder.Hash()); orderHash != "b716fe0d7292bba077cd5d30e7320a498f6eb544f9f0766805102c76d0aa8a8f" {
+		t.Errorf("Hash mismatch: %v", orderHash)
+	}
+	if !newOrder.Signature.Verify(newOrder.Maker, newOrder.Hash()) {
+		t.Errorf("Signature validation failed")
 	}
 }
 
@@ -72,6 +89,7 @@ func TestOrderToFromBytes(t *testing.T) {
 	exchangeAddressBytes, err := types.HexStringToBytes("1dc4c1cefef38a777b15aa20260a54e584b16c48")
 	if err != nil { t.Errorf(err.Error()) }
 	copy(order.ExchangeAddress[:], exchangeAddressBytes)
+	// log.Printf("Order: %#x", order.Bytes())
 	order2, err := types.OrderFromBytes(order.Bytes())
 	if err != nil {
 		t.Errorf(err.Error())
@@ -83,7 +101,7 @@ func TestOrderToFromBytes(t *testing.T) {
 }
 
 func TestOrderFromRawbytes(t *testing.T) {
-	orderBytes, err := hex.DecodeString("f9020a94627306090abab3a6e1400e9345bc60c78a8bef57940000000000000000000000000000000000000000941dad4783cf3fe3085c1426157ab175a6119a04ba9405d090b51c40b020eab3bfcb6a2dff130df22e9ca4f47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04baa4f47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c9400000000000000000000000000000000000000009490fe2af704b34e0224bf2299c838e04d4dcf1364940000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000002b5e3af16b1880000a00000000000000000000000000000000000000000000000000de0b6b3a7640000a00000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000159938ac4a0000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222bb8421ba0ebab93c67e7cdf45e50c83b3a47681918c3f47f220935eb92b7338788024c82a0329105e2259b128ec811b69eb9eee253027089d544c37a1cc33b433ab9b8e03a000000000000000000000000000000000000000000000000000000000000000008080")
+	orderBytes, err := hex.DecodeString("f9022d94d60c1c164ec575f6572f99302331e061eff3c7b7940000000000000000000000000000000000000000941dad4783cf3fe3085c1426157ab175a6119a04ba9405d090b51c40b020eab3bfcb6a2dff130df22e9ca4f47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04baa4f47261b000000000000000000000000005d090b51c40b020eab3bfcb6a2dff130df22e9c9400000000000000000000000000000000000000009490fe2af704b34e0224bf2299c838e04d4dcf1364940000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000002b5e3af16b1880000a00000000000000000000000000000000000000000000000000de0b6b3a7640000a00000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000008080a00000000000000000000000000000000000000000000000000000000159938ac4a0000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222bb8421c5aa36ecbdcd5ee3f8557cfe4dd8bd34a1f4e11b4a6731f215d1e184eaa058e32210ba77921ce26bb03da4af4b81cc1e7a91b39362e8f7d5e64af7dccfa79eb1f03a000000000000000000000000000000000000000000000000000000000000000008080a00000000000000000000000000000000000000000000000000000000000000001")
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -140,6 +158,7 @@ func TestScannerInterfaceUint256(t *testing.T) {
 		t.Errorf("Failed to load MakerAssetAmount: %v", hex.EncodeToString(order.MakerAssetAmount[:]))
 	}
 }
+
 func TestJsonMarshal(t *testing.T) {
 	order := &types.Order{}
 	order.Initialize()
@@ -154,7 +173,7 @@ func TestJsonMarshal(t *testing.T) {
 		t.Errorf("Got error marshalling: %v", err.Error())
 		return
 	}
-	if string(data) != "{\"makerAddress\":\"0x0000000000000000000000000000000000000000\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0x0000000000000000000000000000000000000000\",\"takerAssetData\":\"0x0000000000000000000000000000000000000000\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x1dc4c1cefef38a777b15aa20260a54e584b16c48\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"0\",\"takerAssetAmount\":\"0\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"0\",\"salt\":\"0\",\"signature\":\"0x006bcc503876436ae6ebddecc16f95fdc74945ba85aa7debabdfa4a708a80b0272520d4f331a50396583db9a06bce884abc82219bfe180ef0093b0534786c996c203\"}" {
+	if string(data) != `{"chainId":0,"makerAddress":"0x0000000000000000000000000000000000000000","takerAddress":"0x0000000000000000000000000000000000000000","makerAssetData":"","takerAssetData":"","makerFeeAssetData":"","takerFeeAssetData":"","feeRecipientAddress":"0x0000000000000000000000000000000000000000","exchangeAddress":"0x1dc4c1cefef38a777b15aa20260a54e584b16c48","senderAddress":"0x0000000000000000000000000000000000000000","makerAssetAmount":"0","takerAssetAmount":"0","makerFee":"0","takerFee":"0","expirationTimeSeconds":"0","salt":"0","signature":"0x006bcc503876436ae6ebddecc16f95fdc74945ba85aa7debabdfa4a708a80b0272520d4f331a50396583db9a06bce884abc82219bfe180ef0093b0534786c996c203"}` {
 		t.Errorf("Got unexpected JSON value: %v", string(data))
 	}
 }
@@ -172,9 +191,29 @@ func TestJsonMarshalSlice(t *testing.T) {
 		t.Errorf("Got error marshalling: %v", err.Error())
 		return
 	}
-	if string(data) != "[{\"makerAddress\":\"0x0000000000000000000000000000000000000000\",\"takerAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetData\":\"0x0000000000000000000000000000000000000000\",\"takerAssetData\":\"0x0000000000000000000000000000000000000000\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"exchangeAddress\":\"0x1dc4c1cefef38a777b15aa20260a54e584b16c48\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"makerAssetAmount\":\"0\",\"takerAssetAmount\":\"0\",\"makerFee\":\"0\",\"takerFee\":\"0\",\"expirationTimeSeconds\":\"0\",\"salt\":\"0\",\"signature\":\"0x006bcc503876436ae6ebddecc16f95fdc74945ba85aa7debabdfa4a708a80b0272520d4f331a50396583db9a06bce884abc82219bfe180ef0093b0534786c996c203\"}]" {
+	if string(data) != `[{"chainId":0,"makerAddress":"0x0000000000000000000000000000000000000000","takerAddress":"0x0000000000000000000000000000000000000000","makerAssetData":"","takerAssetData":"","makerFeeAssetData":"","takerFeeAssetData":"","feeRecipientAddress":"0x0000000000000000000000000000000000000000","exchangeAddress":"0x1dc4c1cefef38a777b15aa20260a54e584b16c48","senderAddress":"0x0000000000000000000000000000000000000000","makerAssetAmount":"0","takerAssetAmount":"0","makerFee":"0","takerFee":"0","expirationTimeSeconds":"0","salt":"0","signature":"0x006bcc503876436ae6ebddecc16f95fdc74945ba85aa7debabdfa4a708a80b0272520d4f331a50396583db9a06bce884abc82219bfe180ef0093b0534786c996c203"}]` {
 		t.Errorf("Got unexpected JSON value: %v", string(data))
 	}
+}
+
+func TestSignOrder(t *testing.T) {
+	newOrder := types.Order{}
+	newOrder.Initialize()
+	exchangeAddressBytes, err := types.HexStringToBytes("90fe2af704b34e0224bf2299c838e04d4dcf1364")
+	if err != nil { t.Errorf(err.Error()) }
+	copy(newOrder.ExchangeAddress[:], exchangeAddressBytes)
+	// if orderData, err := ioutil.ReadFile("../formatted_transaction.json"); err == nil {
+	// 	if err := json.Unmarshal(orderData, &newOrder); err != nil {
+	// 		t.Fatalf(err.Error())
+	// 	}
+	// }
+	key, _ := ecdsa.GenerateKey(crypto.S256(), rand.Reader)
+	newOrder.Sign(key, types.SigTypeEIP712)
+	_, err = json.Marshal(&newOrder)
+	if err != nil { t.Errorf(err.Error()) }
+	// log.Printf("Signed order: %v", string(data))
+	// log.Printf("Hash: %#x", newOrder.Hash())
+	// log.Printf("Bytes: %#x", newOrder.Bytes())
 }
 
 func TestJsonUnmarshal(t *testing.T) {
@@ -190,7 +229,7 @@ func TestJsonUnmarshal(t *testing.T) {
 	if address := newOrder.MakerAssetData.Address(); hex.EncodeToString(address[:]) != "1dad4783cf3fe3085c1426157ab175a6119a04ba" {
 		t.Errorf("Unexpected MakerAssetData.Address: %#x", address)
 	}
-	if hex.EncodeToString(newOrder.Maker[:]) != "627306090abab3a6e1400e9345bc60c78a8bef57" {
+	if hex.EncodeToString(newOrder.Maker[:]) != "d60c1c164ec575f6572f99302331e061eff3c7b7" {
 		t.Errorf("Unexpected Maker: %#x", newOrder.Maker[:])
 	}
 	if hex.EncodeToString(newOrder.Taker[:]) != "0000000000000000000000000000000000000000" {
@@ -226,7 +265,7 @@ func TestJsonUnmarshal(t *testing.T) {
 	if hex.EncodeToString(newOrder.Salt[:]) != "000643508ff7019bfb134363a86e98746f6c33262e68daf992b8df064217222b" {
 		t.Errorf("Unexpected Salt: %#x", newOrder.Salt[:])
 	}
-	if hex.EncodeToString(newOrder.Hash()) != "0fa71adbd21643cbb4e87ab8e411655775b626b587e50d7b5303cf1a532e3be7" {
+	if hex.EncodeToString(newOrder.Hash()) != "e60b8492e77f1396b8baa4f8e4011e86e351a3510eef6d72f15f932ad5ab1d52" {
 		t.Errorf("Hashes not equal %x", newOrder.Hash())
 	}
 	if !newOrder.Signature.Verify(newOrder.Maker, newOrder.Hash()) {
