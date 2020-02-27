@@ -2,7 +2,6 @@ package ingest
 
 import (
 	"bytes"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	accountsModule "github.com/notegio/openrelay/accounts"
@@ -115,6 +114,8 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 			}, 415)
 			return
 		}
+		// orderJson, _ := json.Marshal(&order)
+		// log.Println(string(orderJson))
 		networkIDChan := exchangeLookup.ExchangeIsKnown(order.ExchangeAddress)
 		var signedMaker <-chan bool
 		if(enforceTerms) {
@@ -351,7 +352,7 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 		fmt.Fprintf(w, "")
 		orderBytes := order.Bytes()
 		if err := publisher.Publish(string(orderBytes[:])); !err {
-			log.Println("Failed to publish '%v'", hex.EncodeToString(order.Hash()))
+			log.Printf("Failed to publish '%#x'", order.Hash())
 		}
 	}
 }
