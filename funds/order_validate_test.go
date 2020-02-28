@@ -62,7 +62,7 @@ func createMockBalanceChecker(tokenAddressHex, userAddressHex string, tokenAmoun
 }
 
 func TestOrderValidate(t *testing.T) {
-	balanceChecker := createMockBalanceChecker("f47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba", "627306090abab3a6e1400e9345bc60c78a8bef57", "0", "0", t)
+	balanceChecker := createMockBalanceChecker("f47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba", "d60c1c164ec575f6572f99302331e061eff3c7b7", "0", "0", t)
 	feeTokenAsset, _ := hexToAssetData("f47261b0000000000000000000000000e41d2489571d322189246dafa5ebde1f4699f498")
 	tokenProxyAddress, _ := hexToAddress("d4fd252d7d2c9479a8d616f510eac6243b5dddf9")
 	validator := funds.NewOrderValidator(balanceChecker, config.StaticFeeToken(feeTokenAsset), config.StaticTokenProxy(tokenProxyAddress))
@@ -77,7 +77,7 @@ func TestOrderValidate(t *testing.T) {
 }
 
 func TestOrderValidateSufficient(t *testing.T) {
-	balanceChecker := createMockBalanceChecker("f47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba", "627306090abab3a6e1400e9345bc60c78a8bef57", "50000000000000000000", "0", t)
+	balanceChecker := createMockBalanceChecker("f47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba", "d60c1c164ec575f6572f99302331e061eff3c7b7", "50000000000000000000", "0", t)
 	feeTokenAsset, _ := hexToAssetData("f47261b0000000000000000000000000e41d2489571d322189246dafa5ebde1f4699f498")
 	tokenProxyAddress, _ := hexToAddress("d4fd252d7d2c9479a8d616f510eac6243b5dddf9")
 	validator := funds.NewOrderValidator(balanceChecker, config.StaticFeeToken(feeTokenAsset), config.StaticTokenProxy(tokenProxyAddress))
@@ -94,7 +94,7 @@ func TestOrderValidateSufficient(t *testing.T) {
 
 func TestOrderValidateSpent(t *testing.T) {
 	// 25000000000000000000 is half of the makerAssetAmount for the sample order
-	balanceChecker := createMockBalanceChecker("f47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba", "627306090abab3a6e1400e9345bc60c78a8bef57", "25000000000000000000", "0", t)
+	balanceChecker := createMockBalanceChecker("f47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba", "d60c1c164ec575f6572f99302331e061eff3c7b7", "25000000000000000000", "0", t)
 	feeTokenAsset, _ := hexToAssetData("f47261b0000000000000000000000000e41d2489571d322189246dafa5ebde1f4699f498")
 	tokenProxyAddress, _ := hexToAddress("d4fd252d7d2c9479a8d616f510eac6243b5dddf9")
 	validator := funds.NewOrderValidator(balanceChecker, config.StaticFeeToken(feeTokenAsset), config.StaticTokenProxy(tokenProxyAddress))

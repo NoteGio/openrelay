@@ -75,11 +75,7 @@ func getRemainingAmount(numerator, denominator, target []byte) []byte {
 // fill the order and pay makerFees. This assumes that TakerAmountFilled and
 // TakerAmountCancelled reflect
 func (funds *orderValidator) ValidateOrder(order *types.Order) (bool, error) {
-	feeToken, err := funds.feeToken.Get(order)
-	if err != nil {
-		log.Printf("Error getting fee token '%v'", err.Error())
-		return false, err
-	}
+	feeToken := order.MakerFeeAssetData //funds.feeToken.Get(order)
 	makerProxyAddress, err := funds.tokenProxy.Get(order)
 	if err != nil {
 		log.Printf("Error getting token proxy address '%v'", err.Error())
