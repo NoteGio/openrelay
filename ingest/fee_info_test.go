@@ -33,7 +33,7 @@ func mockPoolDecorator(fn func(http.ResponseWriter, *http.Request, *poolModule.P
 	baseFee := &mockBaseFee{big.NewInt(0)}
 	return func(w http.ResponseWriter, r *http.Request) {
 		sender, _:= common.HexToAddress("0x0000000000000000000000000000000000000000")
-		pool := &poolModule.Pool{SearchTerms: "", ID: []byte("default"), SenderAddresses: types.NetworkAddressMap{1: sender}}
+		pool := &poolModule.Pool{SearchTerms: "", ID: []byte("default"), SenderAddresses: types.NetworkAddressMap{1: sender}, FeeTokenAddress: types.NetworkAddressMap{1: sender}}
 		pool.SetBaseFee(baseFee)
 		fn(w, r, pool)
 	}

@@ -27,7 +27,7 @@ func mockPoolDecoratorFee(fee *big.Int, fn func(http.ResponseWriter, *http.Reque
 	baseFee := &mockBaseFee{fee}
 	return func(w http.ResponseWriter, r *http.Request) {
 		sender, _:= common.HexToAddress("0x0000000000000000000000000000000000000000")
-		pool := &poolModule.Pool{SearchTerms: "", ID: []byte("default"), SenderAddresses: types.NetworkAddressMap{1: sender}}
+		pool := &poolModule.Pool{SearchTerms: "", ID: []byte("default"), SenderAddresses: types.NetworkAddressMap{1: sender}, FeeTokenAddress: types.NetworkAddressMap{1: sender}}
 		pool.SetBaseFee(baseFee)
 		fn(w, r, pool)
 	}
@@ -298,6 +298,7 @@ func TestBlacklisted(t *testing.T) {
 	handler(recorder, request)
 	if recorder.Code != 202 {
 		t.Errorf("Expected code 202, got '%v'", recorder.Code)
+		t.Errorf("Body: '%v'", recorder.Body.String())
 	}
 	if len(publisher.messages) != 0 {
 		t.Errorf("Unexpected message count '%v'", len(publisher.messages))

@@ -305,6 +305,44 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 			}, 402)
 			return
 		}
+
+		feeAssetData, err := pool.FeeAssetData(order.ChainID.Uint());
+		if err != nil {
+			log.Printf(err.Error())
+			returnError(w, IngestError{
+				100,
+				"Validation Failed",
+				[]ValidationError{ValidationError{
+					"takerFeeAssetData",
+					1002,
+					fmt.Sprintf("No fee asset data for pool on chain %v", order.ChainID),
+				}},
+			}, 500)
+		}
+
+		if order.TakerFee.Uint() > 0 && !bytes.Equal(order.TakerFeeAssetData[:], feeAssetData[:]) {
+			returnError(w, IngestError{
+				100,
+				"Validation Failed",
+				[]ValidationError{ValidationError{
+					"takerFeeAssetData",
+					1002,
+					fmt.Sprintf("Expected takerFeeAssetData: %#x", feeAssetData[:]),
+				}},
+			}, 402)
+		}
+		if order.MakerFee.Uint() > 0 && !bytes.Equal(order.MakerFeeAssetData[:], feeAssetData[:]) {
+			returnError(w, IngestError{
+				100,
+				"Validation Failed",
+				[]ValidationError{ValidationError{
+					"makerFeeAssetData",
+					1002,
+					fmt.Sprintf("Expected makerFeeAssetData: %#x", feeAssetData[:]),
+				}},
+			}, 402)
+		}
+
 		poolFee, err := pool.Fee()
 		if err != nil {
 			returnError(w, IngestError{

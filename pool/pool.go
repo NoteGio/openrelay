@@ -3,6 +3,7 @@ package pool
 import (
 	"bytes"
 	"net/http"
+	"github.com/notegio/openrelay/common"
 	"github.com/notegio/openrelay/config"
 	dbModule "github.com/notegio/openrelay/db"
 	"github.com/notegio/openrelay/types"
@@ -16,6 +17,7 @@ import (
 	"regexp"
 	"strings"
 	"fmt"
+	"os"
 )
 
 var feeBaseUnits = big.NewInt(1000000000000000000)
@@ -29,6 +31,7 @@ type Pool struct {
 	Limit           uint
 	SenderAddresses types.NetworkAddressMap
 	FilterAddresses types.NetworkAddressMap
+	FeeTokenAddress types.NetworkAddressMap
 	conn            bind.ContractCaller
 	baseFee         config.BaseFee
 }
@@ -80,6 +83,17 @@ func (pool Pool) Count(db *gorm.DB) (<-chan uint) {
 		result <- value
 	}()
 	return result
+}
+
+func (pool *Pool) FeeAssetData(chainid uint) (types.AssetData, error) {
+	if address, ok := pool.FeeTokenAddress[chainid]; ok {
+		return common.ToERC20AssetData(address), nil
+	}
+	// TODO: Set DEFAULT_FEE_ASSETDATA
+	if assetHex := os.Getenv("DEFAULT_FEE_ASSETDATA"); len(assetHex) > 0 {
+		return common.HexToAssetData(assetHex)
+	}
+	return nil, fmt.Errorf("ChainID unknown to pool: %v", pool.FeeTokenAddress)
 }
 
 func (pool Pool) Fee() (*big.Int, error) {

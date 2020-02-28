@@ -73,6 +73,10 @@ func (data *Uint256) Big() (*big.Int) {
 	return new(big.Int).SetBytes(data[:])
 }
 
+func (data *Uint256) Uint() (uint) {
+	return uint(new(big.Int).SetBytes(data[:]).Uint64())
+}
+
 func (data *Uint256) UnmarshalJSON(jsonData []byte) error {
 	numberBytes := bytes.Trim(jsonData, "\"")
 	numberBig, ok := new(big.Int).SetString(string(numberBytes), 10)
