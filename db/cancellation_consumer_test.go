@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"testing"
 	"time"
+	"fmt"
 )
 
 func TestCancellationConsumer(t *testing.T) {
@@ -33,7 +34,7 @@ func TestCancellationConsumer(t *testing.T) {
 	if err := indexer.Index(order); err != nil {
 		t.Errorf(err.Error())
 	}
-	fillString := "{\"Maker\": \"0x627306090abab3a6e1400e9345bc60c78a8bef57\", \"Sender\": \"0x0000000000000000000000000000000000000000\", \"Epoch\": \"11065671350908846865864045738088581419204014210814002044381812654087807532\"}"
+	fillString := fmt.Sprintf("{\"Maker\": \"%#x\", \"Sender\": \"0x0000000000000000000000000000000000000000\", \"Epoch\": \"11065671350908846865864045738088581419204014210814002044381812654087807532\"}", order.Maker[:])
 	publisher, channel := channels.MockChannel()
 	dsPublisher, ch := channels.MockPublisher()
 	consumer := dbModule.NewRecordCancellationConsumer(tx, 1, dsPublisher)
