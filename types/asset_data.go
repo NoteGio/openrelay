@@ -46,7 +46,7 @@ func (data AssetData) TokenID() (*Uint256) {
 
 func (data AssetData) MarshalJSON() ([]byte, error) {
 	if len(data) == 0 {
-		return []byte("0x"), nil
+		return []byte(`"0x"`), nil
 	}
 	return []byte(fmt.Sprintf("\"%#x\"", data[:])), nil
 }
