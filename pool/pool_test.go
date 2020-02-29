@@ -4,7 +4,7 @@ import (
 	dbModule "github.com/notegio/openrelay/db"
 	poolModule "github.com/notegio/openrelay/pool"
 	"github.com/notegio/openrelay/types"
-	"github.com/ethereum/go-ethereum/crypto/sha3"
+	"golang.org/x/crypto/sha3"
 	"github.com/jinzhu/gorm"
 	"os"
 	"fmt"
@@ -56,7 +56,7 @@ func TestDecorator(t *testing.T) {
 	if err := tx.AutoMigrate(&poolModule.Pool{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	poolHash := sha3.NewKeccak256()
+	poolHash := sha3.NewLegacyKeccak256()
 	poolHash.Write([]byte("testPool"))
 	poolID := poolHash.Sum(nil)
 	tx.Create(&poolModule.Pool{ID: poolID, SenderAddresses: types.NetworkAddressMap{}, FilterAddresses: types.NetworkAddressMap{}})
@@ -112,10 +112,10 @@ func TestPoolFilter(t *testing.T) {
 	order := sampleOrder(t)
 	order.Save(tx, dbModule.StatusOpen, nil)
 
-	poolHash := sha3.NewKeccak256()
+	poolHash := sha3.NewLegacyKeccak256()
 	poolHash.Write([]byte("testPool"))
 	poolID := poolHash.Sum(nil)
-	poolHash2 := sha3.NewKeccak256()
+	poolHash2 := sha3.NewLegacyKeccak256()
 	poolHash2.Write([]byte("testPool2"))
 	poolID2 := poolHash2.Sum(nil)
 	tx.Create(&poolModule.Pool{ID: poolID, SenderAddresses: types.NetworkAddressMap{}, FilterAddresses: types.NetworkAddressMap{}, SearchTerms: "makerAssetData=0xf47261b00000000000000000000000001dad4783cf3fe3085c1426157ab175a6119a04ba"})

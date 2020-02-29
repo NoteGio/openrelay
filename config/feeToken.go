@@ -39,7 +39,7 @@ func (feeToken *rpcFeeToken) Get(order *types.Order) (types.AssetData, error) {
 	if feeTokenAssetData, ok := feeToken.exchangeTokenMap[*order.ExchangeAddress]; ok {
 		return feeTokenAssetData, nil
 	}
-	exchange, err := exchangecontract.NewExchange(orCommon.ToGethAddress(order.ExchangeAddress), feeToken.conn)
+	exchange, err := exchangecontract.NewExchangecontract(orCommon.ToGethAddress(order.ExchangeAddress), feeToken.conn)
 	if err != nil {
 		log.Printf("Error intializing exchange contract '%v': '%v'", hex.EncodeToString(order.ExchangeAddress[:]), err.Error())
 		return feeTokenAssetData, err

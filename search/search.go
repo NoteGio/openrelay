@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/jinzhu/gorm"
-	"github.com/ethereum/go-ethereum/crypto/sha3"
+	"golang.org/x/crypto/sha3"
 	"github.com/notegio/openrelay/blockhash"
 	"github.com/notegio/openrelay/common"
 	dbModule "github.com/notegio/openrelay/db"
@@ -127,7 +127,7 @@ func applyBytesFilter(query *gorm.DB, queryField, dbField string, queryObject ur
 
 func applyHashFilter(query *gorm.DB, queryField, dbField string, queryObject urlModule.Values) (*gorm.DB, error) {
 	if preimage := queryObject.Get(queryField); preimage != "" {
-		dataSha := sha3.NewKeccak256()
+		dataSha := sha3.NewLegacyKeccak256()
 		dataSha.Write([]byte(preimage))
 		hash := dataSha.Sum(nil)
 		whereClause := fmt.Sprintf("%v = ?", dbField)

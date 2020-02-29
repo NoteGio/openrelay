@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/ecdsa"
 	dbModule "github.com/notegio/openrelay/db"
-	"github.com/ethereum/go-ethereum/crypto/sha3"
+	"golang.org/x/crypto/sha3"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/notegio/openrelay/types"
 	"testing"
@@ -124,7 +124,7 @@ func TestFindValidNonce(t *testing.T) {
 	}
 	timestamp := "1543351413"
 	nonce := <-dbModule.FindValidNonce(terms.Text, timestamp, mask)
-	termsSha := sha3.NewKeccak256()
+	termsSha := sha3.NewLegacyKeccak256()
 	termsSha.Write([]byte(fmt.Sprintf("%v\n%v\n%#x", terms.Text, timestamp, nonce)))
 	hash := termsSha.Sum(nil)
 	if !dbModule.CheckMask(mask, hash) {

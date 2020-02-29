@@ -10,7 +10,7 @@ import (
 	"github.com/notegio/openrelay/search"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/jinzhu/gorm"
-	"github.com/ethereum/go-ethereum/crypto/sha3"
+	"golang.org/x/crypto/sha3"
 	"gopkg.in/redis.v3"
 	"math/big"
 	urlModule "net/url"
@@ -122,7 +122,7 @@ func PoolDecorator(db *gorm.DB, fn func(http.ResponseWriter, *http.Request, type
 		if len(match) == 2 {
 			poolName := strings.TrimPrefix(match[1], "/")
 			pool :=  &Pool{}
-			poolHash := sha3.NewKeccak256()
+			poolHash := sha3.NewLegacyKeccak256()
 			poolHash.Write([]byte(poolName))
 			if db != nil {
 				if q := db.Model(&Pool{}).Where("ID = ?", poolHash.Sum(nil)).First(pool); q.Error != nil {
@@ -154,7 +154,7 @@ func PoolDecoratorBaseFee(db *gorm.DB, redisClient *redis.Client, fn func(http.R
 		if len(match) == 2 {
 			poolName := strings.TrimPrefix(match[1], "/")
 			pool :=  &Pool{}
-			poolHash := sha3.NewKeccak256()
+			poolHash := sha3.NewLegacyKeccak256()
 			poolHash.Write([]byte(poolName))
 			if q := db.Model(&Pool{}).Where("ID = ?", poolHash.Sum(nil)).First(pool); q.Error != nil {
 				if poolName != "" {

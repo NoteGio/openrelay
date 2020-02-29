@@ -30,7 +30,7 @@ func (filled *rpcFilledLookup) GetCancelled(order *types.Order) (bool, error) {
 		log.Printf("Bloom filter missing order: %#x", order.Hash())
 		return isCancelled, nil
 	}
-	exchange, err := exchangecontract.NewExchange(orCommon.ToGethAddress(order.ExchangeAddress), filled.conn)
+	exchange, err := exchangecontract.NewExchangecontract(orCommon.ToGethAddress(order.ExchangeAddress), filled.conn)
 	if err != nil {
 		log.Printf("Error intializing exchange contract '%v': '%v'", hex.EncodeToString(order.ExchangeAddress[:]), err.Error())
 		return isCancelled, err
@@ -52,7 +52,7 @@ func (filled *rpcFilledLookup) GetAmountFilled(order *types.Order) (*types.Uint2
 		log.Printf("Bloom filter missing order: %#x", order.Hash())
 		return filledAmount, nil
 	}
-	exchange, err := exchangecontract.NewExchange(orCommon.ToGethAddress(order.ExchangeAddress), filled.conn)
+	exchange, err := exchangecontract.NewExchangecontract(orCommon.ToGethAddress(order.ExchangeAddress), filled.conn)
 	if err != nil {
 		log.Printf("Error intializing exchange contract '%v': '%v'", hex.EncodeToString(order.ExchangeAddress[:]), err.Error())
 		return filledAmount, err

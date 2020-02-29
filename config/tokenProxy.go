@@ -47,7 +47,7 @@ func (tokenProxy *rpcTokenProxy) GetById(order *types.Order, proxyID [4]byte) (*
 	if tokenProxyAddress, ok := tokenProxy.exchangeProxyMap[*order.ExchangeAddress][proxyID]; ok {
 		return tokenProxyAddress, nil
 	}
-	exchange, err := exchangecontract.NewExchange(orCommon.ToGethAddress(order.ExchangeAddress), tokenProxy.conn)
+	exchange, err := exchangecontract.NewExchangecontract(orCommon.ToGethAddress(order.ExchangeAddress), tokenProxy.conn)
 	if err != nil {
 		log.Printf("Error intializing exchange contract '%v': '%v'", hex.EncodeToString(order.ExchangeAddress[:]), err.Error())
 		return tokenProxyAddress, err

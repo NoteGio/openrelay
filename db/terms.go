@@ -3,7 +3,7 @@ package db
 import (
 	"github.com/jinzhu/gorm"
 	"github.com/notegio/openrelay/types"
-	"github.com/ethereum/go-ethereum/crypto/sha3"
+	"golang.org/x/crypto/sha3"
 	"math/big"
 	"math/rand"
 	"time"
@@ -134,7 +134,7 @@ func (tm *TermsManager) CheckTerms(id uint, sig *types.Signature, address *types
 // CheckSig verifies that a signature is valid for a given Terms of use object
 func (terms *Terms) CheckSig(sig *types.Signature, address *types.Address, timestamp string, nonce []byte, mask []byte) (bool, error) {
 	signedMessage := []byte(fmt.Sprintf("%v\n%v\n%#x", terms.Text, timestamp, nonce))
-	termsSha := sha3.NewKeccak256()
+	termsSha := sha3.NewLegacyKeccak256()
 	termsSha.Write(signedMessage)
 	hash := termsSha.Sum(nil)
 	if !CheckMask(mask, hash) {
@@ -179,7 +179,7 @@ func FindValidNonce(text, timestamp string, mask []byte) (<-chan []byte) {
 		for !CheckMask(mask, hash) {
 			nonce = make([]byte, 32)
 			rand.Read(nonce[:])
-			termsSha := sha3.NewKeccak256()
+			termsSha := sha3.NewLegacyKeccak256()
 			termsSha.Write([]byte(fmt.Sprintf("%v\n%v\n%#x", text, timestamp, nonce)))
 			hash = termsSha.Sum(nil)
 		}

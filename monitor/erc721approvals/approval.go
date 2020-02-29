@@ -146,7 +146,7 @@ func NewRPCAllowanceBlockConsumer(rpcURL string, exchangeAddress string, publish
 	if err != nil {
 		return nil, err
 	}
-	exchange, err := exchangecontract.NewExchange(common.HexToAddress(exchangeAddress), client)
+	exchange, err := exchangecontract.NewExchangecontract(common.HexToAddress(exchangeAddress), client)
 	if err != nil {
 		log.Printf("Error intializing exchange contract '%v': '%v'", exchangeAddress, err.Error())
 		return nil, err

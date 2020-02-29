@@ -1,5 +1,4 @@
 PACKAGE  = github.com/notegio/openrelay
-GOPATH   = $(CURDIR)/.gopath
 BASE     = $(GOPATH)/src/$(PACKAGE)
 GOSTATIC = go build -a -installsuffix cgo -ldflags '-extldflags "-static"'
 
@@ -10,7 +9,7 @@ $(BASE):
 	@ln -sf $(CURDIR) $@
 
 clean: dockerstop
-	rm -rf bin/ .gopath/
+	rm -rf bin/
 	rm -rf js/build
 
 

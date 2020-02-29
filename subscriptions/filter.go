@@ -5,7 +5,7 @@ import (
 	"github.com/notegio/openrelay/db"
 	"github.com/notegio/openrelay/types"
 	"github.com/notegio/openrelay/common"
-	"github.com/ethereum/go-ethereum/crypto/sha3"
+	"golang.org/x/crypto/sha3"
 	"net/url"
 	"bytes"
 	"strings"
@@ -127,7 +127,7 @@ func (ofilter *OrderFilter) GetFilter(lookup ExchangeLookup) (func(*db.Order) (b
 		predicates = append(predicates, func(order *db.Order) (bool) { return bytes.Equal(order.PoolID, poolID) } )
 	}
 	if ofilter.PoolName != "" {
-		dataSha := sha3.NewKeccak256()
+		dataSha := sha3.NewLegacyKeccak256()
 		dataSha.Write([]byte(ofilter.PoolName))
 		poolID := dataSha.Sum(nil)
 		predicates = append(predicates, func(order *db.Order) (bool) { return bytes.Equal(order.PoolID, poolID) } )
