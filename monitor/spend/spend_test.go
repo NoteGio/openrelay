@@ -41,8 +41,8 @@ func buildLog(address common.Address, topics []common.Hash, data []byte) *types.
 
 func spendLog() *types.Log {
 	ctrAddress := common.HexToAddress("0x3495ffcee09012ab7d827abf3e3b3ae428a38443")
-	senderAddress := common.HexToAddress("0x34ab4a96678c4de8eb34597dbbcf09c27d9bc79d")
-	receiverAddress := common.HexToAddress("0x12459c951127e0c374ff9105dda097662a027093")
+	senderAddress, _ := orCommon.HexToAddress("0x34ab4a96678c4de8eb34597dbbcf09c27d9bc79d")
+	receiverAddress, _ := orCommon.HexToAddress("0x12459c951127e0c374ff9105dda097662a027093")
 	spendTopic := &big.Int{}
 	spendTopic.SetString("ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", 16)
 	topics := []common.Hash{

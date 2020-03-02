@@ -49,6 +49,10 @@ func (data *Address) ToGethAddress() (common.Address) {
 	return common.HexToAddress(hex.EncodeToString(data[:]))
 }
 
+func (data *Address) Big() (*big.Int) {
+	return new(big.Int).SetBytes(data[:])
+}
+
 type Uint256 [32]byte
 
 func (data *Uint256) Value() (driver.Value, error) {

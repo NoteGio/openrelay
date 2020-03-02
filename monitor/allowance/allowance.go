@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	coreTypes "github.com/ethereum/go-ethereum/core/types"
 	// "github.com/notegio/openrelay/funds"
+	orCommon "github.com/notegio/openrelay/common"
 	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/db"
 	"github.com/notegio/openrelay/types"
@@ -106,5 +107,5 @@ func NewRPCAllowanceBlockConsumer(rpcURL string, exchangeAddress string, publish
 		log.Printf("error getting tokenProxyAddress")
 		return nil, err
 	}
-	return NewAllowanceBlockConsumer(tokenProxyAddress.Big(), feeTokenAddress.String(), client, publisher), nil
+	return NewAllowanceBlockConsumer(orCommon.BytesToOrAddress(tokenProxyAddress).Big(), feeTokenAddress.String(), client, publisher), nil
 }

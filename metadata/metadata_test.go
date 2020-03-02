@@ -41,8 +41,8 @@ func (mock *MockContractBackend) PendingNonceAt(ctx context.Context, account com
 func (mock *MockContractBackend) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
 	return new(big.Int), nil
 }
-func (mock *MockContractBackend) EstimateGas(ctx context.Context, call ethereum.CallMsg) (*big.Int, error) {
-	return new(big.Int), nil
+func (mock *MockContractBackend) EstimateGas(ctx context.Context, call ethereum.CallMsg) (uint64, error) {
+	return 0, nil
 }
 func (mock *MockContractBackend) SendTransaction(ctx context.Context, tx *types.Transaction) error {
 	return nil

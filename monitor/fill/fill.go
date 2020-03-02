@@ -113,5 +113,6 @@ func NewRPCFillBlockConsumer(rpcURL string, exchangeAddress string, publisher ch
 	if err != nil {
 		return nil, err
 	}
-	return NewFillBlockConsumer(common.HexToAddress(exchangeAddress).Big(), client, publisher, fb), nil
+	exchangeBig, _ := big.NewInt(0).SetString(exchangeAddress, 0)
+	return NewFillBlockConsumer(exchangeBig, client, publisher, fb), nil
 }

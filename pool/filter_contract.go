@@ -84,7 +84,7 @@ func (fc *FilterContract) Filter(poolID []byte, order *types.Order) (bool, error
 	callMsg := ethereum.CallMsg{
 		From: order.Maker.ToGethAddress(),
 		To: &target,
-		Gas: big.NewInt(1000000),
+		Gas: 1000000,
 		GasPrice: big.NewInt(1),
 		Value: big.NewInt(0),
 		Data: encoding,

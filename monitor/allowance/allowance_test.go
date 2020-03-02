@@ -10,6 +10,7 @@ import (
 	"github.com/notegio/openrelay/monitor/blocks"
 	"github.com/notegio/openrelay/monitor/blocks/mock"
 	"github.com/notegio/openrelay/channels"
+	orCommon "github.com/notegio/openrelay/common"
 	"github.com/notegio/openrelay/db"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -38,8 +39,8 @@ func buildLog(address common.Address, topics []common.Hash, data []byte) *types.
 
 func allowanceLog() *types.Log {
 	ctrAddress := common.HexToAddress("0x1d7022f5b17d2f8b695918fb48fa1089c9f85401")
-	senderAddress := common.HexToAddress("0x5409ed021d9299bf6814279a6a1411a7e866a631")
-	tokenProxyAddress := common.HexToAddress("0x1dc4c1cefef38a777b15aa20260a54e584b16c48")
+	senderAddress, _ := orCommon.HexToAddress("0x5409ed021d9299bf6814279a6a1411a7e866a631")
+	tokenProxyAddress, _ := orCommon.HexToAddress("0x1dc4c1cefef38a777b15aa20260a54e584b16c48")
 	approvalTopic := &big.Int{}
 	approvalTopic.SetString("8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925", 16)
 	topics := []common.Hash{
@@ -55,7 +56,7 @@ func TestBloom(t *testing.T) {
 	bloomBytes, _ := hex.DecodeString("00000000000000000000080000800000000000000000000000000000000000000000000000000000000000000000000000000000000004000000080000200000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000010008000000000000000002000000000000000000000000008000000000000")
 	approvalTopic := &big.Int{}
 	approvalTopic.SetString("8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925", 16)
-	proxyAddress := common.HexToAddress("0x1dc4c1cefef38a777b15aa20260a54e584b16c48").Big()
+	proxyAddress, _ := big.NewInt(0).SetString("0x1dc4c1cefef38a777b15aa20260a54e584b16c48", 0)
 	bloom := types.BytesToBloom(bloomBytes)
 	if !types.BloomLookup(bloom, approvalTopic) {
 		t.Errorf("Bloom filter didn't match approval")
@@ -86,8 +87,9 @@ func TestAllowanceFromBlock(t *testing.T) {
 	destConsumerChannel.AddConsumer(tc)
 	destConsumerChannel.StartConsuming()
 	defer destConsumerChannel.StopConsuming()
+	addr, _ := big.NewInt(0).SetString("0x1dc4c1cefef38a777b15aa20260a54e584b16c48", 0)
 	consumerChannel.AddConsumer(allowance.NewAllowanceBlockConsumer(
-		common.HexToAddress("0x1dc4c1cefef38a777b15aa20260a54e584b16c48").Big(),
+		addr,
 		"0x4444444444444444444444444444444444444444",
 		mock.NewMockLogFilterer([]types.Log{*testLog}),
 		destPublisher,
@@ -131,8 +133,9 @@ func TestNoAllowanceInBlock(t *testing.T) {
 	destConsumerChannel.AddConsumer(tc)
 	destConsumerChannel.StartConsuming()
 	defer destConsumerChannel.StopConsuming()
+	addr, _ := big.NewInt(0).SetString("0x1dc4c1cefef38a777b15aa20260a54e584b16c48", 0)
 	consumerChannel.AddConsumer(allowance.NewAllowanceBlockConsumer(
-		common.HexToAddress("0x1dc4c1cefef38a777b15aa20260a54e584b16c48").Big(),
+		addr,
 		"0x4444444444444444444444444444444444444444",
 		mock.NewMockLogFilterer([]types.Log{}),
 		destPublisher,

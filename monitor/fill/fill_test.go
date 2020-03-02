@@ -79,8 +79,9 @@ func TestFillFromBlock(t *testing.T) {
 	if err != nil { t.Fatalf(err.Error()) }
 	fillBloom, err := fillbloom.NewFillBloom(itemURL)
 	if err != nil { t.Fatalf(err.Error()) }
+	addr, _ := big.NewInt(0).SetString("0x12459c951127e0c374ff9105dda097662a027093", 0)
 	consumerChannel.AddConsumer(fill.NewFillBlockConsumer(
-		common.HexToAddress("0x12459c951127e0c374ff9105dda097662a027093").Big(),
+		addr,
 		mock.NewMockLogFilterer([]types.Log{*testLog}),
 		destPublisher,
 		fillBloom,
@@ -137,8 +138,9 @@ func TestNoAllowanceInBlock(t *testing.T) {
 	defer destConsumerChannel.StopConsuming()
 	fillBloom, err := fillbloom.NewFillBloom(itemURL)
 	if err != nil { t.Fatalf(err.Error()) }
+	addr, _ := big.NewInt(0).SetString("0x12459c951127e0c374ff9105dda097662a027093", 0)
 	consumerChannel.AddConsumer(fill.NewFillBlockConsumer(
-		common.HexToAddress("0x12459c951127e0c374ff9105dda097662a027093").Big(),
+		addr,
 		mock.NewMockLogFilterer([]types.Log{}),
 		destPublisher,
 		fillBloom,
