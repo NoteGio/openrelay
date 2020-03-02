@@ -47,6 +47,12 @@ func (mock *MockContractBackend) EstimateGas(ctx context.Context, call ethereum.
 func (mock *MockContractBackend) SendTransaction(ctx context.Context, tx *types.Transaction) error {
 	return nil
 }
+func (mock *MockContractBackend) FilterLogs(ctx context.Context, filter ethereum.FilterQuery) ([]types.Log, error) {
+	return []types.Log{}, nil
+}
+func (mock *MockContractBackend) SubscribeFilterLogs(ctx context.Context, filter ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error) {
+	return nil, nil
+}
 
 type MockHttpClient struct {
 	results map[string][]byte
