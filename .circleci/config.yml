@@ -15,7 +15,7 @@ jobs:
       - run: make nodesetup
   golang_build_delayrelay:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run: make bin/delayrelay
@@ -25,7 +25,7 @@ jobs:
             - delayrelay
   golang_build_fundcheckrelay:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run: make bin/fundcheckrelay
@@ -35,7 +35,7 @@ jobs:
             - fundcheckrelay
   golang_build_getbalance:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run: make bin/getbalance
@@ -45,7 +45,7 @@ jobs:
             - getbalance
   golang_build_ingest:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run: make bin/ingest
@@ -55,7 +55,7 @@ jobs:
             - ingest
   golang_build_initialize:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run: make bin/initialize
@@ -65,7 +65,7 @@ jobs:
             - initialize
   golang_build_simplerelay:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run: make bin/simplerelay
@@ -75,7 +75,7 @@ jobs:
             - simplerelay
   golang_build_validateorder:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run: make bin/validateorder
@@ -85,7 +85,7 @@ jobs:
             - validateorder
   golang_build_fillupdate:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run: make bin/fillupdate
@@ -95,7 +95,7 @@ jobs:
             - fillupdate
   golang_build_indexer:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run: make bin/indexer
@@ -105,7 +105,7 @@ jobs:
             - indexer
   golang_build_fillindexer:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run: make bin/fillindexer
@@ -115,7 +115,7 @@ jobs:
             - fillindexer
   golang_build_exchangesplitter:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run: make bin/exchangesplitter
@@ -125,7 +125,7 @@ jobs:
             - exchangesplitter
   golang_build_automigrate:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run: make bin/automigrate
@@ -135,7 +135,7 @@ jobs:
             - automigrate
   golang_build_searchapi:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run: make bin/searchapi
@@ -145,7 +145,7 @@ jobs:
             - searchapi
   golang_build_blockmonitor:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run: make bin/blockmonitor
@@ -155,7 +155,7 @@ jobs:
             - blockmonitor
   golang_build_allowancemonitor:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run: make bin/allowancemonitor
@@ -165,7 +165,7 @@ jobs:
             - allowancemonitor
   golang_build_erc721approvalmonitor:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run: make bin/erc721approvalmonitor
@@ -175,7 +175,7 @@ jobs:
             - erc721approvalmonitor
   golang_build_spendmonitor:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run: make bin/spendmonitor
@@ -185,7 +185,7 @@ jobs:
             - spendmonitor
   golang_build_spendrecorder:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run: make bin/spendrecorder
@@ -195,7 +195,7 @@ jobs:
             - spendrecorder
   golang_build_fillmonitor:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run: make bin/fillmonitor
@@ -205,7 +205,7 @@ jobs:
             - fillmonitor
   golang_build_multisigmonitor:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run: make bin/multisigmonitor
@@ -215,7 +215,7 @@ jobs:
             - multisigmonitor
   golang_build_canceluptomonitor:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run: make bin/canceluptomonitor
@@ -225,7 +225,7 @@ jobs:
             - canceluptomonitor
   golang_build_canceluptofilter:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run: make bin/canceluptofilter
@@ -235,7 +235,7 @@ jobs:
             - canceluptofilter
   golang_build_canceluptoindexer:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run: make bin/canceluptoindexer
@@ -245,7 +245,7 @@ jobs:
             - canceluptoindexer
   golang_build_affiliatemonitor:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run: make bin/affiliatemonitor
@@ -255,7 +255,7 @@ jobs:
             - affiliatemonitor
   golang_build_queuemonitor:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run: make bin/queuemonitor
@@ -265,7 +265,7 @@ jobs:
             - queuemonitor
   golang_build_terms:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run: make bin/terms
@@ -275,7 +275,7 @@ jobs:
             - terms
   golang_build_poolfilter:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run: make bin/poolfilter
@@ -285,7 +285,7 @@ jobs:
             - poolfilter
   golang_build_metadataindexer:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run: make bin/metadataindexer
@@ -295,7 +295,7 @@ jobs:
             - metadataindexer
   golang_build_websockets:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run: make bin/websockets
@@ -306,7 +306,7 @@ jobs:
   golang_test:
     docker:
       # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
         environment:
           AWS_ACCESS_KEY_ID: placeholder
           AWS_SECRET_ACCESS_KEY: placeholder
@@ -324,14 +324,14 @@ jobs:
       - run: make gotest
   notify_test_finished:
     docker:
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
     steps:
       - run: |
           curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"Tests executed successfully!\"}" $WEBHOOK_URL
   docker_build_deploy:
     docker:
       # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
-      - image: circleci/golang:1.8
+      - image: circleci/golang:1.13
         #  TODO: Add the following environment variables if you wish to upload to AWS
         #  -  AWS_ACCESS_KEY_ID
         #  -  AWS_SECRET_ACCESS_KEY
@@ -361,7 +361,7 @@ jobs:
       - run: TAG=$CIRCLE_SHA1 docker-compose push --ignore-push-failures
       - run: TAG=$(echo "$CIRCLE_BRANCH" | sed 's^/^-^g')_$CIRCLE_SHA1 docker-compose push --ignore-push-failures
       - run: |
-          [[ CIRCLE_BRANCH = 'support/0xv2' ]] && docker-compose push --ignore-push-failures || true
+          [[ CIRCLE_BRANCH = 'support/0xv3' ]] && docker-compose push --ignore-push-failures || true
       - run: |
           curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"New Docker Build! Tags: $(echo "$CIRCLE_BRANCH" | sed 's^/^-^g'), $CIRCLE_SHA1, $(echo "$CIRCLE_BRANCH" | sed 's^/^-^g')_$CIRCLE_SHA1\"}" $WEBHOOK_URL
 workflows:
@@ -438,6 +438,6 @@ workflows:
             branches:
               only:
                 - master
-                - support/0xv1
                 - support/0xv2
+                - support/0xv3
                 - docker-push

@@ -69,5 +69,6 @@ func NewRPCAffiliateBlockConsumer(rpcURL string, affiliateSignupAddress string, 
 	if err != nil {
 		return nil, err
 	}
-	return NewAffiliateBlockConsumer(common.HexToAddress(affiliateSignupAddress).Big(), client, affiliates.NewRedisAffiliateService(redisClient)), nil
+	addrBig, _ := big.NewInt(0).SetString(affiliateSignupAddress, 0)
+	return NewAffiliateBlockConsumer(addrBig, client, affiliates.NewRedisAffiliateService(redisClient)), nil
 }

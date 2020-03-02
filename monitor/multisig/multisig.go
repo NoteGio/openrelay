@@ -83,5 +83,6 @@ func NewRPCMultisigBlockConsumer(rpcURL string, multisigAddress string) (channel
 	if err != nil {
 		return nil, err
 	}
-	return NewMultisigBlockConsumer(common.HexToAddress(multisigAddress).Big(), client), nil
+	multisigAddrBig, _ := big.NewInt(0).SetString(multisigAddress, 0)
+	return NewMultisigBlockConsumer(multisigAddrBig, client), nil
 }

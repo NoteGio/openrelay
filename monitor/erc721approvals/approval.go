@@ -165,5 +165,5 @@ func NewRPCAllowanceBlockConsumer(rpcURL string, exchangeAddress string, publish
 		return nil, err
 	}
 	log.Printf("TP: %#x - %v", tokenProxyAddress[:], exchangeAddress)
-	return NewAllowanceBlockConsumer(tokenProxyAddress.Big(), feeTokenAddress.String(), client, publisher), nil
+	return NewAllowanceBlockConsumer(big.NewInt(0).SetBytes(tokenProxyAddress[:]), feeTokenAddress.String(), client, publisher), nil
 }

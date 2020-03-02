@@ -79,5 +79,6 @@ func NewRPCCancelUpToBlockConsumer(rpcURL string, exchangeAddress string, publis
 	if err != nil {
 		return nil, err
 	}
-	return NewCancelUpToBlockConsumer(common.HexToAddress(exchangeAddress).Big(), client, publisher), nil
+	exchangeAddressBig, _ := big.NewInt(0).SetString(exchangeAddress, 0)
+	return NewCancelUpToBlockConsumer(exchangeAddressBig, client, publisher), nil
 }
