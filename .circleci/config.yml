@@ -1,18 +1,18 @@
 version: 2
 jobs:
-  node_build_and_test:
-    docker:
-      - image: circleci/node:8
-        environment:
-          AWS_ACCESS_KEY_ID: placeholder
-          AWS_SECRET_ACCESS_KEY: placeholder
-          AWS_DEFAULT_REGION: us-east-1
-      - image: redis
-    steps:
-      - checkout
-      - run: npm install
-      - run: make mock
-      - run: make nodesetup
+  # node_build_and_test:
+  #   docker:
+  #     - image: circleci/node:8
+  #       environment:
+  #         AWS_ACCESS_KEY_ID: placeholder
+  #         AWS_SECRET_ACCESS_KEY: placeholder
+  #         AWS_DEFAULT_REGION: us-east-1
+  #     - image: redis
+  #   steps:
+  #     - checkout
+  #     - run: npm install
+  #     - run: make mock
+  #     - run: make nodesetup
   golang_build_delayrelay:
     docker:
       - image: circleci/golang:1.13
@@ -368,7 +368,7 @@ workflows:
   version: 2
   build_and_test:
     jobs:
-      - node_build_and_test
+      # - node_build_and_test
       - golang_build_delayrelay
       - golang_build_fundcheckrelay
       - golang_build_getbalance
