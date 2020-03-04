@@ -114,7 +114,7 @@ func (pool Pool) QueryString() string {
 	return pool.SearchTerms
 }
 
-var poolRegex = regexp.MustCompile("^(/[^/]*)?/v2/")
+var poolRegex = regexp.MustCompile("^(/[^/]*)?/v3/")
 
 func PoolDecorator(db *gorm.DB, fn func(http.ResponseWriter, *http.Request, types.Pool)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
