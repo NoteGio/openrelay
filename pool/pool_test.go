@@ -75,13 +75,13 @@ func TestDecorator(t *testing.T) {
 		t.Errorf("This should not be reached")
 	})
 
-	request, _ := http.NewRequest("GET", "/v2/content", nil)
+	request, _ := http.NewRequest("GET", "/v3/content", nil)
 	recorder := httptest.NewRecorder()
 	handler(recorder, request)
-	request, _ = http.NewRequest("GET", "/testPool/v2/content", nil)
+	request, _ = http.NewRequest("GET", "/testPool/v3/content", nil)
 	recorder = httptest.NewRecorder()
 	handler2(recorder, request)
-	request, _ = http.NewRequest("GET", "/unknownPool/v2/content", nil)
+	request, _ = http.NewRequest("GET", "/unknownPool/v3/content", nil)
 	recorder = httptest.NewRecorder()
 	handler3(recorder, request)
 	if recorder.Code != 404 {
@@ -151,19 +151,19 @@ func TestPoolFilter(t *testing.T) {
 		w.WriteHeader(200)
 	})
 
-	request, _ := http.NewRequest("GET", "/v2/content", nil)
+	request, _ := http.NewRequest("GET", "/v3/content", nil)
 	recorder := httptest.NewRecorder()
 	handler(recorder, request)
 	if recorder.Code != 200 {
 		t.Errorf("Error on handler")
 	}
-	request, _ = http.NewRequest("GET", "/testPool/v2/content", nil)
+	request, _ = http.NewRequest("GET", "/testPool/v3/content", nil)
 	recorder = httptest.NewRecorder()
 	handler(recorder, request)
 	if recorder.Code != 200 {
 		t.Errorf("Error on handler2")
 	}
-	request, _ = http.NewRequest("GET", "/testPool2/v2/content", nil)
+	request, _ = http.NewRequest("GET", "/testPool2/v3/content", nil)
 	recorder = httptest.NewRecorder()
 	emptyHandler(recorder, request)
 	if recorder.Code != 200 {

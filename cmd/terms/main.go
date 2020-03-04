@@ -53,8 +53,8 @@ func main() {
 		}
 	}
 	mux := &regexpHandler{[]*route{}}
-	mux.HandleFunc(regexp.MustCompile("^(/[^/]+)?/v2/_tos/"), terms.TermsCheckHandler(db))
-	mux.HandleFunc(regexp.MustCompile("^(/[^/]+)?/v2/_tos"), terms.TermsHandler(db))
+	mux.HandleFunc(regexp.MustCompile("^(/[^/]+)?/v3/_tos/"), terms.TermsCheckHandler(db))
+	mux.HandleFunc(regexp.MustCompile("^(/[^/]+)?/v3/_tos"), terms.TermsHandler(db))
 	mux.HandleFunc(regexp.MustCompile("^/_hc$"), terms.HealthCheckHandler(db))
 	corsHandler := cors.Default().Handler(mux)
 	log.Printf("ToS Serving on :%v", port)

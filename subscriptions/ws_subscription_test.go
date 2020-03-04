@@ -58,7 +58,7 @@ func TestWebsocketSubscriptionConsumer(t *testing.T) {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	c, resp, err := websocket.DefaultDialer.DialContext(ctx, "ws://localhost:4321/v2/", nil)
+	c, resp, err := websocket.DefaultDialer.DialContext(ctx, "ws://localhost:4321/v3/", nil)
 
 	defer cancel()
 	if err != nil {

@@ -80,8 +80,8 @@ func main() {
 	feeHandler := pool.PoolDecoratorBaseFee(db, redisClient, ingest.FeeHandler(publisher, accountService, affiliateService, defaultFeeRecipientBytes, exchangeLookup))
 
 	mux := &regexpHandler{[]*route{}}
-	mux.HandleFunc(regexp.MustCompile("^(/[^/]+)?/v2/order$"), handler)
-	mux.HandleFunc(regexp.MustCompile("^(/[^/]+)?/v2/order_config$"), feeHandler)
+	mux.HandleFunc(regexp.MustCompile("^(/[^/]+)?/v3/order$"), handler)
+	mux.HandleFunc(regexp.MustCompile("^(/[^/]+)?/v3/order_config$"), feeHandler)
 	mux.HandleFunc(regexp.MustCompile("^/_hc$"), ingest.HealthCheckHandler(redisClient))
 	corsHandler := cors.Default().Handler(mux)
 	log.Printf("Order Ingest Serving on :%v", port)
