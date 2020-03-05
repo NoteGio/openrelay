@@ -17,7 +17,6 @@ import (
 	"regexp"
 	"strings"
 	"fmt"
-	"os"
 )
 
 var feeBaseUnits = big.NewInt(1000000000000000000)
@@ -89,11 +88,7 @@ func (pool *Pool) FeeAssetData(chainid uint) (types.AssetData, error) {
 	if address, ok := pool.FeeTokenAddress[chainid]; ok {
 		return common.ToERC20AssetData(address), nil
 	}
-	// TODO: Set DEFAULT_FEE_ASSETDATA
-	if assetHex := os.Getenv("DEFAULT_FEE_ASSETDATA"); len(assetHex) > 0 {
-		return common.HexToAssetData(assetHex)
-	}
-	return nil, fmt.Errorf("ChainID unknown to pool: %v", pool.FeeTokenAddress)
+	return common.DefaultFeeAssetData(chainid)
 }
 
 func (pool Pool) Fee() (*big.Int, error) {

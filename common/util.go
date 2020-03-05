@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	"math/big"
 	"encoding/hex"
 	"github.com/ethereum/go-ethereum/common"
@@ -10,6 +11,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"strconv"
 )
 
 func BytesToAddress(data [20]byte) common.Address {
@@ -105,6 +107,18 @@ func GetSecret(uri string) string {
 		}
 	}
 	return uri
+}
+
+func DefaultFeeAssetData(chainid uint) (types.AssetData, error) {
+	pairs := strings.Split(os.Getenv("DEFAULT_FEE_ASSETDATA"), ";")
+	for _, pair := range pairs {
+		mapping := strings.Split(pair, ":")
+		pairid, _ := strconv.Atoi(mapping[0])
+		if uint(pairid) == chainid {
+			return HexToAssetData(mapping[1])
+		}
+	}
+	return nil, fmt.Errorf("AssetData not found for %v", chainid)
 }
 
 type empty struct{}
