@@ -65,18 +65,22 @@ func main() {
 	if err := db.AutoMigrate(&poolModule.Pool{}).Error; err != nil {
 		log.Fatalf("Error migrating pools table: %v", err.Error())
 	}
-	kovanAddress, _ := common.HexToAddress("0x35dd2932454449b14cee11a94d3674a936d5d7b2")
+	kovanAddress, _ := common.HexToAddress("0x4eacd0af335451709e1e7b570b8ea68edec8bc97")
 	db.Where(
 		&dbModule.Exchange{Network: 42},
 	).FirstOrCreate(&dbModule.Exchange{Network: 42, Address: kovanAddress })
 	ganacheAddress, _ := common.HexToAddress("0x48bacb9266a570d521063ef5dd96e61686dbe788")
 	db.Where(
-		&dbModule.Exchange{Network: 50},
-	).FirstOrCreate(&dbModule.Exchange{Network: 50, Address: ganacheAddress })
-	mainnetAddress, _ := common.HexToAddress("0x4f833a24e1f95d70f028921e27040ca56e09ab0b")
+		&dbModule.Exchange{Network: 1337},
+	).FirstOrCreate(&dbModule.Exchange{Network: 1337, Address: ganacheAddress })
+	mainnetAddress, _ := common.HexToAddress("0x61935cbdd02287b511119ddb11aeb42f1593b7ef")
 	db.Where(
 		&dbModule.Exchange{Network: 1},
 	).FirstOrCreate(&dbModule.Exchange{Network: 1, Address: mainnetAddress })
+	rinkebyAddress, _ := common.HexToAddress("0x198805e9682fceec29413059b68550f92868c129")
+	db.Where(
+		&dbModule.Exchange{Network: 4},
+	).FirstOrCreate(&dbModule.Exchange{Network: 4, Address: rinkebyAddress })
 	if db.Model(&dbModule.Terms{}).First(&dbModule.Terms{}).RecordNotFound() {
 		if err := dbModule.NewTermsManager(db).UpdateTerms("en", terms); err != nil {
 			log.Fatalf("Error setting terms: %v", err.Error())

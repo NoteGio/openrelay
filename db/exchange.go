@@ -10,6 +10,10 @@ type Exchange struct {
 	Network  int64          `gorm:"index"`
 }
 
+func (order *Exchange) TableName() string {
+	return "exchangesv3"
+}
+
 type ExchangeLookup struct {
 	byAddressCache map[types.Address]int64
 	byNetworkCache map[int64][]*types.Address

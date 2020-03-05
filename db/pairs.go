@@ -30,10 +30,10 @@ func GetAllTokenPairs(db *gorm.DB, offset, count, networkID int) ([]Pair, int, e
 	// The results would be the same if we queried the orders table directly
 	// instead of doing a subquery, but indexes would not be used, and the query
 	// would be very inefficient.
-	if err := db.Raw("SELECT COUNT(*) FROM (SELECT DISTINCT LEAST(x.maker_asset_data, x.taker_asset_data), GREATEST(x.maker_asset_data, x.taker_asset_data) from (SELECT DISTINCT maker_asset_data, taker_asset_data from orderv3 WHERE exchange_address IN (SELECT address FROM exchanges WHERE network = ?)) as x) as y", networkID).Count(&total).Error; err != nil {
+	if err := db.Raw("SELECT COUNT(*) FROM (SELECT DISTINCT LEAST(x.maker_asset_data, x.taker_asset_data), GREATEST(x.maker_asset_data, x.taker_asset_data) from (SELECT DISTINCT maker_asset_data, taker_asset_data from orderv3 WHERE exchange_address IN (SELECT address FROM exchangesv3 WHERE network = ?)) as x) as y", networkID).Count(&total).Error; err != nil {
 		return tokenPairs, total, err
 	}
-	if err := db.Raw("SELECT DISTINCT LEAST(x.maker_asset_data, x.taker_asset_data) as token_a, GREATEST(x.maker_asset_data, x.taker_asset_data) as token_b from (SELECT DISTINCT maker_asset_data, taker_asset_data from orderv3 WHERE exchange_address IN (SELECT address FROM exchanges WHERE network = ?)) as x", networkID).Offset(offset).Limit(count).Scan(&tokenPairs).Error; err != nil {
+	if err := db.Raw("SELECT DISTINCT LEAST(x.maker_asset_data, x.taker_asset_data) as token_a, GREATEST(x.maker_asset_data, x.taker_asset_data) as token_b from (SELECT DISTINCT maker_asset_data, taker_asset_data from orderv3 WHERE exchange_address IN (SELECT address FROM exchangesv3 WHERE network = ?)) as x", networkID).Offset(offset).Limit(count).Scan(&tokenPairs).Error; err != nil {
 		return tokenPairs, total, err
 	}
 	return tokenPairs, total, nil
@@ -45,10 +45,10 @@ func GetAllTokenPairs(db *gorm.DB, offset, count, networkID int) ([]Pair, int, e
 func GetTokenAPairs(db *gorm.DB, tokenA types.AssetData, offset, count, networkID int) ([]Pair, int, error) {
 	tokenPairs := []Pair{}
 	var total int
-	if err := db.Raw("SELECT COUNT(*) FROM (SELECT DISTINCT LEAST(x.maker_asset_data, x.taker_asset_data), GREATEST(x.maker_asset_data, x.taker_asset_data) from (SELECT DISTINCT maker_asset_data, taker_asset_data from orderv3 WHERE exchange_address IN (SELECT address FROM exchanges WHERE network = ?)) as x WHERE x.taker_asset_data = ? or x.maker_asset_data = ?) as y", networkID, []byte(tokenA[:]), []byte(tokenA[:])).Count(&total).Error; err != nil {
+	if err := db.Raw("SELECT COUNT(*) FROM (SELECT DISTINCT LEAST(x.maker_asset_data, x.taker_asset_data), GREATEST(x.maker_asset_data, x.taker_asset_data) from (SELECT DISTINCT maker_asset_data, taker_asset_data from orderv3 WHERE exchange_address IN (SELECT address FROM exchangesv3 WHERE network = ?)) as x WHERE x.taker_asset_data = ? or x.maker_asset_data = ?) as y", networkID, []byte(tokenA[:]), []byte(tokenA[:])).Count(&total).Error; err != nil {
 		return tokenPairs, total, err
 	}
-	if err := db.Raw("SELECT DISTINCT LEAST(x.maker_asset_data, x.taker_asset_data) as token_a, GREATEST(x.maker_asset_data, x.taker_asset_data) as token_b from (SELECT DISTINCT maker_asset_data, taker_asset_data from orderv3 WHERE exchange_address IN (SELECT address FROM exchanges WHERE network = ?)) as x WHERE x.taker_asset_data = ? or x.maker_asset_data = ?", networkID, []byte(tokenA[:]), []byte(tokenA[:])).Offset(offset).Limit(count).Scan(&tokenPairs).Error; err != nil {
+	if err := db.Raw("SELECT DISTINCT LEAST(x.maker_asset_data, x.taker_asset_data) as token_a, GREATEST(x.maker_asset_data, x.taker_asset_data) as token_b from (SELECT DISTINCT maker_asset_data, taker_asset_data from orderv3 WHERE exchange_address IN (SELECT address FROM exchangesv3 WHERE network = ?)) as x WHERE x.taker_asset_data = ? or x.maker_asset_data = ?", networkID, []byte(tokenA[:]), []byte(tokenA[:])).Offset(offset).Limit(count).Scan(&tokenPairs).Error; err != nil {
 		return tokenPairs, total, err
 	}
 	return tokenPairs, total, nil
@@ -62,7 +62,7 @@ func GetTokenAPairs(db *gorm.DB, tokenA types.AssetData, offset, count, networkI
 // methods.
 func GetTokenABPairs(db *gorm.DB, tokenA, tokenB types.AssetData, networkID int) ([]Pair, int, error) {
 	tokenPairs := []Pair{}
-	if err := db.Raw("SELECT DISTINCT LEAST(x.maker_asset_data, x.taker_asset_data) as token_a, GREATEST(x.maker_asset_data, x.taker_asset_data) as token_b from (SELECT DISTINCT maker_asset_data, taker_asset_data from orderv3 WHERE exchange_address IN (SELECT address FROM exchanges WHERE network = ?)) as x WHERE (x.taker_asset_data = ? AND x.maker_asset_data = ?) or (x.maker_asset_data = ? and x.taker_asset_data = ?)", networkID, []byte(tokenA[:]), []byte(tokenB[:]), []byte(tokenA[:]), []byte(tokenB[:])).Scan(&tokenPairs).Error; err != nil {
+	if err := db.Raw("SELECT DISTINCT LEAST(x.maker_asset_data, x.taker_asset_data) as token_a, GREATEST(x.maker_asset_data, x.taker_asset_data) as token_b from (SELECT DISTINCT maker_asset_data, taker_asset_data from orderv3 WHERE exchange_address IN (SELECT address FROM exchangesv3 WHERE network = ?)) as x WHERE (x.taker_asset_data = ? AND x.maker_asset_data = ?) or (x.maker_asset_data = ? and x.taker_asset_data = ?)", networkID, []byte(tokenA[:]), []byte(tokenB[:]), []byte(tokenA[:]), []byte(tokenB[:])).Scan(&tokenPairs).Error; err != nil {
 		return tokenPairs, 0, err
 	}
 	return tokenPairs, len(tokenPairs), nil
