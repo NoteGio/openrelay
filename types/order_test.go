@@ -72,6 +72,17 @@ func TestPublicOrderHash(t *testing.T) {
 	}
 }
 
+func TestFeeData(t *testing.T) {
+	orderData := []byte(`{"chainId":1,"exchangeAddress":"0x61935cbdd02287b511119ddb11aeb42f1593b7ef","senderAddress":"0x0000000000000000000000000000000000000000","makerAddress":"0xa5a3a577aa8ac8f09a2bf6f9239ee215131204f0","takerAddress":"0x0000000000000000000000000000000000000000","makerAssetData":"0xf47261b0000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2","takerAssetData":"0xf47261b0000000000000000000000000e41d2489571d322189246dafa5ebde1f4699f498","feeRecipientAddress":"0xa258b39954cef5cb142fd567a46cddb31a670124","makerAssetAmount":"1055000000000000","takerAssetAmount":"1000000000000000000","makerFee":"0","takerFee":"0","makerFeeAssetData":"f47261b00000000000000000000000006dfff22588be9b3ef8cf0ad6dc9b84796f9fb45f01","takerFeeAssetData":"0x","expirationTimeSeconds":"1585170491","signature":"0x1ba9664367f2307a57af0f1e1e038fa0b57ec38bcbd17216f00f43afe16a5b54955bfca3252944a42bdf09b1b6bd30bbc0831aad0ecd7b69e9a1ab8fcbd38b1f5b02","salt":"1582665013297"}`)
+	newOrder := &types.Order{}
+	if err := json.Unmarshal(orderData, &newOrder); err != nil {
+		t.Fatalf("unmarshal failed")
+	}
+	if len(newOrder.MakerFeeAssetData) == 0 {
+		t.Fatalf("Fee data should be nonzero")
+	}
+}
+
 func TestOrderHash(t *testing.T) {
 	order := &types.Order{}
 	order.Initialize()
