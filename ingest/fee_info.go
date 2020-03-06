@@ -118,6 +118,7 @@ func FeeHandler(publisher channels.Publisher, accounts accountsModule.AccountSer
 		go func() {
 			feeRecipient, err := affiliates.Get(feeRecipientAddress)
 			if err != nil {
+				log.Printf("Affiliate error: %v", err.Error())
 				affiliateChan <- nil
 			} else {
 				affiliateChan <- feeRecipient
@@ -132,13 +133,14 @@ func FeeHandler(publisher channels.Publisher, accounts accountsModule.AccountSer
 				[]ValidationError{ValidationError{
 					"feeRecipient",
 					1002,
-					"Invalid fee recpient",
+					"Invalid fee recipient",
 				}},
 			}, 402)
 			return
 		}
 		poolFee, err := pool.Fee()
 		if err != nil {
+			log.Printf("Pool fee error: %v", err.Error())
 			returnError(w, IngestError{
 				100,
 				"Validation Failed",
