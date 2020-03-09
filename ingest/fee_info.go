@@ -17,6 +17,7 @@ import (
 // FeeInputPayload only considers maker and feeRecipient when calculating fees.
 // Everything else will be ignored.
 type FeeInputPayload struct {
+	ChainID      uint `json:"chainId"`
 	Maker        string `json:"maker"`
 	Exchange     string `json:"exchangeAddress"`
 	FeeRecipient string `json:"feeRecipientAddress"`
@@ -30,6 +31,8 @@ type FeeResponse struct {
 	FeeRecipient   string `json:"feeRecipientAddress"`
 	Sender         string `json:"senderAddress"`
 	TakerToSpecify string `json:"takerToSpecify"`
+	MakerFeeAssetData string `json:"makerFeeAssetData"`
+	TakerFeeAssetData string `json:"takerFeeAssetData"`
 }
 
 func FeeHandler(publisher channels.Publisher, accounts accountsModule.AccountService, affiliates affiliatesModule.AffiliateService, defaultFeeRecipient [20]byte, exchangeLookup ExchangeLookup) func(http.ResponseWriter, *http.Request, *poolModule.Pool) {
@@ -152,6 +155,24 @@ func FeeHandler(publisher channels.Publisher, accounts accountsModule.AccountSer
 			}, 500)
 			return
 		}
+		chainId := feeInput.ChainID
+		if chainId == 0 {
+			chainId = 1
+		}
+		feeTokenAssetData, err := pool.FeeAssetData(chainId)
+		if err != nil {
+			log.Printf("Pool fee token error: %v", err.Error())
+			returnError(w, IngestError{
+				100,
+				"Validation Failed",
+				[]ValidationError{ValidationError{
+					"pool",
+					1002,
+					"Pool error",
+				}},
+			}, 500)
+			return
+		}
 		account := <-makerChan
 		minFee := new(big.Int)
 
@@ -184,6 +205,8 @@ func FeeHandler(publisher channels.Publisher, accounts accountsModule.AccountSer
 			fmt.Sprintf("%#x", feeRecipientAddress[:]),
 			senderToSpecify,
 			takerToSpecify,
+			fmt.Sprintf("%#x", feeTokenAssetData),
+			fmt.Sprintf("%#x", feeTokenAssetData),
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)

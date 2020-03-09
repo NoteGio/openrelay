@@ -43,7 +43,7 @@ func TestFeeRecipientAndMakerProvided(t *testing.T) {
 	publisher := TestPublisher{}
 	handler := mockPoolDecorator(ingest.FeeHandler(&publisher, &TestAccountService{false, new(big.Int)}, &TestAffiliateService{new(big.Int), nil}, [20]byte{}, &TestExchangeLookup{1}))
 	reader := TestReader{
-		[]byte("{\"maker\": \"0x0000000000000000000000000000000000000000\", \"feeRecipientAddress\": \"0000000000000000000000000000000000000000\", \"takerTokenAmount\": \"100\", \"makerTokenAmount\": \"100\"}"),
+		[]byte("{\"chainId\":1, \"maker\": \"0x0000000000000000000000000000000000000000\", \"feeRecipientAddress\": \"0000000000000000000000000000000000000000\", \"takerTokenAmount\": \"100\", \"makerTokenAmount\": \"100\"}"),
 		nil,
 	}
 	request, _ := http.NewRequest("POST", "/v0.0/fees", reader)
@@ -55,7 +55,7 @@ func TestFeeRecipientAndMakerProvided(t *testing.T) {
 		t.Errorf("Body: '%v'", recorder.Body.String())
 	}
 	body := recorder.Body.String()
-	if body != "{\"makerFee\":\"0\",\"takerFee\":\"0\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"takerToSpecify\":\"0x0000000000000000000000000000000000000000\"}" {
+	if body != "{\"makerFee\":\"0\",\"takerFee\":\"0\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"takerToSpecify\":\"0x0000000000000000000000000000000000000000\",\"makerFeeAssetData\":\"0xf47261b00000000000000000000000000000000000000000000000000000000000000000\",\"takerFeeAssetData\":\"0xf47261b00000000000000000000000000000000000000000000000000000000000000000\"}" {
 		t.Errorf("Unexpected body: '%v'", body)
 	}
 }
@@ -75,7 +75,7 @@ func TestFeeRecipientAndMakerDefault(t *testing.T) {
 		t.Errorf("Body: '%v'", recorder.Body.String())
 	}
 	body := recorder.Body.String()
-	if body != "{\"makerFee\":\"0\",\"takerFee\":\"0\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"takerToSpecify\":\"0x0000000000000000000000000000000000000000\"}" {
+	if body != "{\"makerFee\":\"0\",\"takerFee\":\"0\",\"feeRecipientAddress\":\"0x0000000000000000000000000000000000000000\",\"senderAddress\":\"0x0000000000000000000000000000000000000000\",\"takerToSpecify\":\"0x0000000000000000000000000000000000000000\",\"makerFeeAssetData\":\"0xf47261b00000000000000000000000000000000000000000000000000000000000000000\",\"takerFeeAssetData\":\"0xf47261b00000000000000000000000000000000000000000000000000000000000000000\"}" {
 		t.Errorf("Unexpected body: '%v'", body)
 	}
 }
