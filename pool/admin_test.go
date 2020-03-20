@@ -67,7 +67,7 @@ func TestCancellation(t *testing.T) {
 	message := []byte(fmt.Sprintf(`{"id":1,"method":"cancellation","params":["%#x"],"expiration":%v}`, order.Hash(), time.Now().Add(10 * time.Second).Unix()))
 	h := hmac.New(sha256.New, []byte("secret"))
 	checksum := h.Sum(message)
-	request, _ := http.NewRequest("POST", "/testPool/v3/admin", bytes.NewReader(message))
+	request, _ := http.NewRequest("POST", "/testPool/v3/_admin", bytes.NewReader(message))
 	request.Header["Authorization"] = []string{fmt.Sprintf("%#x", checksum)}
 	recorder := httptest.NewRecorder()
 	handler(recorder, request)

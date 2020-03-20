@@ -41,6 +41,9 @@ func handleResponse(w http.ResponseWriter, result, id interface{}, code int) {
 
 func PoolAdminHandler(db *gorm.DB, cancellationsPublisher channels.Publisher) func(http.ResponseWriter, *http.Request, *Pool) {
 	return func(w http.ResponseWriter, r *http.Request, pool *Pool) {
+		if len(pool.Key()) == 0 {
+			handleError(w, "invalid signature", 401)
+		}
 		h := hmac.New(sha256.New, pool.Key())
 		data, err := ioutil.ReadAll(r.Body)
     if err != nil {
@@ -55,7 +58,7 @@ func PoolAdminHandler(db *gorm.DB, cancellationsPublisher channels.Publisher) fu
 		}
 		sig, err := hex.DecodeString(strings.TrimPrefix(string(sigHex[0]), "0x"))
 		if err != nil {
-			handleError(w, err.Error(), 400)
+			handleError(w, err.Error(), 401)
 			return
 		}
 		if !hmac.Equal(checksum, sig) {
