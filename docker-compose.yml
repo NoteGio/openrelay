@@ -58,7 +58,7 @@ services:
       dockerfile: Dockerfile.pooladmin
     image: "openrelay/pooladmin:${TAG:-latest}"
     ports:
-      - "8082:8080"
+      - "8085:8080"
     command: ["/pooladmin", "postgres://pooladmin${POSTGRES_HOST:-postgres}", "env://POSTGRES_PASSWORD", "${REDIS_HOST:-redis:6379}", "queue://pgordersfilled"]
     depends_on:
       - redis
