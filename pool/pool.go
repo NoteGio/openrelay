@@ -31,8 +31,13 @@ type Pool struct {
 	SenderAddresses types.NetworkAddressMap
 	FilterAddresses types.NetworkAddressMap
 	FeeTokenAddress types.NetworkAddressMap
+	SecretKey       []byte
 	conn            bind.ContractCaller
 	baseFee         config.BaseFee
+}
+
+func (pool *Pool) Key() []byte {
+	return pool.SecretKey
 }
 
 func (pool *Pool) SetConn(conn bind.ContractCaller) {
@@ -162,7 +167,6 @@ func PoolDecoratorBaseFee(db *gorm.DB, redisClient *redis.Client, fn func(http.R
 				// just use an empty pool
 			}
 			pool.baseFee = baseFee
-			fmt.Printf("Pool: %v", pool)
 			fn(w, r, pool)
 		} else {
 			// Routing regex shouldn't get here

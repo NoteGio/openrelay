@@ -1,7 +1,7 @@
 # This base image assumes that the bin directory has not been built previously
 # and will build it for downstream consumption
 
-FROM golang:1.8 as corebuild
+FROM golang:1.13 as corebuild
 
 RUN mkdir -p /go/src/github.com/notegio/openrelay
 

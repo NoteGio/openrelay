@@ -7,4 +7,5 @@ import (
 type Pool interface {
 	Filter(*gorm.DB) (*gorm.DB, error)
 	QueryString() string
+	Key() []byte
 }

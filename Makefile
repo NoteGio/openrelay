@@ -111,7 +111,10 @@ bin/metadataindexer: $(BASE) cmd/metadataindexer/main.go
 bin/websockets: $(BASE) cmd/websockets/main.go
 	cd "$(BASE)" && $(GOSTATIC) -o bin/websockets cmd/websockets/main.go
 
-bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate bin/indexer bin/fillindexer bin/automigrate bin/searchapi bin/exchangesplitter bin/blockmonitor bin/allowancemonitor bin/spendmonitor bin/fillmonitor bin/multisigmonitor bin/spendrecorder bin/queuemonitor bin/canceluptomonitor bin/canceluptofilter bin/canceluptoindexer bin/erc721approvalmonitor bin/affiliatemonitor bin/terms bin/poolfilter bin/metadataindexer bin/websockets
+bin/pooladmin: $(BASE) cmd/pooladmin/main.go
+	cd "$(BASE)" && $(GOSTATIC) -o bin/pooladmin cmd/pooladmin/main.go
+
+bin: bin/delayrelay bin/fundcheckrelay bin/getbalance bin/ingest bin/initialize bin/simplerelay bin/validateorder bin/fillupdate bin/indexer bin/fillindexer bin/automigrate bin/searchapi bin/exchangesplitter bin/blockmonitor bin/allowancemonitor bin/spendmonitor bin/fillmonitor bin/multisigmonitor bin/spendrecorder bin/queuemonitor bin/canceluptomonitor bin/canceluptofilter bin/canceluptoindexer bin/erc721approvalmonitor bin/affiliatemonitor bin/terms bin/poolfilter bin/metadataindexer bin/websockets bin/pooladmin
 
 truffleCompile:
 	cd js ; node_modules/.bin/truffle compile

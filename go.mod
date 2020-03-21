@@ -7,6 +7,7 @@ require (
 	github.com/ethereum/go-ethereum v1.9.11
 	github.com/gorilla/websocket v1.4.1-0.20190629185528-ae1634f6a989
 	github.com/jinzhu/gorm v1.9.12
+	github.com/rs/cors v0.0.0-20160617231935-a62a804a8a00
 	github.com/willf/bitset v1.1.10 // indirect
 	github.com/willf/bloom v2.0.3+incompatible
 	golang.org/x/crypto v0.0.0-20200221231518-2aa609cf4a9d

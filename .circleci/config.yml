@@ -303,6 +303,16 @@ jobs:
           root: bin
           paths:
             - websockets
+  golang_build_pooladmin:
+    docker:
+      - image: circleci/golang:1.13
+    steps:
+      - checkout
+      - run: make bin/pooladmin
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - pooladmin
   golang_test:
     docker:
       # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
@@ -398,6 +408,7 @@ workflows:
       - golang_build_poolfilter
       - golang_build_metadataindexer
       - golang_build_websockets
+      - golang_build_pooladmin
       - golang_test
       - notify_test_finished:
           requires:
@@ -431,6 +442,7 @@ workflows:
             - golang_build_poolfilter
             - golang_build_metadataindexer
             - golang_build_websockets
+            - golang_build_pooladmin
       - docker_build_deploy:
           requires:
             - notify_test_finished
@@ -438,6 +450,5 @@ workflows:
             branches:
               only:
                 - master
-                - support/0xv2
                 - support/0xv3
                 - docker-push
