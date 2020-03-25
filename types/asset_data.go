@@ -16,7 +16,9 @@ var ERC721ProxyID = [4]byte{2, 87, 23, 146} // 0x02571792
 
 func (data AssetData) ProxyId() ([4]byte) {
 	result := [4]byte{}
-	copy(result[:], data[0:4])
+	if len(data) >= 4 {
+		copy(result[:], data[0:4])
+	}
 	return result
 }
 

@@ -100,12 +100,14 @@ func TestCheckUnfundedSufficient(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 	// Checking that the MakerAddress has enough of MakerAssetData.Address(), asserting that they have exactly MakerAssetAmount of the token
-	// This check ignores ZRX, by saying that the TakerAssetData is ZRX, rather than the MakerAssetData.
-	if err := indexer.RecordSpend(dbOrder.Maker, dbOrder.MakerAssetData.Address(), dbOrder.TakerAssetData.Address(), dbOrder.MakerAssetData, dbOrder.MakerAssetAmount); err != nil {
+	if err := indexer.RecordSpend(dbOrder.Maker, dbOrder.MakerAssetData.Address(), dbOrder.MakerAssetData, dbOrder.MakerAssetAmount); err != nil {
 		t.Errorf(err.Error())
 	}
 	dbOrders := []dbModule.Order{}
 	tx.Model(&dbModule.Order{}).Where("order_hash = ?", order.Hash()).Find(&dbOrders)
+	if len(dbOrders) != 1 {
+		t.Fatalf("No orders returned")
+	}
 	dbOrder = &dbOrders[0]
 	if dbOrder.Status != dbModule.StatusOpen {
 		t.Errorf("Order status should not have changed, but is now %v", dbOrder.Status)
@@ -126,7 +128,7 @@ func TestCheckUnfundedNotFound(t *testing.T) {
 	if err := tx.AutoMigrate(&dbModule.Order{}).Error; err != nil {
 		t.Errorf(err.Error())
 	}
-	indexer := dbModule.NewIndexer(tx, dbModule.StatusUnfunded, nil)
+	indexer := dbModule.NewIndexer(tx.Debug(), dbModule.StatusUnfunded, nil)
 	order := sampleOrder(t)
 	dbOrder := &dbModule.Order{}
 	dbOrder.Order = *order
@@ -134,13 +136,14 @@ func TestCheckUnfundedNotFound(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 	// Checking that the Taker has enough of MakerAssetData.Address(), asserting that they have exactly MakerAssetAmount of the token
-	// This check ignores ZRX, by saying that the TakerAssetData is ZRX, rather than the MakerAssetData.
-	// This should not change anything, because no orders will match
-	if err := indexer.RecordSpend(dbOrder.Taker, dbOrder.MakerAssetData.Address(), dbOrder.TakerAssetData.Address(), dbOrder.MakerAssetData, dbOrder.MakerAssetAmount); err != nil {
+	if err := indexer.RecordSpend(dbOrder.Taker, dbOrder.MakerAssetData.Address(), dbOrder.MakerAssetData, dbOrder.MakerAssetAmount); err != nil {
 		t.Errorf(err.Error())
 	}
 	dbOrders := []dbModule.Order{}
 	tx.Model(&dbModule.Order{}).Where("order_hash = ?", order.Hash()).Find(&dbOrders)
+	if len(dbOrders) != 1 {
+		t.Fatalf("No orders returned")
+	}
 	dbOrder = &dbOrders[0]
 	if dbOrder.Status != dbModule.StatusOpen {
 		t.Errorf("Order status should not have changed, but is now %v", dbOrder.Status)
@@ -169,14 +172,16 @@ func TestCheckUnfundedInsufficient(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 	// Checking that the Taker has enough of MakerAssetData.Address(), asserting that they have exactly MakerAssetAmount of the token
-	// This check ignores ZRX, by saying that the TakerAssetData is ZRX, rather than the MakerAssetData.
 	// This should not change anything, because no orders will match
 	zero := &types.Uint256{}
-	if err := indexer.RecordSpend(dbOrder.Maker, dbOrder.MakerAssetData.Address(), dbOrder.TakerAssetData.Address(), dbOrder.MakerAssetData, zero); err != nil {
+	if err := indexer.RecordSpend(dbOrder.Maker, dbOrder.MakerAssetData.Address(), dbOrder.MakerAssetData, zero); err != nil {
 		t.Errorf(err.Error())
 	}
 	dbOrders := []dbModule.Order{}
 	tx.Model(&dbModule.Order{}).Where("order_hash = ?", order.Hash()).Find(&dbOrders)
+	if len(dbOrders) != 1 {
+		t.Fatalf("No orders returned")
+	}
 	dbOrder = &dbOrders[0]
 	if dbOrder.Status != dbModule.StatusUnfunded {
 		t.Errorf("Order status should have changed, but is now %v", dbOrder.Status)
