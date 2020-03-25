@@ -320,29 +320,6 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 			}, 500)
 		}
 
-		if order.TakerFee.Uint() > 0 && !bytes.Equal(order.TakerFeeAssetData[:], feeAssetData[:]) {
-			returnError(w, IngestError{
-				100,
-				"Validation Failed",
-				[]ValidationError{ValidationError{
-					"takerFeeAssetData",
-					1002,
-					fmt.Sprintf("Expected takerFeeAssetData: %#x", feeAssetData[:]),
-				}},
-			}, 402)
-		}
-		if order.MakerFee.Uint() > 0 && !bytes.Equal(order.MakerFeeAssetData[:], feeAssetData[:]) {
-			returnError(w, IngestError{
-				100,
-				"Validation Failed",
-				[]ValidationError{ValidationError{
-					"makerFeeAssetData",
-					1002,
-					fmt.Sprintf("Expected makerFeeAssetData: %#x", feeAssetData[:]),
-				}},
-			}, 402)
-		}
-
 		poolFee, err := pool.Fee()
 		if err != nil {
 			returnError(w, IngestError{
@@ -356,6 +333,33 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 			}, 500)
 			return
 		}
+
+		if poolFee.Cmp(big.NewInt(0)) != 0 {
+			// Only enforce fee assets if the pool requires a fee.
+			if order.TakerFee.Uint() > 0 && !bytes.Equal(order.TakerFeeAssetData[:], feeAssetData[:]) {
+				returnError(w, IngestError{
+					100,
+					"Validation Failed",
+					[]ValidationError{ValidationError{
+						"takerFeeAssetData",
+						1002,
+						fmt.Sprintf("Expected takerFeeAssetData: %#x", feeAssetData[:]),
+					}},
+				}, 402)
+			}
+			if order.MakerFee.Uint() > 0 && !bytes.Equal(order.MakerFeeAssetData[:], feeAssetData[:]) {
+				returnError(w, IngestError{
+					100,
+					"Validation Failed",
+					[]ValidationError{ValidationError{
+						"makerFeeAssetData",
+						1002,
+						fmt.Sprintf("Expected makerFeeAssetData: %#x", feeAssetData[:]),
+					}},
+				}, 402)
+			}
+		}
+
 		account := <-makerChan
 		minFee := new(big.Int)
 		// A pool's Fee() value is the base fee for that pool. A maker's Discount()
