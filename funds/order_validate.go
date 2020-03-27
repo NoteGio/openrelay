@@ -123,12 +123,6 @@ func (funds *orderValidator) ValidateOrder(order *types.Order) (bool, error) {
 			getRemainingAmount(unavailableAmount.Bytes(), order.TakerAssetAmount[:], order.MakerAssetAmount[:]),
 			makerChan,
 		)
-		go funds.checkBalance(
-			feeToken,
-			order.Maker,
-			getRemainingAmount(unavailableAmount.Bytes(), order.TakerAssetAmount[:], order.MakerFee[:]),
-			feeChan,
-		)
 		go funds.checkAllowance(
 			order.MakerAssetData,
 			order.Maker,
@@ -136,6 +130,19 @@ func (funds *orderValidator) ValidateOrder(order *types.Order) (bool, error) {
 			getRemainingAmount(unavailableAmount.Bytes(), order.TakerAssetAmount[:], order.MakerAssetAmount[:]),
 			makerAllowanceChan,
 		)
+		if !bytes.Equal(feeToken[:], order.TakerAssetData[:]) && order.TakerAssetAmount.Big().Cmp(order.MakerFee.Big()) > 0 {
+			go funds.checkBalance(
+				feeToken,
+				order.Maker,
+				getRemainingAmount(unavailableAmount.Bytes(), order.TakerAssetAmount[:], order.MakerFee[:]),
+				feeChan,
+			)
+		} else {
+			// If the TakerToken is the FeeToken and the TakerAssetAmount is bigger
+			// than the MakerFee, the maker will always have enough tokens to pay the
+			// fee after the trade.
+			feeChan <- boolOrErr{success: true}
+		}
 		go funds.checkAllowance(
 			feeToken,
 			order.Maker,

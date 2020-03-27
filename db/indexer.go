@@ -70,9 +70,9 @@ func (indexer *Indexer) RecordSpend(makerAddress, tokenAddress *types.Address, a
 	// bit of pressure off.
 	var query *gorm.DB
 	if len(assetData) == 0 {
-		query = indexer.db.Model(&Order{}).Where("status = ? AND maker = ? AND ((maker_asset_address = ? AND ? < maker_asset_remaining) OR (maker_fee_asset_data = ? AND ? < maker_fee_remaining))", StatusOpen, makerAddress, tokenAddress, balance, common.ToERC20AssetData(tokenAddress), balance)
+		query = indexer.db.Model(&Order{}).Where("status = ? AND maker = ? AND ((maker_asset_address = ? AND ? < maker_asset_remaining) OR (maker_fee_asset_data = ? AND ? < maker_fee_remaining AND taker_asset_data != ?))", StatusOpen, makerAddress, tokenAddress, balance, common.ToERC20AssetData(tokenAddress), balance, common.ToERC20AssetData(tokenAddress))
 	} else {
-		query = indexer.db.Model(&Order{}).Where("status = ? AND maker = ? AND ((maker_asset_data = ? AND ? < maker_asset_remaining) OR (maker_fee_asset_data = ? AND ? < maker_fee_remaining))", StatusOpen, makerAddress, []byte(assetData), balance, []byte(assetData), balance)
+		query = indexer.db.Model(&Order{}).Where("status = ? AND maker = ? AND ((maker_asset_data = ? AND ? < maker_asset_remaining) OR (maker_fee_asset_data = ? AND ? < maker_fee_remaining AND taker_asset_data != ?))", StatusOpen, makerAddress, []byte(assetData), balance, []byte(assetData), balance, common.ToERC20AssetData(tokenAddress))
 	}
 	return indexer.UpdateAndPublish(query, "status", indexer.status, true)
 }
