@@ -23,7 +23,6 @@ import (
 type allowanceBlockConsumer struct {
 	tokenProxyAddress *big.Int
 	approvalTopic     *big.Int
-	feeTokenAddress   string  // Needed for the SpendRecord,
 	logFilter         ethereum.LogFilterer
 	publisher         channels.Publisher
 }
@@ -62,7 +61,6 @@ func (consumer *allowanceBlockConsumer) Consume(delivery channels.Delivery) {
 			sr := &db.SpendRecord{
 				TokenAddress: strings.ToLower(approvalLog.Address.String()),
 				SpenderAddress: hexutil.Encode(approvalLog.Topics[1][12:]),
-				ZrxToken: consumer.feeTokenAddress,
 				Balance: balance.String(),
 			}
 			msg, err := json.Marshal(sr)
@@ -78,10 +76,10 @@ func (consumer *allowanceBlockConsumer) Consume(delivery channels.Delivery) {
 	delivery.Ack()
 }
 
-func NewAllowanceBlockConsumer(tp *big.Int, feeToken string, lf ethereum.LogFilterer, publisher channels.Publisher) (channels.Consumer) {
+func NewAllowanceBlockConsumer(tp *big.Int, lf ethereum.LogFilterer, publisher channels.Publisher) (channels.Consumer) {
 	approvalTopic := &big.Int{}
 	approvalTopic.SetString("8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925", 16)
-	return &allowanceBlockConsumer{tp, approvalTopic, feeToken, lf, publisher}
+	return &allowanceBlockConsumer{tp, approvalTopic, lf, publisher}
 }
 
 func NewRPCAllowanceBlockConsumer(rpcURL string, exchangeAddress string, publisher channels.Publisher) (channels.Consumer, error) {
@@ -94,18 +92,10 @@ func NewRPCAllowanceBlockConsumer(rpcURL string, exchangeAddress string, publish
 		log.Printf("Error intializing exchange contract '%v': '%v'", exchangeAddress, err.Error())
 		return nil, err
 	}
-	feeTokenAssetData, err := exchange.ZRX_ASSET_DATA(nil)
-	if err != nil {
-		log.Printf("Error getting fee token address for exchange %v", exchangeAddress)
-		return nil, err
-	}
-	feeTokenAsset := make(types.AssetData, len(feeTokenAssetData))
-	copy(feeTokenAsset[:], feeTokenAssetData[:])
-	feeTokenAddress := feeTokenAsset.Address()
 	tokenProxyAddress, err := exchange.GetAssetProxy(nil, types.ERC20ProxyID)
 	if err != nil {
 		log.Printf("error getting tokenProxyAddress")
 		return nil, err
 	}
-	return NewAllowanceBlockConsumer(orCommon.BytesToOrAddress(tokenProxyAddress).Big(), feeTokenAddress.String(), client, publisher), nil
+	return NewAllowanceBlockConsumer(orCommon.BytesToOrAddress(tokenProxyAddress).Big(), client, publisher), nil
 }

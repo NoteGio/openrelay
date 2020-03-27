@@ -24,7 +24,6 @@ import (
 type spendBlockConsumer struct {
 	tokenProxyAddress *types.Address
 	spendTopic        *big.Int
-	feeTokenAddress    string  // Needed for the SpendRecord,
 	logFilter          ethereum.LogFilterer
 	publisher          channels.Publisher
 	balanceChecker     balance.BalanceChecker
@@ -141,7 +140,6 @@ func (consumer *spendBlockConsumer) Consume(delivery channels.Delivery) {
 				TokenAddress: strings.ToLower(spendLog.Address.String()),
 				AssetData: hexutil.Encode(tokenAssetData[:]),
 				SpenderAddress: hexutil.Encode(spendLog.Topics[1][12:]),
-				ZrxToken: consumer.feeTokenAddress,
 				Balance: balance.String(),
 			}
 			msg, err := json.Marshal(sr)
@@ -157,10 +155,10 @@ func (consumer *spendBlockConsumer) Consume(delivery channels.Delivery) {
 	delivery.Ack()
 }
 
-func NewSpendBlockConsumer(tp *types.Address, feeToken string, lf ethereum.LogFilterer, publisher channels.Publisher, bc balance.BalanceChecker) (channels.Consumer) {
+func NewSpendBlockConsumer(tp *types.Address, lf ethereum.LogFilterer, publisher channels.Publisher, bc balance.BalanceChecker) (channels.Consumer) {
 	spendTopic := &big.Int{}
 	spendTopic.SetString("ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", 16)
-	return &spendBlockConsumer{tp, spendTopic, feeToken, lf, publisher, bc}
+	return &spendBlockConsumer{tp, spendTopic, lf, publisher, bc}
 }
 
 func NewRPCSpendBlockConsumer(rpcURL string, exchangeAddress string, publisher channels.Publisher) (channels.Consumer, error) {
@@ -173,14 +171,6 @@ func NewRPCSpendBlockConsumer(rpcURL string, exchangeAddress string, publisher c
 		log.Printf("Error intializing exchange contract '%v': '%v'", exchangeAddress, err.Error())
 		return nil, err
 	}
-	feeTokenAssetData, err := exchange.ZRX_ASSET_DATA(nil)
-	if err != nil {
-		log.Printf("Error getting fee token address for exchange %v", exchangeAddress)
-		return nil, err
-	}
-	feeTokenAsset := make(types.AssetData, len(feeTokenAssetData))
-	copy(feeTokenAsset[:], feeTokenAssetData[:])
-	feeTokenAddress := feeTokenAsset.Address()
 	tokenProxyAddress, err := exchange.GetAssetProxy(nil, types.ERC20ProxyID)
 	if err != nil {
 		log.Printf("error getting tokenProxyAddress")
@@ -193,5 +183,5 @@ func NewRPCSpendBlockConsumer(rpcURL string, exchangeAddress string, publisher c
 		log.Printf("Error getting balance checker")
 		return nil, err
 	}
-	return NewSpendBlockConsumer(tokenProxyAddressOr, feeTokenAddress.String(), client, publisher, balanceChecker), nil
+	return NewSpendBlockConsumer(tokenProxyAddressOr, client, publisher, balanceChecker), nil
 }
