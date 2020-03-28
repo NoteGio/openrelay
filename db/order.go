@@ -2,8 +2,10 @@ package db
 
 import (
 	"fmt"
+	"bytes"
 	"github.com/jinzhu/gorm"
 	"github.com/notegio/openrelay/channels"
+	"github.com/notegio/openrelay/common"
 	"github.com/notegio/openrelay/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"log"
@@ -36,6 +38,7 @@ type Order struct {
 	MakerFeeRemaining   *types.Uint256
 	MakerAssetMetadata  *AssetMetadata
 	TakerAssetMetadata  *AssetMetadata
+	MakerAssetRequiredRemaining *types.Uint256
 }
 
 func (order *Order) TableName() string {
@@ -69,6 +72,11 @@ func (order *Order) Populate() {
 	copy(makerFeeRemaining[:], abi.U256(makerFeeRemainingInt))
 	order.MakerAssetRemaining = makerRemaining
 	order.MakerFeeRemaining = makerFeeRemaining
+	if bytes.Equal(order.MakerFeeAssetData[:], order.MakerAssetData) {
+		order.MakerAssetRequiredRemaining = common.BigToUint256(big.NewInt(0).Add(order.MakerAssetRemaining.Big(), order.MakerFeeRemaining.Big()))
+	} else {
+		order.MakerAssetRequiredRemaining = order.MakerFeeRemaining
+	}
 
 	takerTokenAmount := new(big.Float).SetInt(order.TakerAssetAmount.Big())
 	makerTokenAmount := new(big.Float).SetInt(order.MakerAssetAmount.Big())

@@ -56,6 +56,7 @@ func TestWebsocketSubscriptionConsumer(t *testing.T) {
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
+	time.Sleep(200 * time.Millisecond)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	c, resp, err := websocket.DefaultDialer.DialContext(ctx, "ws://localhost:4321/v3/", nil)

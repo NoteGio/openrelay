@@ -6,10 +6,10 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/jinzhu/gorm"
 	"github.com/notegio/openrelay/channels"
+	"github.com/notegio/openrelay/common"
 	"github.com/notegio/openrelay/types"
 	"math/big"
 	"strings"
-	"bytes"
 	"log"
 )
 
@@ -62,7 +62,7 @@ func (indexer *Indexer) RecordFill(fillRecord *FillRecord) error {
 
 // RecordSpend takes information about a token transfer, and updates any
 // orders that might have become unfillable as a result of the transfer.
-func (indexer *Indexer) RecordSpend(makerAddress, tokenAddress, zrxAddress *types.Address, assetData types.AssetData, balance *types.Uint256) error {
+func (indexer *Indexer) RecordSpend(makerAddress, tokenAddress *types.Address, assetData types.AssetData, balance *types.Uint256) error {
 	// NOTE: Right now we're doing this as a single check/update. Eventually it
 	// might make sense to do a check against a read replica, and the update
 	// against the write node if the check passes. It's more work over-all, but
@@ -70,12 +70,9 @@ func (indexer *Indexer) RecordSpend(makerAddress, tokenAddress, zrxAddress *type
 	// bit of pressure off.
 	var query *gorm.DB
 	if len(assetData) == 0 {
-		query = indexer.db.Model(&Order{}).Where("status = ? AND maker_asset_address = ? AND maker = ? AND ? < maker_asset_remaining", StatusOpen, tokenAddress, makerAddress, balance)
+		query = indexer.db.Model(&Order{}).Where("status = ? AND maker = ? AND ((maker_asset_address = ? AND ? < maker_asset_remaining) OR (maker_fee_asset_data = ? AND ? < maker_fee_remaining AND taker_asset_data != ?))", StatusOpen, makerAddress, tokenAddress, balance, common.ToERC20AssetData(tokenAddress), balance, common.ToERC20AssetData(tokenAddress))
 	} else {
-		query = indexer.db.Model(&Order{}).Where("status = ? AND maker_asset_data = ? AND maker = ? AND ? < maker_asset_remaining", StatusOpen, []byte(assetData), makerAddress, balance)
-	}
-	if(bytes.Equal(tokenAddress[:], zrxAddress[:])) {
-		query = query.Or("maker = ? AND ? < maker_fee_remaining", makerAddress, balance)
+		query = indexer.db.Model(&Order{}).Where("status = ? AND maker = ? AND ((maker_asset_data = ? AND ? < maker_asset_remaining) OR (maker_fee_asset_data = ? AND ? < maker_fee_remaining AND taker_asset_data != ?))", StatusOpen, makerAddress, []byte(assetData), balance, []byte(assetData), balance, common.ToERC20AssetData(tokenAddress))
 	}
 	return indexer.UpdateAndPublish(query, "status", indexer.status, true)
 }

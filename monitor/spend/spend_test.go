@@ -99,7 +99,6 @@ func TestSpendFromBlock(t *testing.T) {
 	balanceMap[string(orCommon.ToERC20AssetData(tokenAddress))] = make(map[orTypes.Address]*big.Int)
 	balanceMap[string(orCommon.ToERC20AssetData(tokenAddress))][*spenderAddress] = big.NewInt(0)
 	consumerChannel.AddConsumer(spend.NewSpendBlockConsumer(tokenProxyAddress,
-		"0x4444444444444444444444444444444444444444",
 		mock.NewMockLogFilterer([]types.Log{*testLog}),
 		destPublisher,
 		balance.NewMockBalanceChecker(balanceMap),
@@ -118,9 +117,6 @@ func TestSpendFromBlock(t *testing.T) {
 	}
 	if sr.SpenderAddress != "0x34ab4a96678c4de8eb34597dbbcf09c27d9bc79d" {
 		t.Errorf("Unexpected spender address, got '%v'", sr.TokenAddress)
-	}
-	if sr.ZrxToken != "0x4444444444444444444444444444444444444444" {
-		t.Errorf("Unexpected zrx token address, got '%v'", sr.TokenAddress)
 	}
 	balance, _ := new(big.Int).SetString("0000000000000000000000000000000000000000000000000000000000000000", 16)
 	if sr.Balance != balance.String() {
@@ -148,7 +144,6 @@ func TestNoSpendInBlock(t *testing.T) {
 	tokenProxyBytes := common.HexToAddress("0x3333333333333333333333333333333333333333")
 	copy(tokenProxyAddress[:], tokenProxyBytes[:])
 	consumerChannel.AddConsumer(spend.NewSpendBlockConsumer(tokenProxyAddress,
-		"0x4444444444444444444444444444444444444444",
 		mock.NewMockLogFilterer([]types.Log{*testLog}),
 		destPublisher,
 		balance.NewMockBalanceChecker(make(map[string]map[orTypes.Address]*big.Int)),

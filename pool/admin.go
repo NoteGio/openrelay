@@ -39,6 +39,15 @@ func handleResponse(w http.ResponseWriter, result, id interface{}, code int) {
 
 }
 
+
+// /poolName/v3/_admin
+// POST
+// Body: {"jsonrpc": "2.0", "id": STRING|INT, "expiration": INT, "method": STRING, "params": LIST}
+// * id: An identifier for you to correlate requests and responses
+// * expiration: Unix timestamp in seconds. Must be in the range (now < expiration <= now + 10)
+// * method: The RPC method to invoke
+// * params: The parameters taken by the specified RPC method.
+// Header: Authorization: HMAC_sha256(key, body)
 func PoolAdminHandler(db *gorm.DB, cancellationsPublisher channels.Publisher) func(http.ResponseWriter, *http.Request, *Pool) {
 	return func(w http.ResponseWriter, r *http.Request, pool *Pool) {
 		if len(pool.Key()) == 0 {
@@ -91,6 +100,13 @@ func PoolAdminHandler(db *gorm.DB, cancellationsPublisher channels.Publisher) fu
 	}
 }
 
+
+// RPC Method: cancellation
+// Params: List of order hashes to cancel
+// Orders will only be cancelled if they were submitted through this pool.
+// Return value: Number of orders to be canclled. This may not match the length
+// of the list, if some of the items in the list do not correspond to orders
+// submitted through the pool
 func cancellation(db *gorm.DB, cancellationsPublisher channels.Publisher, pool *Pool, params []interface{}) (interface{}, error, int) {
 	orderList := [][]byte{}
 	for _, p := range params {

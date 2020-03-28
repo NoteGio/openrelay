@@ -1,9 +1,11 @@
 package funds
 
 import (
+	"bytes"
 	"encoding/hex"
 	"fmt"
 	"github.com/notegio/openrelay/config"
+	"github.com/notegio/openrelay/common"
 	"github.com/notegio/openrelay/types"
 	"github.com/notegio/openrelay/channels"
 	"github.com/notegio/openrelay/funds/balance"
@@ -81,7 +83,7 @@ func (funds *orderValidator) ValidateOrder(order *types.Order) (bool, error) {
 		log.Printf("Error getting token proxy address '%v'", err.Error())
 		return false, err
 	}
-	feeProxyAddress, err := funds.tokenProxy.GetById(order, types.ERC20ProxyID)
+	feeProxyAddress, err := funds.tokenProxy.GetById(order, order.MakerFeeAssetData.ProxyId())
 	if err != nil {
 		log.Printf("Error getting fee token proxy address '%v'", err.Error())
 		return false, err
@@ -91,32 +93,64 @@ func (funds *orderValidator) ValidateOrder(order *types.Order) (bool, error) {
 	makerAllowanceChan := make(chan boolOrErr)
 	feeAllowanceChan := make(chan boolOrErr)
 	unavailableAmount := order.TakerAssetAmountFilled.Big()
-	go funds.checkBalance(
-		order.MakerAssetData,
-		order.Maker,
-		getRemainingAmount(unavailableAmount.Bytes(), order.TakerAssetAmount[:], order.MakerAssetAmount[:]),
-		makerChan,
-	)
-	go funds.checkBalance(
-		feeToken,
-		order.Maker,
-		getRemainingAmount(unavailableAmount.Bytes(), order.TakerAssetAmount[:], order.MakerFee[:]),
-		feeChan,
-	)
-	go funds.checkAllowance(
-		order.MakerAssetData,
-		order.Maker,
-		makerProxyAddress,
-		getRemainingAmount(unavailableAmount.Bytes(), order.TakerAssetAmount[:], order.MakerAssetAmount[:]),
-		makerAllowanceChan,
-	)
-	go funds.checkAllowance(
-		feeToken,
-		order.Maker,
-		feeProxyAddress,
-		getRemainingAmount(unavailableAmount.Bytes(), order.TakerAssetAmount[:], order.MakerFee[:]),
-		feeAllowanceChan,
-	)
+
+	if bytes.Equal(order.MakerAssetData[:], feeToken[:]) {
+		requiredMakerAmount := common.BigToUint256(big.NewInt(0).Add(order.MakerAssetAmount.Big(), order.MakerFee.Big()))
+		go funds.checkBalance(
+			order.MakerAssetData,
+			order.Maker,
+			getRemainingAmount(unavailableAmount.Bytes(), order.TakerAssetAmount[:], requiredMakerAmount[:]),
+			makerChan,
+		)
+		go funds.checkAllowance(
+			order.MakerAssetData,
+			order.Maker,
+			makerProxyAddress,
+			getRemainingAmount(unavailableAmount.Bytes(), order.TakerAssetAmount[:], requiredMakerAmount[:]),
+			makerAllowanceChan,
+		)
+		// If the MakerAssetData == MakerFeeAssetData, then we only need to check it
+		// once with the combined amount, but the other channels still expect
+		// results
+		go func () {
+			feeChan <- boolOrErr{success: true}
+			feeAllowanceChan <- boolOrErr{success: true}
+		}()
+	} else {
+		go funds.checkBalance(
+			order.MakerAssetData,
+			order.Maker,
+			getRemainingAmount(unavailableAmount.Bytes(), order.TakerAssetAmount[:], order.MakerAssetAmount[:]),
+			makerChan,
+		)
+		go funds.checkAllowance(
+			order.MakerAssetData,
+			order.Maker,
+			makerProxyAddress,
+			getRemainingAmount(unavailableAmount.Bytes(), order.TakerAssetAmount[:], order.MakerAssetAmount[:]),
+			makerAllowanceChan,
+		)
+		if !bytes.Equal(feeToken[:], order.TakerAssetData[:]) && order.TakerAssetAmount.Big().Cmp(order.MakerFee.Big()) > 0 {
+			go funds.checkBalance(
+				feeToken,
+				order.Maker,
+				getRemainingAmount(unavailableAmount.Bytes(), order.TakerAssetAmount[:], order.MakerFee[:]),
+				feeChan,
+			)
+		} else {
+			// If the TakerToken is the FeeToken and the TakerAssetAmount is bigger
+			// than the MakerFee, the maker will always have enough tokens to pay the
+			// fee after the trade.
+			feeChan <- boolOrErr{success: true}
+		}
+		go funds.checkAllowance(
+			feeToken,
+			order.Maker,
+			feeProxyAddress,
+			getRemainingAmount(unavailableAmount.Bytes(), order.TakerAssetAmount[:], order.MakerFee[:]),
+			feeAllowanceChan,
+		)
+	}
 	result := true
 	if chanResult := <-makerChan; !chanResult.success {
 		log.Printf("Insufficient maker token funds")

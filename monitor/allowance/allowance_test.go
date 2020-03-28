@@ -90,7 +90,6 @@ func TestAllowanceFromBlock(t *testing.T) {
 	addr, _ := big.NewInt(0).SetString("0x1dc4c1cefef38a777b15aa20260a54e584b16c48", 0)
 	consumerChannel.AddConsumer(allowance.NewAllowanceBlockConsumer(
 		addr,
-		"0x4444444444444444444444444444444444444444",
 		mock.NewMockLogFilterer([]types.Log{*testLog}),
 		destPublisher,
 	))
@@ -107,9 +106,6 @@ func TestAllowanceFromBlock(t *testing.T) {
 		t.Errorf("Unexpected token address, got '%v'", sr.TokenAddress)
 	}
 	if sr.SpenderAddress != "0x5409ed021d9299bf6814279a6a1411a7e866a631" {
-		t.Errorf("Unexpected token address, got '%v'", sr.TokenAddress)
-	}
-	if sr.ZrxToken != "0x4444444444444444444444444444444444444444" {
 		t.Errorf("Unexpected token address, got '%v'", sr.TokenAddress)
 	}
 	balance, _ := new(big.Int).SetString("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16)
@@ -136,7 +132,6 @@ func TestNoAllowanceInBlock(t *testing.T) {
 	addr, _ := big.NewInt(0).SetString("0x1dc4c1cefef38a777b15aa20260a54e584b16c48", 0)
 	consumerChannel.AddConsumer(allowance.NewAllowanceBlockConsumer(
 		addr,
-		"0x4444444444444444444444444444444444444444",
 		mock.NewMockLogFilterer([]types.Log{}),
 		destPublisher,
 	))
