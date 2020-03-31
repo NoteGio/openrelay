@@ -141,7 +141,9 @@ func (funds *orderValidator) ValidateOrder(order *types.Order) (bool, error) {
 			// If the TakerToken is the FeeToken and the TakerAssetAmount is bigger
 			// than the MakerFee, the maker will always have enough tokens to pay the
 			// fee after the trade.
-			feeChan <- boolOrErr{success: true}
+			go func() {
+				feeChan <- boolOrErr{success: true}
+			}()
 		}
 		go funds.checkAllowance(
 			feeToken,
