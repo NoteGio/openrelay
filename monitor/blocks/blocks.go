@@ -72,7 +72,7 @@ func (bm *BlockMonitor) Process() error {
 		log.Printf("Error getting header for block number %v", blockNumber)
 		return err
 	}
-	log.Printf("Starting Block: Number: '%v' - Hash: '%#x'", header.Number, header.Hash())
+	log.Printf("Starting Block: Number: '%v' - Hash: '%#x' - Pause Time: '%v'", header.Number, header.Hash(), bm.queryInterval)
 	// Track the block in the RingBuffer to handle chain re-orgs.
 	bm.brb.Add(&MiniBlock{
 		header.Hash(),
