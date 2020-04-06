@@ -19,8 +19,8 @@ import (
 
 type fillBlockConsumer struct {
 	exchangeAddress   *big.Int
-	fillTopic         *big.Int // 0x0bcc4c97732e47d9946f229edb95f5b6323f601300e4690de719993f3c371129
-	cancelTopic       *big.Int // 0xdc47b3613d9fe400085f6dbdc99453462279057e6207385042827ed6b1a62cf7
+	fillTopic         *big.Int // 0x6869791f0a34781b29882982cc39e882768cf2c96995c2a110c577c53bc932d5
+	cancelTopic       *big.Int // 0x02c310a9a43963ff31a754a4099cc435ed498049687539d72d7818d9b093415c
 	logFilter         ethereum.LogFilterer
 	publisher         channels.Publisher
 	fillBloom         *fillbloom.FillBloom
@@ -67,7 +67,7 @@ func (consumer *fillBlockConsumer) Consume(delivery channels.Delivery) {
 			var fr *db.FillRecord
 			if new(big.Int).SetBytes(fillLog.Topics[0][:]).Cmp(consumer.fillTopic) == 0 {
 				takerTokenFilled := big.NewInt(0)
-				takerTokenFilled.SetBytes(fillLog.Data[32*3:32*4])
+				takerTokenFilled.SetBytes(fillLog.Data[32*7:32*8])
 				orderHash := fillLog.Topics[3][:]
 				fr = &db.FillRecord{
 					OrderHash: fmt.Sprintf("%#x", orderHash),
@@ -102,9 +102,9 @@ func (consumer *fillBlockConsumer) Consume(delivery channels.Delivery) {
 
 func NewFillBlockConsumer(exchangeAddress *big.Int, lf ethereum.LogFilterer, publisher channels.Publisher, fb *fillbloom.FillBloom) (channels.Consumer) {
 	fillTopic := &big.Int{}
-	fillTopic.SetString("0bcc4c97732e47d9946f229edb95f5b6323f601300e4690de719993f3c371129", 16)
+	fillTopic.SetString("6869791f0a34781b29882982cc39e882768cf2c96995c2a110c577c53bc932d5", 16)
 	cancelTopic := &big.Int{}
-	cancelTopic.SetString("dc47b3613d9fe400085f6dbdc99453462279057e6207385042827ed6b1a62cf7", 16)
+	cancelTopic.SetString("02c310a9a43963ff31a754a4099cc435ed498049687539d72d7818d9b093415c", 16)
 	return &fillBlockConsumer{exchangeAddress, fillTopic, cancelTopic, lf, publisher, fb}
 }
 
