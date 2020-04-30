@@ -54,7 +54,7 @@ func (tokenProxy *rpcTokenProxy) GetById(order *types.Order, proxyID [4]byte) (*
 	}
 	tokenProxyGethAddress, err := exchange.GetAssetProxy(nil, proxyID)
 	if err != nil {
-		log.Printf("Error getting token proxy address for exhange %#x", order.ExchangeAddress)
+		log.Printf("Error getting token proxy address for exhange %v", order.ExchangeAddress[:])
 		return nil, err
 	}
 	copy(tokenProxyAddress[:], tokenProxyGethAddress[:])

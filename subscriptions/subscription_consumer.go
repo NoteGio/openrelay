@@ -24,7 +24,7 @@ type SubscriptionMessage struct {
 	Type      string `json:"type"`
 	Channel   string `json:"channel"`
 	RequestID string `json:"requestId"`
-	Payload   *OrderFilter
+	Payload   *OrderFilter `json:"payload"`
 }
 
 func sendError(publisher channels.Publisher, err error) {

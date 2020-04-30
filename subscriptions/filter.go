@@ -2,10 +2,12 @@ package subscriptions
 
 import (
 	"encoding/hex"
+	"fmt"
 	"github.com/notegio/openrelay/db"
 	"github.com/notegio/openrelay/types"
 	"github.com/notegio/openrelay/common"
 	"golang.org/x/crypto/sha3"
+	"math/big"
 	"net/url"
 	"bytes"
 	"strings"
@@ -142,6 +144,13 @@ func (ofilter *OrderFilter) GetFilter(lookup ExchangeLookup) (func(*db.Order) (b
 				}
 			}
 			return false
+		})
+	}
+	if ofilter.TakerFee != "" {
+		takerFee, ok := big.NewInt(0).SetString(ofilter.TakerFee, 10)
+		if !ok { return nil, fmt.Errorf("TakerFee '%v' not a number", ofilter.TakerFee)}
+		predicates = append(predicates, func(order *db.Order) (bool) {
+			return takerFee.Cmp(order.TakerFee.Big()) == 0
 		})
 	}
 	return func(order *db.Order) (bool) {

@@ -74,7 +74,14 @@ func TestWebsocketSubscriptionConsumer(t *testing.T) {
 	c.WriteMessage(websocket.TextMessage, []byte(`{
 	    "type": "subscribe",
 	    "channel": "orders",
-	    "requestId": "123e4567-e89b-12d3-a456-426655440000"
+	    "requestId": "00000000-e89b-12d3-a456-426655440000",
+			"payload": {"makerAddress": "0x0000000000000000000000000000000000000001"}
+	}`))
+	c.WriteMessage(websocket.TextMessage, []byte(`{
+	    "type": "subscribe",
+	    "channel": "orders",
+	    "requestId": "123e4567-e89b-12d3-a456-426655440000",
+			"payload": {"makerAddress": "0x0000000000000000000000000000000000000000"}
 	}`))
 
 	time.Sleep(50 * time.Millisecond)
