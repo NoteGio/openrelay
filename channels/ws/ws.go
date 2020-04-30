@@ -107,7 +107,7 @@ func GetChannels(port uint, db *gorm.DB, cleanup func(channels.Publisher)) (<-ch
         log.Println(err)
         return
     }
-		wsChannel := &WebsocketChannel{true, conn, make(chan []byte), []channels.Consumer{}, p.QueryString(), make(chan struct{}), cleanup}
+		wsChannel := &WebsocketChannel{true, conn, make(chan []byte, 100), []channels.Consumer{}, p.QueryString(), make(chan struct{}), cleanup}
 		outChan <- wsChannel
 		pingPeriodString := os.Getenv("WEBSOCKET_HEARTBEAT")
 		pingPeriod := 60
