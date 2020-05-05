@@ -1,6 +1,7 @@
 package ingest_test
 
 import (
+	"bytes"
 	"github.com/notegio/openrelay/ingest"
 	"github.com/notegio/openrelay/common"
 	"github.com/notegio/openrelay/types"
@@ -43,7 +44,7 @@ func TestFeeRecipientAndMakerProvided(t *testing.T) {
 	publisher := TestPublisher{}
 	handler := mockPoolDecorator(ingest.FeeHandler(&publisher, &TestAccountService{false, new(big.Int)}, &TestAffiliateService{new(big.Int), nil}, [20]byte{}, &TestExchangeLookup{1}))
 	reader := TestReader{
-		[]byte("{\"chainId\":1, \"maker\": \"0x0000000000000000000000000000000000000000\", \"feeRecipientAddress\": \"0000000000000000000000000000000000000000\", \"takerTokenAmount\": \"100\", \"makerTokenAmount\": \"100\"}"),
+		bytes.NewReader([]byte("{\"chainId\":1, \"maker\": \"0x0000000000000000000000000000000000000000\", \"feeRecipientAddress\": \"0000000000000000000000000000000000000000\", \"takerTokenAmount\": \"100\", \"makerTokenAmount\": \"100\"}")),
 		nil,
 	}
 	request, _ := http.NewRequest("POST", "/v0.0/fees", reader)
@@ -63,7 +64,7 @@ func TestFeeRecipientAndMakerDefault(t *testing.T) {
 	publisher := TestPublisher{}
 	handler := mockPoolDecorator(ingest.FeeHandler(&publisher, &TestAccountService{false, new(big.Int)}, &TestAffiliateService{new(big.Int), nil}, [20]byte{}, &TestExchangeLookup{1}))
 	reader := TestReader{
-		[]byte("{\"takerTokenAmount\": \"100\", \"makerTokenAmount\": \"100\"}"),
+		bytes.NewReader([]byte("{\"takerTokenAmount\": \"100\", \"makerTokenAmount\": \"100\"}")),
 		nil,
 	}
 	request, _ := http.NewRequest("POST", "/v0.0/fees", reader)
