@@ -10,6 +10,7 @@ import (
 	"github.com/notegio/openrelay/types"
 	poolModule "github.com/notegio/openrelay/pool"
 	"io"
+	"io/ioutil"
 	"log"
 	"math/big"
 	"net/http"
@@ -65,8 +66,8 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 		}
 		order := types.Order{}
 		if contentType == "application/octet-stream" {
-			var data [1024]byte
-			length, err := r.Body.Read(data[:])
+			reader := &io.LimitedReader{R: r.Body, N: 1024}
+			data, err := ioutil.ReadAll(reader)
 			if err != nil && err != io.EOF {
 				log.Printf(err.Error())
 				returnError(w, IngestError{
@@ -76,7 +77,7 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 				}, 500)
 				return
 			}
-			if err := order.FromBytes(data[:length]); err != nil {
+			if err := order.FromBytes(data); err != nil {
 				log.Printf("Error parsing order: %v", err.Error())
 				returnError(w, IngestError{
 					100,
@@ -86,8 +87,8 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 				return
 			}
 		} else if contentType == "application/json" {
-			var data [4096]byte
-			jsonLength, err := r.Body.Read(data[:])
+			reader := &io.LimitedReader{R: r.Body, N: 4096}
+			data, err := ioutil.ReadAll(reader)
 			if err != nil && err != io.EOF {
 				log.Printf(err.Error())
 				returnError(w, IngestError{
@@ -97,7 +98,7 @@ func Handler(publisher channels.Publisher, accounts accountsModule.AccountServic
 				}, 500)
 				return
 			}
-			if err := json.Unmarshal(data[:jsonLength], &order); err != nil {
+			if err := json.Unmarshal(data, &order); err != nil {
 				log.Printf("%v: '%v'", err.Error(), string(data[:]))
 				returnError(w, IngestError{
 					101,
